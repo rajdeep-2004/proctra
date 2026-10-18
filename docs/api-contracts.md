@@ -57,7 +57,7 @@ type AttemptStatus = "active" | "submitted" | "auto_submitted";
 #### `GET /api/v1/health`
 - Auth: public · Phase: 01 · Purpose: liveness + DB check for Electron's offline screen
 
-Response `200` `{ "data": { "ok": true, "db": "up" } }` (`db: "down"` with `503` if Mongo ping fails)
+Response `200` `{ "data": { "ok": true, "db": "up" } }` · `503` `{ "data": { "ok": false, "db": "down" } }` if the Mongo ping fails (within ~5 s)
 
 ### Auth
 
@@ -279,7 +279,7 @@ Not HTTP, but a contract between the web app and the Electron shell.
 ## 4. Endpoint index
 | Method | Path | Auth | Phase | Status |
 |---|---|---|---|---|
-| GET | /api/v1/health | public | 01 | planned |
+| GET | /api/v1/health | public | 01 | built |
 | POST | /api/v1/auth/register | public | 02 | planned |
 | * | /api/auth/* (Auth.js) | public | 02 | planned |
 | GET | /api/v1/me | any | 02 | planned |

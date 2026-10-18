@@ -41,6 +41,7 @@ Rules:
 | D-026 | 2026-10-19 | 01 | Keep Next.js 16.4 defaults: Cache Components + Partial Prefetching | Active |
 | D-027 | 2026-10-19 | 01 | shadcn/ui on Radix (nova preset) and its runtime deps | Active |
 | D-028 | 2026-10-19 | 01 | Lazy, validated env access; keys added per phase | Active |
+| D-029 | 2026-10-19 | 01 | Mongo connection settings and the standard API wrapper | Active |
 
 ---
 
@@ -905,6 +906,10 @@ Radix is the most documented shadcn base, so fixes and examples are easy to find
 `cn` was unfamiliar (it replaces the usual `clsx` + `tailwind-merge`), so it was checked before keeping it:
 published by shadcn from `github.com/shadcn-ui/cn`, no install scripts, no dependencies.
 The layout exposes the Geist font as `--font-sans` because the generated theme reads that variable.
+`shadcn` is a **devDependency**: the app only imports `shadcn/tailwind.css` at build time. Its CLI pulls in
+`fast-glob` → `braces` (7 "high" npm-audit DoS findings for untrusted glob input — never reached by our app).
+Keeping it out of production deps makes `npm audit --omit=dev` clean; `npm audit fix --force` was rejected
+because it would downgrade shadcn to 1.0.
 
 **Files touched**
 - `components.json`, `src/components/ui/button.tsx`, `src/lib/utils.ts`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/page.tsx`
@@ -950,3 +955,45 @@ already uses; each phase adds its own (phase 02: `AUTH_SECRET`, `SEED_TEACHER_*`
 
 **Revisit if**
 n/a
+
+---
+
+### D-029 — Mongo connection settings and the standard API wrapper
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+Every route needs the same connection handling and the same response/error shape from `api-contracts.md`.
+
+**Decision**
+- `src/lib/db.ts`: one cached `connectDB()` stored on `globalThis`, with `bufferCommands: false`,
+  `serverSelectionTimeoutMS: 5000`, `maxPoolSize: 10`. A failed connect clears the cached promise so the next request retries.
+- `src/lib/api-response.ts`: `AppError(code, message, status)`, `ok()`, `created()` and `withHandler()`.
+
+**Why**
+- `bufferCommands: false`: by default Mongoose silently queues queries while disconnected, so a request
+  would hang instead of failing. Failing fast lets the exam client's retry logic (D-007) kick in.
+- 5 s server selection: health and API calls return a clear error quickly when Atlas is unreachable.
+- `globalThis`: Next.js dev hot-reload re-imports modules; a module-level variable would open a new connection each reload.
+
+**How it works**
+```ts
+export const POST = withHandler(async (req) => {
+  const input = Schema.parse(await req.json());   // ZodError → 400 VALIDATION_ERROR
+  return created(await service.create(input));    // AppError → its status; anything else → 500 INTERNAL
+});
+```
+Plain return values become `200 { data }`; returning a `Response` (e.g. `created()`) passes through.
+Unknown errors are logged with method + path only (never the body, which may contain passwords).
+
+**Files touched**
+- `src/lib/db.ts`, `src/lib/api-response.ts`, `src/app/api/v1/health/route.ts`
+
+**Concepts worth learning**
+- **Higher-order function:** `withHandler` takes a function and returns a new function with extra behaviour (error handling).
+- **Connection pooling:** reusing a small set of open DB connections instead of reconnecting per request.
+
+**Revisit if**
+We need request ids / structured logging.
