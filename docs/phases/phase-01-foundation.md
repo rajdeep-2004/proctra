@@ -37,7 +37,7 @@ None — first phase. Planning docs are complete (prd, architecture, system-desi
 
 ## Tasks
 - [x] 01.1 — Scaffold Next.js (App Router, TS, Tailwind, ESLint, `src/`), npm scripts → `chore: scaffold next.js app`
-- [ ] 01.2 — Init shadcn/ui, base layout + landing page → `chore(ui): set up shadcn/ui and base layout`
+- [x] 01.2 — Init shadcn/ui, base layout + landing page → `chore(ui): set up shadcn/ui and base layout`
 - [ ] 01.3 — `lib/env.ts` (Zod), `.env.example`, `.env` placeholders → `feat(config): add validated env loader`
 - [ ] 01.4 — `lib/db.ts` cached Mongoose connection, `lib/api-response.ts` (`AppError`, `withHandler`), `GET /api/v1/health` → `feat(api): add db connection and health endpoint`
 - [ ] 01.5 — Electron main + preload (TS → `electron/dist`), security flags, origin allow-list, offline screen, `npm run electron` → `feat(desktop): add electron shell`

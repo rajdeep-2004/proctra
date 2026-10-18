@@ -39,6 +39,7 @@ Rules:
 | D-024 | 2026-10-19 | 00 | Grading as a pure function with a stored breakdown | Active |
 | D-025 | 2026-10-19 | 00 | Competition ranking computed on read | Active |
 | D-026 | 2026-10-19 | 01 | Keep Next.js 16.4 defaults: Cache Components + Partial Prefetching | Active |
+| D-027 | 2026-10-19 | 01 | shadcn/ui on Radix (nova preset) and its runtime deps | Active |
 
 ---
 
@@ -868,3 +869,48 @@ loading states for free.
 
 **Revisit if**
 Auth.js or another library proves incompatible with Cache Components.
+
+---
+
+### D-027 — shadcn/ui on Radix (nova preset) and its runtime deps
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+shadcn CLI 4.22 asks for an underlying primitive library (Radix, Base UI, React Aria) and a visual preset,
+and installs several runtime packages.
+
+**Decision**
+Radix primitives with the default `nova` preset (Lucide icons, Geist font). Dependencies it added:
+`radix-ui` (accessible primitives), `class-variance-authority` (button/badge variants), `lucide-react`
+(icons), `tw-animate-css` (enter/exit animations for dialogs), `shadcn` (provides `shadcn/tailwind.css`
+imported by `globals.css`) and `cn` (class-name merging).
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Base UI / React Aria base | Fewer examples; DevClub UI is "shadcn-compatible", most likely Radix-based |
+
+**Why**
+Radix is the most documented shadcn base, so fixes and examples are easy to find.
+
+**How it works**
+`npx shadcn add <component>` copies component source into `src/components/ui/` — we own that code.
+`cn(...)` (from `src/lib/utils.ts`) joins class names and resolves Tailwind conflicts (`"p-2 p-4"` → `"p-4"`).
+
+**Notes**
+`cn` was unfamiliar (it replaces the usual `clsx` + `tailwind-merge`), so it was checked before keeping it:
+published by shadcn from `github.com/shadcn-ui/cn`, no install scripts, no dependencies.
+The layout exposes the Geist font as `--font-sans` because the generated theme reads that variable.
+
+**Files touched**
+- `components.json`, `src/components/ui/button.tsx`, `src/lib/utils.ts`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/page.tsx`
+
+**Concepts worth learning**
+- **Headless primitives:** Radix handles behaviour/accessibility (focus, keyboard, ARIA); styling is ours.
+- **Supply-chain check:** before trusting a new package, check publisher, repo, install scripts and deps.
+
+**Revisit if**
+DevClub UI (S-02) requires a different base.
