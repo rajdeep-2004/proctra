@@ -20,7 +20,7 @@ snapshots — a university capstone for students and teachers (macOS). Details l
 ```bash
 npm install          # install deps
 npm run dev          # Next.js dev server (http://localhost:3000)
-npm run electron     # Electron shell (run with dev server up)
+npm run electron     # compile electron/ and open the shell (run with dev server up)
 npm run build        # production build
 npm run lint         # lint + typecheck
 npm run seed         # create/update teacher account from SEED_TEACHER_* env

@@ -219,7 +219,7 @@ What breaks first beyond a single class:
 ## 10. Observability
 - Vercel function logs (`console.error` for unexpected errors, no PII/passwords).
 - Proctor event log per attempt doubles as a client-health record (snapshot failures, focus loss).
-- `GET /api/v1/health` → `{ ok, db: "up" | "down" }` used by Electron's offline screen.
+- `GET /api/v1/health` → `{ ok, db: "up" | "down" }` for manual/deploy checks. Electron's offline screen is driven by the window's `did-fail-load` event instead (D-030).
 
 ## 11. Trade-offs accepted
 | Trade-off | Why acceptable now | Revisit when |

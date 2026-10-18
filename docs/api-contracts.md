@@ -55,7 +55,7 @@ type AttemptStatus = "active" | "submitted" | "auto_submitted";
 ### Health
 
 #### `GET /api/v1/health`
-- Auth: public · Phase: 01 · Purpose: liveness + DB check for Electron's offline screen
+- Auth: public · Phase: 01 · Purpose: liveness + DB check (manual and post-deploy checks)
 
 Response `200` `{ "data": { "ok": true, "db": "up" } }` · `503` `{ "data": { "ok": false, "db": "down" } }` if the Mongo ping fails (within ~5 s)
 

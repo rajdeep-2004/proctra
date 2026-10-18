@@ -42,6 +42,7 @@ Rules:
 | D-027 | 2026-10-19 | 01 | shadcn/ui on Radix (nova preset) and its runtime deps | Active |
 | D-028 | 2026-10-19 | 01 | Lazy, validated env access; keys added per phase | Active |
 | D-029 | 2026-10-19 | 01 | Mongo connection settings and the standard API wrapper | Active |
+| D-030 | 2026-10-19 | 01 | Electron shell details: single instance, offline page, dev env loading | Active |
 
 ---
 
@@ -997,3 +998,52 @@ Unknown errors are logged with method + path only (never the body, which may con
 
 **Revisit if**
 We need request ids / structured logging.
+
+---
+
+### D-030 — Electron shell details: single instance, offline page, dev env loading
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+Building the shell from D-002/D-009 raised smaller questions: how dev reads `PROCTRA_APP_URL`, what
+happens when the server is unreachable, and how the TypeScript is compiled.
+
+**Decision**
+- **Compile:** `electron/*.ts` → CommonJS in `electron/dist/` via its own `electron/tsconfig.json`
+  (`npm run electron:build`). The root Next.js tsconfig excludes `electron/`; `npm run lint` type-checks both.
+- **Config in dev:** `process.loadEnvFile(".env")` (built into Electron 44's Node 24) — no `dotenv`
+  dependency. Variables already set in the shell win, so `PROCTRA_APP_URL=… npm run electron` overrides `.env`.
+- **Offline:** on a main-frame `did-fail-load` (ignoring `ERR_ABORTED`, which redirects trigger) the window
+  loads the local `electron/offline.html` with a Retry button. This replaced the planned `/health` polling — the
+  load-failure event already tells us exactly when the server is unreachable.
+- **Single instance lock:** a second launch focuses the existing window (two copies could open two exam windows).
+- **Quit on last window close, also on macOS:** an exam app shouldn't keep running in the dock.
+- **Permissions:** all denied for now; phase 05 allows camera for the app origin only.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Poll `/health` before loading | Extra request + timer for information `did-fail-load` already gives |
+| `dotenv` package | Node 24 has `process.loadEnvFile` built in |
+| Offline page as a `data:` URL | Harder to read/maintain; a file is also easy to allow-list exactly |
+
+**How it works**
+The navigation allow-list (`isAllowedUrl`) accepts only the app origin plus the exact offline-page file
+path. The offline page's Retry reads the target from its query string; if someone tampers with it, the
+allow-list still blocks anything outside the app origin. Verified in `.scratch/` via the DevTools protocol:
+`window.proctra` present, `require`/`process` undefined, `window.open` → `null`, navigation to another
+origin blocked, offline page + Retry loop works.
+
+**Files touched**
+- `electron/main.ts`, `electron/preload.ts`, `electron/offline.html`, `electron/tsconfig.json`,
+  `src/types/proctra.d.ts`, `package.json` (`main`, scripts), `tsconfig.json`, `eslint.config.mjs`
+
+**Concepts worth learning**
+- **Main vs renderer process:** main is Node.js and owns windows; each renderer is a sandboxed web page.
+- **Chrome DevTools Protocol (CDP):** the debugging API we used to script checks against the running app.
+
+**Revisit if**
+Phase 07 packaging needs a different way to provide `PROCTRA_APP_URL`.
