@@ -1,6 +1,6 @@
 # Architecture
 
-> Last updated: 2026-10-19 — Static structure of the system. Runtime behavior lives in system-design.md.
+> Last updated: 2026-10-19 (phase 01 close) — Static structure of the system. Runtime behavior lives in system-design.md.
 
 ## 1. Overview
 Proctra is **one Next.js application** (UI + server-side route handlers) deployed on Vercel, wrapped
@@ -34,8 +34,8 @@ flowchart LR
 ## 3. Tech stack
 | Layer | Choice | Why (link decision) |
 |---|---|---|
-| Desktop shell | Electron (latest stable) + electron-builder | D-002, D-012 |
-| Frontend | Next.js (App Router, latest stable) + React + TypeScript | D-003 |
+| Desktop shell | Electron 44.9 (Node 24) + electron-builder (phase 07) | D-002, D-012 |
+| Frontend | Next.js 16.4 (App Router, Cache Components) + React 19.3 + TypeScript | D-003 |
 | Styling / UI | Tailwind CSS + shadcn/ui; DevClub UI + GSAP only in polish | D-015 |
 | Backend | Next.js route handlers under `/api/v1` + service layer | D-003 |
 | Validation | Zod | D-011 |
@@ -43,7 +43,7 @@ flowchart LR
 | Auth | Auth.js (NextAuth v5) Credentials provider, JWT session cookie, bcryptjs | D-005 |
 | Image storage | Cloudinary (`type: authenticated`, server-side upload) | D-008 |
 | Cache / queue | None | D-014 |
-| Hosting | Vercel (manual deploy via `vercel` CLI / Git import) | D-002 |
+| Hosting | Vercel project `proctra`, manual `vercel deploy --prod` from the CLI → https://proctra-mu.vercel.app | D-002, D-031 |
 | Package manager | npm | D-015 |
 
 ## 4. Codebase layout
@@ -52,7 +52,8 @@ proctra/
 ├── electron/               # Electron main + preload (TypeScript, compiled to electron/dist/)
 │   ├── main.ts             # windows, kiosk exam window, permissions, IPC handlers
 │   ├── preload.ts          # exposes window.proctra (narrow API only)
-│   ├── build/              # macOS entitlements, icon
+│   ├── offline.html        # shown when the app URL can't be reached
+│   ├── build/              # macOS entitlements, icon (phase 07)
 │   └── tsconfig.json
 ├── src/
 │   ├── app/                # Next.js App Router
@@ -64,7 +65,7 @@ proctra/
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
 │   │   └── <feature>/      # quiz-editor/, exam/, results/ ...
-│   ├── lib/                # db.ts, auth.ts, cloudinary.ts, env.ts, api-response.ts, desktop.ts
+│   ├── lib/                # built: db.ts, env.ts, api-response.ts, utils.ts (cn) · later: auth.ts (02), cloudinary.ts (05), desktop.ts (05)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
@@ -139,7 +140,7 @@ server component (reads) ──────────────────�
 | `CLOUDINARY_API_KEY` | Cloudinary key | yes | `1234567890` |
 | `CLOUDINARY_API_SECRET` | Cloudinary secret (server only) | yes | `abc...` |
 | `SEED_TEACHER_EMAIL` / `SEED_TEACHER_PASSWORD` / `SEED_TEACHER_NAME` | Seed script input | for seeding | `teacher@uni.edu` |
-| `PROCTRA_APP_URL` | URL the Electron shell loads (baked in at package time) | yes (Electron) | `http://localhost:3000` / `https://proctra.vercel.app` |
+| `PROCTRA_APP_URL` | URL the Electron shell loads (baked in at package time) | yes (Electron) | `http://localhost:3000` / `https://proctra-mu.vercel.app` |
 
-All env reads go through `src/lib/env.ts` (validated with Zod at startup). `.env.example` lists every
+All server env reads go through `env()` in `src/lib/env.ts` (validated with Zod on first use, D-028; keys are added in the phase that needs them). Electron reads only `PROCTRA_APP_URL`. `.env.example` lists every
 key; real values live in `.env` (gitignored) locally and in Vercel project settings for production.

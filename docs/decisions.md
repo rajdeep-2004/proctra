@@ -38,6 +38,12 @@ Rules:
 | D-023 | 2026-10-19 | 00 | Role-prefixed routes and 404 for other students' attempts | Active |
 | D-024 | 2026-10-19 | 00 | Grading as a pure function with a stored breakdown | Active |
 | D-025 | 2026-10-19 | 00 | Competition ranking computed on read | Active |
+| D-026 | 2026-10-19 | 01 | Keep Next.js 16.4 defaults: Cache Components + Partial Prefetching | Active |
+| D-027 | 2026-10-19 | 01 | shadcn/ui on Radix (nova preset) and its runtime deps | Active |
+| D-028 | 2026-10-19 | 01 | Lazy, validated env access; keys added per phase | Active |
+| D-029 | 2026-10-19 | 01 | Mongo connection settings and the standard API wrapper | Active |
+| D-030 | 2026-10-19 | 01 | Electron shell details: single instance, offline page, dev env loading | Active |
+| D-031 | 2026-10-19 | 01 | Deploy with the Vercel CLI; env vars set from .env without echoing | Active |
 
 ---
 
@@ -821,3 +827,258 @@ With ≤ a few hundred attempts per quiz this is instant, so no stored rank is n
 
 **Revisit if**
 Quizzes reach thousands of attempts.
+
+---
+
+### D-026 — Keep Next.js 16.4 defaults: Cache Components + Partial Prefetching
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** stack
+
+**Context**
+`create-next-app@16.4.2` enables `cacheComponents: true` and `partialPrefetching: true` by default. This
+changes how pages and GET route handlers render compared with older Next.js tutorials (no
+`export const dynamic = "force-dynamic"`; instead data is dynamic unless you opt into caching).
+
+**Decision**
+Keep both defaults. Never use `'use cache'` for per-user or exam data. Wrap components that read the
+session/cookies or DB in `<Suspense>`, and call `await connection()` at the top of GET route handlers so
+they always run at request time.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Turn Cache Components off (previous caching model) | Fights the framework defaults and the bundled docs; older model caches some things implicitly, which is riskier for exam data |
+
+**Why**
+In this model "fresh on every request" is the default and caching is explicit — exactly what an exam
+app wants. The cost is adding `<Suspense>` boundaries around request-time data, which also gives
+loading states for free.
+
+**How it works**
+- At build time Next.js prerenders a static "shell" of each page. Anything that reads cookies, headers
+  or the database stops prerendering at that point and is streamed in at request time inside the
+  nearest `<Suspense>` boundary (its fallback is shown first).
+- A GET handler that touches the DB or request is automatically request-time; `connection()` makes
+  that explicit for handlers (like `/health`) where it matters.
+
+**Files touched**
+- `next.config.ts` — kept as generated
+- `docs/system-design.md` §6 — replaced the `force-dynamic` note
+
+**Concepts worth learning**
+- **Static shell / streaming:** send the unchanging HTML immediately, stream dynamic parts as they resolve.
+- **Suspense boundary:** a React component that shows a fallback until its children's async work completes.
+
+**Revisit if**
+Auth.js or another library proves incompatible with Cache Components.
+
+---
+
+### D-027 — shadcn/ui on Radix (nova preset) and its runtime deps
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+shadcn CLI 4.22 asks for an underlying primitive library (Radix, Base UI, React Aria) and a visual preset,
+and installs several runtime packages.
+
+**Decision**
+Radix primitives with the default `nova` preset (Lucide icons, Geist font). Dependencies it added:
+`radix-ui` (accessible primitives), `class-variance-authority` (button/badge variants), `lucide-react`
+(icons), `tw-animate-css` (enter/exit animations for dialogs), `shadcn` (provides `shadcn/tailwind.css`
+imported by `globals.css`) and `cn` (class-name merging).
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Base UI / React Aria base | Fewer examples; DevClub UI is "shadcn-compatible", most likely Radix-based |
+
+**Why**
+Radix is the most documented shadcn base, so fixes and examples are easy to find.
+
+**How it works**
+`npx shadcn add <component>` copies component source into `src/components/ui/` — we own that code.
+`cn(...)` (from `src/lib/utils.ts`) joins class names and resolves Tailwind conflicts (`"p-2 p-4"` → `"p-4"`).
+
+**Notes**
+`cn` was unfamiliar (it replaces the usual `clsx` + `tailwind-merge`), so it was checked before keeping it:
+published by shadcn from `github.com/shadcn-ui/cn`, no install scripts, no dependencies.
+The layout exposes the Geist font as `--font-sans` because the generated theme reads that variable.
+`shadcn` is a **devDependency**: the app only imports `shadcn/tailwind.css` at build time. Its CLI pulls in
+`fast-glob` → `braces` (7 "high" npm-audit DoS findings for untrusted glob input — never reached by our app).
+Keeping it out of production deps makes `npm audit --omit=dev` clean; `npm audit fix --force` was rejected
+because it would downgrade shadcn to 1.0.
+
+**Files touched**
+- `components.json`, `src/components/ui/button.tsx`, `src/lib/utils.ts`, `src/app/globals.css`, `src/app/layout.tsx`, `src/app/page.tsx`
+
+**Concepts worth learning**
+- **Headless primitives:** Radix handles behaviour/accessibility (focus, keyboard, ARIA); styling is ours.
+- **Supply-chain check:** before trusting a new package, check publisher, repo, install scripts and deps.
+
+**Revisit if**
+DevClub UI (S-02) requires a different base.
+
+---
+
+### D-028 — Lazy, validated env access; keys added per phase
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+Architecture §10 says env is validated with Zod "at startup". But `next build` imports server modules,
+and validating at import time would break builds on any machine without a `.env`.
+
+**Decision**
+`src/lib/env.ts` exports `env()`, which parses `process.env` with Zod on first call and caches the result.
+Error messages list variable **names** only, never values. The schema only contains keys the code
+already uses; each phase adds its own (phase 02: `AUTH_SECRET`, `SEED_TEACHER_*`; phase 05: Cloudinary).
+`server-only` makes importing it from a client component a build error, so secrets can't leak into the browser bundle.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Validate at import | Builds fail without real secrets |
+| Read `process.env.X` directly | Typos become `undefined` at runtime; no single list of required config |
+| Declare all future keys now | App would refuse to run until Cloudinary/Auth keys exist, blocking phase 01 |
+
+**Files touched**
+- `src/lib/env.ts`, `.env.example`
+
+**Concepts worth learning**
+- **Fail fast:** surface misconfiguration at the first use with a clear message instead of a confusing crash later.
+- **`server-only`:** a marker package whose import throws in client bundles.
+
+**Revisit if**
+n/a
+
+---
+
+### D-029 — Mongo connection settings and the standard API wrapper
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+Every route needs the same connection handling and the same response/error shape from `api-contracts.md`.
+
+**Decision**
+- `src/lib/db.ts`: one cached `connectDB()` stored on `globalThis`, with `bufferCommands: false`,
+  `serverSelectionTimeoutMS: 5000`, `maxPoolSize: 10`. A failed connect clears the cached promise so the next request retries.
+- `src/lib/api-response.ts`: `AppError(code, message, status)`, `ok()`, `created()` and `withHandler()`.
+
+**Why**
+- `bufferCommands: false`: by default Mongoose silently queues queries while disconnected, so a request
+  would hang instead of failing. Failing fast lets the exam client's retry logic (D-007) kick in.
+- 5 s server selection: health and API calls return a clear error quickly when Atlas is unreachable.
+- `globalThis`: Next.js dev hot-reload re-imports modules; a module-level variable would open a new connection each reload.
+
+**How it works**
+```ts
+export const POST = withHandler(async (req) => {
+  const input = Schema.parse(await req.json());   // ZodError → 400 VALIDATION_ERROR
+  return created(await service.create(input));    // AppError → its status; anything else → 500 INTERNAL
+});
+```
+Plain return values become `200 { data }`; returning a `Response` (e.g. `created()`) passes through.
+Unknown errors are logged with method + path only (never the body, which may contain passwords).
+
+**Files touched**
+- `src/lib/db.ts`, `src/lib/api-response.ts`, `src/app/api/v1/health/route.ts`
+
+**Concepts worth learning**
+- **Higher-order function:** `withHandler` takes a function and returns a new function with extra behaviour (error handling).
+- **Connection pooling:** reusing a small set of open DB connections instead of reconnecting per request.
+
+**Revisit if**
+We need request ids / structured logging.
+
+---
+
+### D-030 — Electron shell details: single instance, offline page, dev env loading
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+Building the shell from D-002/D-009 raised smaller questions: how dev reads `PROCTRA_APP_URL`, what
+happens when the server is unreachable, and how the TypeScript is compiled.
+
+**Decision**
+- **Compile:** `electron/*.ts` → CommonJS in `electron/dist/` via its own `electron/tsconfig.json`
+  (`npm run electron:build`). The root Next.js tsconfig excludes `electron/`; `npm run lint` type-checks both.
+- **Config in dev:** `process.loadEnvFile(".env")` (built into Electron 44's Node 24) — no `dotenv`
+  dependency. Variables already set in the shell win, so `PROCTRA_APP_URL=… npm run electron` overrides `.env`.
+- **Offline:** on a main-frame `did-fail-load` (ignoring `ERR_ABORTED`, which redirects trigger) the window
+  loads the local `electron/offline.html` with a Retry button. This replaced the planned `/health` polling — the
+  load-failure event already tells us exactly when the server is unreachable.
+- **Single instance lock:** a second launch focuses the existing window (two copies could open two exam windows).
+- **Quit on last window close, also on macOS:** an exam app shouldn't keep running in the dock.
+- **Permissions:** all denied for now; phase 05 allows camera for the app origin only.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Poll `/health` before loading | Extra request + timer for information `did-fail-load` already gives |
+| `dotenv` package | Node 24 has `process.loadEnvFile` built in |
+| Offline page as a `data:` URL | Harder to read/maintain; a file is also easy to allow-list exactly |
+
+**How it works**
+The navigation allow-list (`isAllowedUrl`) accepts only the app origin plus the exact offline-page file
+path. The offline page's Retry reads the target from its query string; if someone tampers with it, the
+allow-list still blocks anything outside the app origin. Verified in `.scratch/` via the DevTools protocol:
+`window.proctra` present, `require`/`process` undefined, `window.open` → `null`, navigation to another
+origin blocked, offline page + Retry loop works.
+
+**Files touched**
+- `electron/main.ts`, `electron/preload.ts`, `electron/offline.html`, `electron/tsconfig.json`,
+  `src/types/proctra.d.ts`, `package.json` (`main`, scripts), `tsconfig.json`, `eslint.config.mjs`
+
+**Concepts worth learning**
+- **Main vs renderer process:** main is Node.js and owns windows; each renderer is a sandboxed web page.
+- **Chrome DevTools Protocol (CDP):** the debugging API we used to script checks against the running app.
+
+**Revisit if**
+Phase 07 packaging needs a different way to provide `PROCTRA_APP_URL`.
+
+---
+
+### D-031 — Deploy with the Vercel CLI; env vars set from .env without echoing
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+The brief rules out CI/CD pipelines, but the app must be hosted so every student's Electron app reaches one server.
+
+**Decision**
+Vercel project `proctra` (account `rajdeep-2004`), deployed manually with `npx vercel deploy --prod`.
+Production URL: **https://proctra-mu.vercel.app** (`proctra.vercel.app` was taken). Secrets are added with
+`grep '^KEY=' .env | cut -d= -f2- | npx vercel env add KEY production` (and `preview`), so they never
+appear on screen or in shell history. A `.vercelignore` excludes `.env*`, `.scratch/` and build output from uploads.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Vercel Git integration (auto-deploy on push) | It's effectively CI/CD, which the brief excludes; also deploys unreviewed phase branches |
+
+**Gotchas hit**
+- `vercel link` appends `.env*` to `.gitignore`. Placed after our `!.env.example` rule, it would stop
+  `.env.example` being tracked, so that line was removed (our existing rules already ignore `.env.local`).
+- `vercel link` writes a short-lived `VERCEL_OIDC_TOKEN` to `.env.local` (gitignored; not used by the app).
+
+**How to deploy**
+`npx vercel deploy --prod` from the repo root on `main` after a phase is merged, then
+`curl https://proctra-mu.vercel.app/api/v1/health` should return `db: "up"`.
+
+**Revisit if**
+The course allows CI, or a stable custom domain is needed for the packaged app.
