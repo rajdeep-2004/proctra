@@ -1,0 +1,64 @@
+# Phase 06 — Results, profile & leaderboard
+
+| | |
+|---|---|
+| Status | not-started |
+| Branch | `phase/06-results` |
+| Depends on | Phase 05 |
+| PRD features | F-09 (teacher view), F-11, F-12, F-13 |
+| Target | 2026-10-24 |
+
+## Goal
+Students see their attempt history and marks; teachers see submissions, per-attempt details with the
+event log, and a leaderboard with competition ranking, all respecting result release.
+
+## Previous phase summary
+<!-- Filled at /phase-start. -->
+
+## In scope — exact features
+1. **Student profile**
+   - Acceptance: `/student/profile` lists own attempts (quiz, date, status, marks if released) via `GET /me/attempts`; each opens the result page.
+2. **Teacher submissions**
+   - Acceptance: quiz page shows submissions table (name, status, marks, event count, snapshot count) after lazy finalization.
+3. **Teacher attempt detail**
+   - Acceptance: per-question breakdown (selected vs correct) and neutral event timeline.
+4. **Leaderboard**
+   - Acceptance: ranks 1, 1, 3 for tied scores; teacher always sees it; students only after release, with their own row highlighted; no snapshots/events exposed.
+5. **Result release**
+   - Acceptance: with `resultsReleaseAt` in the future, student result/profile/leaderboard hide marks and show the release time; they appear after it passes.
+
+## Out of scope
+- Snapshot gallery (phase 07, S-01). Exports/CSV, charts.
+
+## Relevant docs
+- `api-contracts.md` → `GET /me/attempts`, Teacher — results, Leaderboard
+- `database-schema.md` → Attempt indexes, §4 access patterns
+- `system-design.md` → leaderboard flow
+- `decisions.md` → D-021, D-023, D-024, D-025
+
+## Tasks
+- [ ] 06.1 — `GET /me/attempts` + student profile page → `feat(results): add student attempt history`
+- [ ] 06.2 — Teacher submissions + attempt detail routes and pages → `feat(results): add teacher submissions and attempt detail`
+- [ ] 06.3 — Leaderboard service (competition ranking) + route + teacher/student pages → `feat(results): add quiz leaderboard`
+- [ ] 06.4 — Result-release enforcement across result/profile/leaderboard → `feat(results): enforce result release time`
+- [ ] 06.5 — Update docs → `docs: update docs for phase 06`
+
+## Done criteria
+- [ ] With 3 students (two tied), leaderboard shows 1, 1, 3
+- [ ] Student A cannot fetch student B's attempt (404) — scratch script
+- [ ] Hidden results stay hidden until release time, then appear
+- [ ] Docs match what was built; decisions logged
+
+## How to verify
+1. Seed 3 student attempts on one quiz with tied scores. 2. Check teacher + student views.
+3. `node --test .scratch/ranking.test.mjs`; `.scratch/access-check.mjs`.
+
+## Phase summary
+<!-- Filled at /phase-close. -->
+- **Built:**
+- **Key decisions:**
+- **Known limitations:**
+- **Next phase should know:**
+
+## Next phase preview
+Phase 07 packages the `.dmg`, deploys to production, writes the README, then adds should-haves if time remains.
