@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/01-foundation` |
 | Depends on | — |
 | PRD features | groundwork for all (F-14 deploy path) |
@@ -36,7 +36,7 @@ None — first phase. Planning docs are complete (prd, architecture, system-desi
 - `decisions.md` → D-002, D-003, D-004, D-009, D-011
 
 ## Tasks
-- [ ] 01.1 — Scaffold Next.js (App Router, TS, Tailwind, ESLint, `src/`), npm scripts → `chore: scaffold next.js app`
+- [x] 01.1 — Scaffold Next.js (App Router, TS, Tailwind, ESLint, `src/`), npm scripts → `chore: scaffold next.js app`
 - [ ] 01.2 — Init shadcn/ui, base layout + landing page → `chore(ui): set up shadcn/ui and base layout`
 - [ ] 01.3 — `lib/env.ts` (Zod), `.env.example`, `.env` placeholders → `feat(config): add validated env loader`
 - [ ] 01.4 — `lib/db.ts` cached Mongoose connection, `lib/api-response.ts` (`AppError`, `withHandler`), `GET /api/v1/health` → `feat(api): add db connection and health endpoint`

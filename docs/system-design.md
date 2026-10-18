@@ -181,7 +181,7 @@ and shows `deadline − (Date.now() + offset)`. The client countdown is cosmetic
 | What | Where | TTL | Invalidation |
 |---|---|---|---|
 | Mongoose connection | Module-level global in `lib/db.ts` | Process lifetime | n/a (reused across serverless invocations) |
-| Pages with user data | Not cached (`dynamic = 'force-dynamic'`) | — | — |
+| Pages / GET handlers with user data | Not cached — with Cache Components (D-026) nothing is cached unless marked `'use cache'`; we never use it for user data. GET handlers call `connection()` so they always run at request time | — | — |
 No data cache: load is tiny and stale exam data would be dangerous.
 
 ## 7. Failure modes

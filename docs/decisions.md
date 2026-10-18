@@ -38,6 +38,7 @@ Rules:
 | D-023 | 2026-10-19 | 00 | Role-prefixed routes and 404 for other students' attempts | Active |
 | D-024 | 2026-10-19 | 00 | Grading as a pure function with a stored breakdown | Active |
 | D-025 | 2026-10-19 | 00 | Competition ranking computed on read | Active |
+| D-026 | 2026-10-19 | 01 | Keep Next.js 16.4 defaults: Cache Components + Partial Prefetching | Active |
 
 ---
 
@@ -821,3 +822,49 @@ With ≤ a few hundred attempts per quiz this is instant, so no stored rank is n
 
 **Revisit if**
 Quizzes reach thousands of attempts.
+
+---
+
+### D-026 — Keep Next.js 16.4 defaults: Cache Components + Partial Prefetching
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** stack
+
+**Context**
+`create-next-app@16.4.2` enables `cacheComponents: true` and `partialPrefetching: true` by default. This
+changes how pages and GET route handlers render compared with older Next.js tutorials (no
+`export const dynamic = "force-dynamic"`; instead data is dynamic unless you opt into caching).
+
+**Decision**
+Keep both defaults. Never use `'use cache'` for per-user or exam data. Wrap components that read the
+session/cookies or DB in `<Suspense>`, and call `await connection()` at the top of GET route handlers so
+they always run at request time.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Turn Cache Components off (previous caching model) | Fights the framework defaults and the bundled docs; older model caches some things implicitly, which is riskier for exam data |
+
+**Why**
+In this model "fresh on every request" is the default and caching is explicit — exactly what an exam
+app wants. The cost is adding `<Suspense>` boundaries around request-time data, which also gives
+loading states for free.
+
+**How it works**
+- At build time Next.js prerenders a static "shell" of each page. Anything that reads cookies, headers
+  or the database stops prerendering at that point and is streamed in at request time inside the
+  nearest `<Suspense>` boundary (its fallback is shown first).
+- A GET handler that touches the DB or request is automatically request-time; `connection()` makes
+  that explicit for handlers (like `/health`) where it matters.
+
+**Files touched**
+- `next.config.ts` — kept as generated
+- `docs/system-design.md` §6 — replaced the `force-dynamic` note
+
+**Concepts worth learning**
+- **Static shell / streaming:** send the unchanging HTML immediately, stream dynamic parts as they resolve.
+- **Suspense boundary:** a React component that shows a fallback until its children's async work completes.
+
+**Revisit if**
+Auth.js or another library proves incompatible with Cache Components.
