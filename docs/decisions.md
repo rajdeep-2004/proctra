@@ -43,6 +43,7 @@ Rules:
 | D-028 | 2026-10-19 | 01 | Lazy, validated env access; keys added per phase | Active |
 | D-029 | 2026-10-19 | 01 | Mongo connection settings and the standard API wrapper | Active |
 | D-030 | 2026-10-19 | 01 | Electron shell details: single instance, offline page, dev env loading | Active |
+| D-031 | 2026-10-19 | 01 | Deploy with the Vercel CLI; env vars set from .env without echoing | Active |
 
 ---
 
@@ -1047,3 +1048,37 @@ origin blocked, offline page + Retry loop works.
 
 **Revisit if**
 Phase 07 packaging needs a different way to provide `PROCTRA_APP_URL`.
+
+---
+
+### D-031 — Deploy with the Vercel CLI; env vars set from .env without echoing
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+The brief rules out CI/CD pipelines, but the app must be hosted so every student's Electron app reaches one server.
+
+**Decision**
+Vercel project `proctra` (account `rajdeep-2004`), deployed manually with `npx vercel deploy --prod`.
+Production URL: **https://proctra-mu.vercel.app** (`proctra.vercel.app` was taken). Secrets are added with
+`grep '^KEY=' .env | cut -d= -f2- | npx vercel env add KEY production` (and `preview`), so they never
+appear on screen or in shell history. A `.vercelignore` excludes `.env*`, `.scratch/` and build output from uploads.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Vercel Git integration (auto-deploy on push) | It's effectively CI/CD, which the brief excludes; also deploys unreviewed phase branches |
+
+**Gotchas hit**
+- `vercel link` appends `.env*` to `.gitignore`. Placed after our `!.env.example` rule, it would stop
+  `.env.example` being tracked, so that line was removed (our existing rules already ignore `.env.local`).
+- `vercel link` writes a short-lived `VERCEL_OIDC_TOKEN` to `.env.local` (gitignored; not used by the app).
+
+**How to deploy**
+`npx vercel deploy --prod` from the repo root on `main` after a phase is merged, then
+`curl https://proctra-mu.vercel.app/api/v1/health` should return `db: "up"`.
+
+**Revisit if**
+The course allows CI, or a stable custom domain is needed for the packaged app.

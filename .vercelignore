@@ -1,0 +1,8 @@
+# Never upload local secrets or throwaway files when deploying with the Vercel CLI.
+.env
+.env.*
+!.env.example
+.scratch/
+electron/dist/
+node_modules/
+.next/
