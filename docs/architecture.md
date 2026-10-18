@@ -52,7 +52,8 @@ proctra/
 ├── electron/               # Electron main + preload (TypeScript, compiled to electron/dist/)
 │   ├── main.ts             # windows, kiosk exam window, permissions, IPC handlers
 │   ├── preload.ts          # exposes window.proctra (narrow API only)
-│   ├── build/              # macOS entitlements, icon
+│   ├── offline.html        # shown when the app URL can't be reached
+│   ├── build/              # macOS entitlements, icon (phase 07)
 │   └── tsconfig.json
 ├── src/
 │   ├── app/                # Next.js App Router
