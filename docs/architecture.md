@@ -1,6 +1,6 @@
 # Architecture
 
-> Last updated: 2026-10-19 — Static structure of the system. Runtime behavior lives in system-design.md.
+> Last updated: 2026-10-19 (phase 01 close) — Static structure of the system. Runtime behavior lives in system-design.md.
 
 ## 1. Overview
 Proctra is **one Next.js application** (UI + server-side route handlers) deployed on Vercel, wrapped
@@ -34,8 +34,8 @@ flowchart LR
 ## 3. Tech stack
 | Layer | Choice | Why (link decision) |
 |---|---|---|
-| Desktop shell | Electron (latest stable) + electron-builder | D-002, D-012 |
-| Frontend | Next.js (App Router, latest stable) + React + TypeScript | D-003 |
+| Desktop shell | Electron 44.9 (Node 24) + electron-builder (phase 07) | D-002, D-012 |
+| Frontend | Next.js 16.4 (App Router, Cache Components) + React 19.3 + TypeScript | D-003 |
 | Styling / UI | Tailwind CSS + shadcn/ui; DevClub UI + GSAP only in polish | D-015 |
 | Backend | Next.js route handlers under `/api/v1` + service layer | D-003 |
 | Validation | Zod | D-011 |
@@ -65,7 +65,7 @@ proctra/
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
 │   │   └── <feature>/      # quiz-editor/, exam/, results/ ...
-│   ├── lib/                # db.ts, auth.ts, cloudinary.ts, env.ts, api-response.ts, desktop.ts
+│   ├── lib/                # built: db.ts, env.ts, api-response.ts, utils.ts (cn) · later: auth.ts (02), cloudinary.ts (05), desktop.ts (05)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
