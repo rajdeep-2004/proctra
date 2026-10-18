@@ -141,5 +141,5 @@ server component (reads) ──────────────────�
 | `SEED_TEACHER_EMAIL` / `SEED_TEACHER_PASSWORD` / `SEED_TEACHER_NAME` | Seed script input | for seeding | `teacher@uni.edu` |
 | `PROCTRA_APP_URL` | URL the Electron shell loads (baked in at package time) | yes (Electron) | `http://localhost:3000` / `https://proctra.vercel.app` |
 
-All env reads go through `src/lib/env.ts` (validated with Zod at startup). `.env.example` lists every
+All server env reads go through `env()` in `src/lib/env.ts` (validated with Zod on first use, D-028; keys are added in the phase that needs them). Electron reads only `PROCTRA_APP_URL`. `.env.example` lists every
 key; real values live in `.env` (gitignored) locally and in Vercel project settings for production.

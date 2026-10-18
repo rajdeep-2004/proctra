@@ -40,6 +40,7 @@ Rules:
 | D-025 | 2026-10-19 | 00 | Competition ranking computed on read | Active |
 | D-026 | 2026-10-19 | 01 | Keep Next.js 16.4 defaults: Cache Components + Partial Prefetching | Active |
 | D-027 | 2026-10-19 | 01 | shadcn/ui on Radix (nova preset) and its runtime deps | Active |
+| D-028 | 2026-10-19 | 01 | Lazy, validated env access; keys added per phase | Active |
 
 ---
 
@@ -914,3 +915,38 @@ The layout exposes the Geist font as `--font-sans` because the generated theme r
 
 **Revisit if**
 DevClub UI (S-02) requires a different base.
+
+---
+
+### D-028 — Lazy, validated env access; keys added per phase
+- **Date:** 2026-10-19
+- **Phase:** 01 — Foundation
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+Architecture §10 says env is validated with Zod "at startup". But `next build` imports server modules,
+and validating at import time would break builds on any machine without a `.env`.
+
+**Decision**
+`src/lib/env.ts` exports `env()`, which parses `process.env` with Zod on first call and caches the result.
+Error messages list variable **names** only, never values. The schema only contains keys the code
+already uses; each phase adds its own (phase 02: `AUTH_SECRET`, `SEED_TEACHER_*`; phase 05: Cloudinary).
+`server-only` makes importing it from a client component a build error, so secrets can't leak into the browser bundle.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Validate at import | Builds fail without real secrets |
+| Read `process.env.X` directly | Typos become `undefined` at runtime; no single list of required config |
+| Declare all future keys now | App would refuse to run until Cloudinary/Auth keys exist, blocking phase 01 |
+
+**Files touched**
+- `src/lib/env.ts`, `.env.example`
+
+**Concepts worth learning**
+- **Fail fast:** surface misconfiguration at the first use with a clear message instead of a confusing crash later.
+- **`server-only`:** a marker package whose import throws in client bundles.
+
+**Revisit if**
+n/a
