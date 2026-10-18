@@ -13,7 +13,20 @@ Students can sign up, everyone can sign in and out, users land on their role's d
 teacher-only route rejects students on the server.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+From phase 01 (Foundation, merged 2026-10-19):
+- **Exists:** Next.js 16.4 + Tailwind v4 + shadcn/ui (Radix, `Button` only); landing page with a disabled
+  "Sign in" button to wire up; `env()` in `src/lib/env.ts` (only `MONGODB_URI` so far); `connectDB()` in
+  `src/lib/db.ts`; `AppError`, `withHandler`, `ok`, `created` in `src/lib/api-response.ts`;
+  `GET /api/v1/health`; Electron shell with persistent session partition `persist:proctra` (cookies survive
+  restarts); production at https://proctra-mu.vercel.app.
+- **Rely on:** handler pattern `export const POST = withHandler(async (req) => …)`; Zod errors auto-map to 400;
+  call `await connection()` in GET handlers; scratch checks run with `npx tsx --conditions=react-server --test`.
+- **Watch out:** Next.js 16.4 + Cache Components — read `node_modules/next/dist/docs/` first (route guards
+  are `proxy.ts`; session reads go inside `<Suspense>`). Verify Auth.js v5 works with this before building on
+  it (fallback in D-005: `jose` + own cookie).
+- **New env keys this phase:** `AUTH_SECRET`, `SEED_TEACHER_EMAIL`, `SEED_TEACHER_PASSWORD`, `SEED_TEACHER_NAME`
+  — add to `.env.example`, `.env` (user fills real values) and Vercel.
+- Decisions: D-026 – D-031.
 
 ## In scope — exact features
 1. **User model + registration**

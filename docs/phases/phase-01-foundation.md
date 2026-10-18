@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/01-foundation` |
 | Depends on | — |
 | PRD features | groundwork for all (F-14 deploy path) |
