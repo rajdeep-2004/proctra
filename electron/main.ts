@@ -33,6 +33,8 @@ if (FAKE_CAMERA) {
 }
 
 const ATTEMPT_ID = /^[a-f0-9]{24}$/;
+/** Dev-only lifecycle log (stdout of `npm run electron`), to debug window handling. */
+const trace = (...args: unknown[]) => { if (DEV) console.log("[proctra]", ...args); };
 
 let mainWindow: BrowserWindow | null = null;
 let examWindow: BrowserWindow | null = null;
@@ -105,6 +107,7 @@ function createMainWindow(): BrowserWindow {
   win.once("ready-to-show", () => win.show());
   showOfflinePageOnFailure(win, () => APP_URL.href);
   win.on("closed", () => {
+    trace("main window closed");
     mainWindow = null;
   });
   void win.loadURL(APP_URL.href);
@@ -138,27 +141,64 @@ function openExamWindow(attemptId: string) {
     examWindow?.focus();
   });
   showOfflinePageOnFailure(examWindow, () => examUrl);
-  examWindow.on("closed", () => {
+  const thisWindow = examWindow;
+  thisWindow.on("closed", () => {
+    trace("exam window closed", { expected: examWindow !== thisWindow });
+    if (examWindow !== thisWindow) return; // closed by closeExamWindow(), which reveals the main window itself
+    // Closed some other way (crash, OS): forget it and bring the main window back.
     examWindow = null;
     examAttemptId = null;
-    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+    mainWindow?.show();
+    mainWindow?.focus();
   });
   void examWindow.loadURL(examUrl);
   mainWindow?.hide();
 }
 
+/**
+ * Ends the exam: leave kiosk/full screen FIRST, wait until macOS has finished leaving the full-screen Space,
+ * then destroy the exam window and bring the main window (with the result page) to the front.
+ * Doing it all at once left the main window "visible" on a Space that was being torn down — the student
+ * saw the app disappear (found in the real kiosk test, D-047).
+ */
 function closeExamWindow(showUrl: string) {
+  trace("closeExamWindow", { hasExam: !!examWindow, hasMain: !!mainWindow, mainVisible: mainWindow?.isVisible() });
   const win = examWindow;
   examWindow = null;
   examAttemptId = null;
-  if (win && !win.isDestroyed()) {
-    win.setKiosk(false);
-    win.destroy(); // destroy() bypasses closable:false
-  }
   if (!mainWindow) mainWindow = createMainWindow();
-  void mainWindow.loadURL(showUrl);
-  mainWindow.show();
-  mainWindow.focus();
+  const main = mainWindow;
+  void main.loadURL(showUrl); // result page loads while the exam window is leaving
+
+  const reveal = () => {
+    if (main.isDestroyed()) return;
+    main.show();
+    main.moveTop();
+    main.focus();
+    app.focus({ steal: true }); // macOS: make Proctra the active app again
+    trace("main revealed", { visible: main.isVisible(), focused: main.isFocused() });
+  };
+
+  if (!win || win.isDestroyed()) return reveal();
+
+  let finished = false;
+  const finish = (why: string) => {
+    if (finished) return;
+    finished = true;
+    trace("exam window leaving done:", why);
+    if (!win.isDestroyed()) win.destroy(); // destroy() bypasses closable:false
+    setTimeout(reveal, 150); // let macOS settle on the normal desktop Space
+  };
+
+  if (win.isKiosk() || win.isFullScreen()) {
+    win.once("leave-full-screen", () => finish("leave-full-screen"));
+    win.setAlwaysOnTop(false);
+    win.setKiosk(false);
+    win.setFullScreen(false);
+    setTimeout(() => finish("timeout"), 1500); // fallback if macOS sends no event
+  } else {
+    finish("not fullscreen");
+  }
 }
 
 // ---------- IPC: the only three things the page can ask for (D-009) ----------
@@ -236,5 +276,9 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   // Quit when the last window closes, on macOS too: an exam app shouldn't linger in the dock.
-  app.on("window-all-closed", () => app.quit());
+  app.on("window-all-closed", () => {
+    trace("window-all-closed → quit");
+    app.quit();
+  });
+  app.on("before-quit", () => trace("before-quit"));
 }

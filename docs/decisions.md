@@ -59,6 +59,7 @@ Rules:
 | D-044 | 2026-10-19 | 04 | Submit only after saves are confirmed; auto-submit with server backstop | Active |
 | D-045 | 2026-10-19 | 05 | Kiosk exam window lifecycle, camera-only permission, dev test switches | Active |
 | D-046 | 2026-10-19 | 05 | Proctor events and the hidden exam camera | Active |
+| D-047 | 2026-10-19 | 05 | Leave kiosk before revealing the result window (macOS Spaces bug) | Active |
 
 ---
 
@@ -1857,3 +1858,41 @@ limits, other student 404, teacher 403, times clamped, server `resumed` on resum
 
 **Revisit if**
 Teachers need more signals (e.g. screen count) — Electron could report them from main, but only neutral facts.
+
+---
+
+### D-047 — Leave kiosk before revealing the result window (macOS Spaces bug)
+- **Date:** 2026-10-19
+- **Phase:** 05 — Kiosk window & camera
+- **Status:** Active
+- **Type:** edge-case
+
+**Context**
+In the user's real kiosk test, submitting closed the exam window and the app seemed to quit. Automated tests had passed
+because they used `PROCTRA_KIOSK=0` (normal window). There was no crash report, and the app process was still alive with the
+result page loaded — Electron even reported the main window as visible and focused. But macOS's own window list
+(`CGWindowListCopyWindowInfo`, on-screen only) showed **no** Proctra window.
+
+**Cause**
+macOS puts a full-screen/kiosk window in its own Space. We destroyed the exam window and immediately showed the (hidden) main
+window while that Space was still being torn down, so the main window was "shown" somewhere the user couldn't see.
+
+**Decision**
+`closeExamWindow()` now: loads the result page in the main window → turns off always-on-top, kiosk and full screen on the exam
+window → waits for `leave-full-screen` (1.5 s fallback) → destroys it → after 150 ms shows, raises and focuses the main window
+and calls `app.focus({ steal: true })`. The exam window's `closed` handler only re-shows the main window if the exam window
+closed *unexpectedly*, so the two paths don't race. Dev-only `[proctra]` traces log the lifecycle.
+
+**Verified** with real kiosk mode (fake camera) and the macOS on-screen window list: during the exam a 1800×1130 kiosk window;
+after submit the trace shows `leave-full-screen → exam window closed → main revealed`, and a 1200×800 Proctra window is on
+screen with the result page. Before the fix the same probe showed no Proctra window at all.
+
+**Lesson**
+Test the real mode at least once: the windowed test switch (D-045) hid exactly the behaviour that differs.
+
+**Files touched**
+- `electron/main.ts`
+
+**Concepts worth learning**
+- **macOS Spaces:** full-screen windows get their own virtual desktop; windows shown during a Space transition can land off-screen.
+- **Verify from the OS's point of view:** the app's own state ("visible: true") can disagree with what the user actually sees.
