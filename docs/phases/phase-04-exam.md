@@ -13,7 +13,22 @@ A student can start (or resume) an attempt, answer with autosave, submit or be a
 server deadline, and see their graded result — in a normal window (kiosk + camera come in phase 05).
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+From phase 03 (Quiz management, merged 2026-10-19):
+- **Exists:** Quiz model (`src/models/quiz.ts`) with embedded questions (`_id`, `text`, `options[]`, `correctIndex`),
+  marking, `startsAt`/`endsAt` exam slot (duration derived via `slotMinutes()`, 1 min–5 h), `status`, `locked`.
+  Teacher API + editor; student list (`/student`) and detail (`/student/quizzes/[quizId]`) with a disabled
+  **Start quiz** button and a live server-time `<Countdown>`. `quiz-service.ts` has `listQuizzesForStudent`,
+  `getQuizForStudent`, and raw-collection helpers (`attemptCounts`, `myAttempts`, `extendActiveAttempts`).
+- **Rules to implement (D-041, system-design §2/§4):** start only while `startsAt ≤ now < endsAt` and the quiz is
+  published; set `quiz.locked = true` **before** inserting the attempt; `attempt.deadline = quiz.endsAt`; one attempt per
+  student (unique index); answers saved with a single conditional update (`status: "active"`, `deadline > now − 5 s`).
+  When the Attempt model exists, switch the raw-collection helpers in `quiz-service.ts` to it.
+- **Rely on:** `requireUser("student")`, `withHandler`/`AppError`, `api()` client helper, `<LocalTime>`, `useIsClient()`,
+  `ObjectIdString`. Never send `correctIndex` while an attempt is active (projection approach, D-040).
+- **Watch out:** Zod object-level `.refine()` runs even after field errors — guard types (D-041 note). Streamed pages
+  can't change HTTP status (D-040). Test with `.scratch/http.mts` + scratch teacher `t2@scratch.test` (re-seed after cleanup);
+  local prod server needs `AUTH_TRUST_HOST=true`; force a frame before reading Electron pages (D-039).
+- Decisions: D-037 – D-041.
 
 ## In scope — exact features
 1. **Attempt model + grading**

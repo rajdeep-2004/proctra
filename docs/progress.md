@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 03 — Quiz management (`review`)
-**Branch:** `phase/03-quiz-management`
+**Current phase:** 04 — Taking the exam (`not-started`)
+**Branch:** —
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -10,7 +10,7 @@
 |---|---|---|---|---|---|---|
 | 01 | Foundation | done | phase/01-foundation | 10-19 | 2026-10-19 | 2026-10-19 |
 | 02 | Auth & roles | done | phase/02-auth | 10-20 | 2026-10-19 | 2026-10-19 |
-| 03 | Quiz management | review | phase/03-quiz-management | 10-20 → 10-21 | 2026-10-19 | |
+| 03 | Quiz management | done | phase/03-quiz-management | 10-20 → 10-21 | 2026-10-19 | 2026-10-19 |
 | 04 | Taking the exam | not-started | phase/04-exam | 10-21 → 10-22 | | |
 | 05 | Kiosk window & camera | not-started | phase/05-kiosk-camera | 10-23 | | |
 | 06 | Results, profile & leaderboard | not-started | phase/06-results | 10-24 | | |
@@ -23,7 +23,7 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 - Done: tasks 03.1–03.5 — quiz model + validation, teacher API (24/24 checks), editor + dashboard, student list/detail (15 checks + screenshots).
 - Found: user's long-running `next dev` stopped running the proxy (restart fixes); `next start` locally needs `AUTH_TRUST_HOST=true`.
 - Change request: fixed exam slot (start/end, derived duration), extend-only end time, live countdown (03.6–03.8, D-041). Found + fixed a Zod refine crash (no-timezone date → 500).
-- Next: approve phase 03 → merge + deploy; then `/phase-start 04` (biggest phase: exam, autosave, grading).
+- Next: phase 03 approved, merged to `main` (3976d07) and deployed; `/phase-start 04` (biggest phase: exam, autosave, grading).
 - Blockers: none. Schedule: on track (phase 03 finished on day 1).
 
 ### 2026-10-19 (phase 02)
