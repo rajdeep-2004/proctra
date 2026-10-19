@@ -9,6 +9,7 @@ import { SaveIndicator } from "@/components/exam/save-indicator";
 import { SubmitDialog } from "@/components/exam/submit-dialog";
 import { useExamCamera } from "@/components/exam/use-exam-camera";
 import { useProctorEvents } from "@/components/exam/use-proctor-events";
+import { useSnapshots } from "@/components/exam/use-snapshots";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { readPending, useAutosave } from "@/components/exam/use-autosave";
 import { useIsClient } from "@/lib/use-is-client";
@@ -66,6 +67,9 @@ function Exam({ attempt }: { attempt: ActiveAttemptView }) {
     useCallback(() => events.log("camera_restored"), [events]),
   );
   const cameraBlocked = proctoring && camera.status === "lost";
+  // Stills every 10 s only while the attempt runs and the camera is live (F-07); never outside an attempt.
+  useSnapshots(attempt.id, proctoring && camera.status === "live", camera.grabFrame,
+    useCallback(() => events.log("snapshot_failed"), [events]), goToResult);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   /** POST submit until it works (the server's lazy finalization is the backstop if it never does). */

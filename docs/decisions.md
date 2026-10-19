@@ -424,6 +424,19 @@ Canvas grabs a frame from a hidden `<video>` → `canvas.toBlob("image/jpeg", 0.
 Server validates type/size (≤ 500 KB) → `cloudinary.uploader.upload_stream({ type: "authenticated", folder })`.
 Teachers (S-01) get `cloudinary.url(publicId, { sign_url: true, type: "authenticated" })` links.
 
+**Implementation (phase 05)**
+`src/lib/cloudinary.ts` validates the three `CLOUDINARY_*` keys separately from `env()` — if they're missing, only snapshot
+uploads fail (502 → `snapshot_failed` event), the rest of the app keeps working. `useSnapshots` captures via
+`useExamCamera().grabFrame()` (640×480 JPEG ≈ 7–40 KB) only while the attempt is active **and** the camera is live.
+The server checks the JPEG magic bytes (`FF D8 FF`), size ≤ 500 KB, ownership, active + within deadline grace.
+Verified live: 4 snapshots ~10 s apart; Cloudinary `type: authenticated`; public URL → 404, unsigned authenticated URL → 401,
+signed URL → 200 image/jpeg; snapshot count unchanged 25 s after submit; failure path (secret missing) → `snapshot_failed`
+events and an unaffected exam.
+
+**Gotcha:** newer Cloudinary accounts give API keys **roles**. Our key could ping but uploads returned
+`403 … missing permissions (actions=["create"])` until the key's role allowed creating assets. A disabled key returns
+`disabled api_key`. The SDK rejects with plain `{ message, http_code }` objects (not `Error`), so logs print those fields.
+
 **Concepts worth learning**
 - **Signed URLs:** a URL containing a signature made with a secret, so only the server can produce valid links.
 

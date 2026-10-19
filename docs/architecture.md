@@ -145,7 +145,7 @@ server component (reads) ──────────────────�
 | `AUTH_SECRET` | Auth.js JWT signing secret | yes | output of `npx auth secret` |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary account | yes | `demo` |
 | `CLOUDINARY_API_KEY` | Cloudinary key | yes | `1234567890` |
-| `CLOUDINARY_API_SECRET` | Cloudinary secret (server only) | yes | `abc...` |
+| `CLOUDINARY_API_SECRET` | Cloudinary secret (server only). The API key needs a role that allows **creating** assets | yes (snapshots) | `abc...` |
 | `SEED_TEACHER_EMAIL` / `SEED_TEACHER_PASSWORD` / `SEED_TEACHER_NAME` | Seed script input | for seeding | `teacher@uni.edu` |
 | `PROCTRA_APP_URL` | URL the Electron shell loads (baked in at package time) | yes (Electron) | `http://localhost:3000` / `https://proctra-mu.vercel.app` |
 
