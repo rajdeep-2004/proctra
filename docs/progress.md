@@ -1,6 +1,6 @@
 # Progress
 
-**Current phase:** 06 — Results, profile & leaderboard (`in-progress`)
+**Current phase:** 06 — Results, profile & leaderboard (`review`)
 **Branch:** `phase/06-results`
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
@@ -13,12 +13,18 @@
 | 03 | Quiz management | done | phase/03-quiz-management | 10-20 → 10-21 | 2026-10-19 | 2026-10-19 |
 | 04 | Taking the exam | done | phase/04-exam | 10-21 → 10-22 | 2026-10-19 | 2026-10-19 |
 | 05 | Kiosk window & camera | done | phase/05-kiosk-camera | 10-23 | 2026-10-19 | 2026-10-19 |
-| 06 | Results, profile & leaderboard | in-progress | phase/06-results | 10-24 | 2026-10-20 | |
+| 06 | Results, profile & leaderboard | review | phase/06-results | 10-24 | 2026-10-20 | |
 | 07 | Ship: packaging, README, polish | not-started | phase/07-ship | 10-25 | | |
 
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-20 (phase 06)
+- Done: tasks 06.1–06.5 — student profile (9/9), teacher results + attempt detail (16/16), live leaderboard (15/15 + ranking unit tests + live browser update), result release end to end (11/11).
+- User decision: live leaderboard for students who finished, updating as others finish (D-049).
+- Next: approve phase 06 → merge + deploy; then `/phase-start 07` (packaging .dmg, README, snapshot gallery, polish).
+- Blockers: none. Schedule: ahead (deadline 2026-10-25).
+
 ### 2026-10-19 (phase 05)
 - Done: tasks 05.1–05.5 — desktop bridge + kiosk window, camera gate + desktop-only, event log + camera-loss overlay (11/11 API), snapshots to private Cloudinary (8/8 API + live privacy check).
 - Fixed: kiosk exit left the result window off-screen (macOS Spaces, D-047) — found in the user's real run, confirmed fixed by the user.
