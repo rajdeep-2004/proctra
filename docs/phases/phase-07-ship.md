@@ -51,7 +51,7 @@ result page, live leaderboard → teacher results, attempt detail with event tim
 - [ ] 07.2 — Production deploy + verify `.dmg` end to end → `chore(deploy): ship production build`
 - [ ] 07.3 — README → `docs: add project README`
 - [x] 07.4 — (should) Snapshot gallery route + UI → `feat(results): add teacher snapshot gallery`
-- [ ] 07.5 — (should) DevClub UI + GSAP polish → `feat(ui): integrate devclub components and motion`
+- [x] 07.5 — (should) DevClub UI + GSAP polish → `feat(ui): integrate devclub components and motion`
 - [ ] 07.6 — Final docs pass → `docs: update docs for phase 07`
 
 ## Done criteria

@@ -36,7 +36,7 @@ flowchart LR
 |---|---|---|
 | Desktop shell | Electron 44.9 (Node 24) + electron-builder (phase 07) | D-002, D-012 |
 | Frontend | Next.js 16.4 (App Router, Cache Components) + React 19.3 + TypeScript | D-003 |
-| Styling / UI | Tailwind CSS + shadcn/ui; DevClub UI + GSAP only in polish | D-015 |
+| Styling / UI | Tailwind CSS + shadcn/ui; DevClub UI Animated Counter (result score) + GSAP stagger on dashboards | D-015, D-053 |
 | Backend | Next.js route handlers under `/api/v1` + service layer | D-003 |
 | Validation | Zod | D-011 |
 | Database | MongoDB Atlas (free tier) + Mongoose | D-004 |
@@ -66,6 +66,7 @@ proctra/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
 │   │   ├── auth/, layout/  # sign-in/up forms, app header
 │   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
+│   │   ├── motion/         # StaggerIn (GSAP entrance for dashboard lists; never on exam screens)
 │   │   ├── results/        # leaderboard view (live polling) + shared page, event timeline
 │   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue/useAutosave, useExamCamera, useSnapshots, useProctorEvents
 │   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)

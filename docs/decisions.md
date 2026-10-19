@@ -65,6 +65,7 @@ Rules:
 | D-050 | 2026-10-20 | 06 | Teacher results: separate service, sorted submissions, paired event timeline | Active |
 | D-051 | 2026-10-20 | 07 | Packaging: shell-only bundle, baked production URL, ad-hoc signature, generated icon | Active |
 | D-052 | 2026-10-20 | 07 | Snapshot gallery: on-demand, signed 10-minute download links | Active |
+| D-053 | 2026-10-20 | 07 | Light DevClub UI + GSAP polish via the shadcn registry | Active |
 
 ---
 
@@ -2102,3 +2103,45 @@ signature rejected, other teacher/student 403, missing 404); headless Chrome: 3/
 
 **Revisit if**
 Teachers review many long attempts (download-endpoint latency) — then consider token-authenticated CDN URLs.
+
+---
+
+### D-053 — Light DevClub UI + GSAP polish via the shadcn registry
+- **Date:** 2026-10-20
+- **Phase:** 07 — Ship (S-02)
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+The brief asks to use the DevClub UI library "where it fits" and GSAP "sparingly", never on exam controls. The user chose a light touch.
+
+**Decision**
+- Read the library's README first (as the brief requires). Its own CLI (`npx @devclubnst/ui add …`) **failed to run** — the npm package
+  lists the whole showcase site as dependencies (Next.js, three.js, PostHog…) and npm crashed resolving them. The README's other route,
+  the shadcn registry (`npx shadcn add https://ui.devclubxnst.com/r/<name>.json`), installs one component's source only — used that.
+- Reviewed the registry JSON before installing (dependencies, imports, no network/analytics/eval). Added **Animated Counter** to the
+  student result score (`gooey` off; it respects reduced motion and keeps screen-reader text).
+- Skipped **Dither** (WebGL via OGL — too heavy for a light touch); "noise-background" isn't in the registry.
+- **GSAP:** one `StaggerIn` wrapper (`useGSAP` + `gsap.matchMedia`) fades/slides dashboard quiz cards and teacher table rows in
+  (0.35 s, 0.04 s stagger, `clearProps` afterwards); disabled under `prefers-reduced-motion`. Not used on any exam screen.
+- New dependencies: `motion`, `clsx`, `tailwind-merge` (required by the counter), `gsap`, `@gsap/react`. Production audit stays clean.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Restyle more screens with DevClub components | User chose a light touch; every extra animated component is more to verify before the deadline |
+| Use `motion` for the entrance too (one library) | The brief names GSAP for motion; the counter brings `motion` with it anyway |
+
+**Verified:** build + regression suites (release 11/11, profile 9/9); headless Chrome: 9 dashboard cards end fully visible after the
+stagger, result page renders "7.50 / 12.50" with screen-reader text "7.50", no console errors.
+
+**Files touched**
+- `src/components/ui/animated-counter.tsx` (DevClub source), `src/components/motion/stagger-in.tsx`, `src/app/student/page.tsx`,
+  `src/app/teacher/page.tsx`, `src/app/student/attempts/[attemptId]/page.tsx`, `package.json`, `docs/architecture.md`, `CLAUDE.md`
+
+**Concepts worth learning**
+- **Copy-in component registries (shadcn style):** you own the copied source, so review it like your own code before committing.
+- **Reduced motion:** respect the OS accessibility setting — animation must never be required to use the app.
+
+**Revisit if**
+The DevClub CLI's package is fixed (then it's the documented route), or more screens get polish after the deadline.

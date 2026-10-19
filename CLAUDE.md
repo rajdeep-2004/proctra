@@ -8,7 +8,7 @@ snapshots — a university capstone for students and teachers (macOS). Details l
 <!-- lean = no tests, Docker, CI or devops files committed; scratch tests only in .scratch/ (gitignored). Rules: ~/.claude/CLAUDE.md -->
 
 ## Stack
-- Frontend: Next.js (App Router), React, TypeScript, Tailwind CSS, shadcn/ui (DevClub UI + GSAP only in phase 07)
+- Frontend: Next.js (App Router), React, TypeScript, Tailwind CSS, shadcn/ui; DevClub UI Animated Counter + GSAP stagger (never on exam screens)
 - Backend: Next.js route handlers under `/api/v1` → services → Mongoose models; Zod validation
 - Database: MongoDB Atlas + Mongoose
 - Auth: Auth.js (NextAuth v5) Credentials, JWT cookie, bcryptjs
