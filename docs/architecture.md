@@ -65,7 +65,8 @@ proctra/
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
 │   │   └── <feature>/      # quiz-editor/, exam/, results/ ...
-│   ├── lib/                # built: db.ts, env.ts, api-response.ts, utils.ts (cn) · later: auth.ts (02), cloudinary.ts (05), desktop.ts (05)
+│   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
+│   ├── lib/                # db.ts, env.ts, api-response.ts, session.ts (requireUser), utils.ts (cn) · later: cloudinary.ts (05), desktop.ts (05)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
@@ -87,7 +88,7 @@ proctra/
 |---|---|---|---|
 | Electron main | Windows, kiosk mode, camera permission, navigation allow-list, IPC | APP_URL config | Hold DB/Cloudinary secrets; trust renderer input without validation |
 | Preload bridge | `window.proctra` API (start/end exam, window events) | Electron `contextBridge`, `ipcRenderer` | Expose `ipcRenderer`, Node, or fs to the page |
-| Auth (`lib/auth.ts`) | Sign-in, session cookie, `requireUser(role?)` helper | User model, bcryptjs | Be bypassed by any `/api/v1` handler |
+| Auth (`src/auth.ts`, `lib/session.ts`) | Sign-in, session cookie, `requireUser(role?)` helper | User model, bcryptjs | Be bypassed by any `/api/v1` handler |
 | Quiz service | Quiz CRUD, publish/unpublish/archive, edit lock | Quiz, Attempt models | Return `correctOption` to students |
 | Attempt service | Start/resume, save answer, submit, lazy finalization | Quiz, Attempt, grading | Trust client time, score or role |
 | Grading service | Score computation (pure function) | none | Touch the DB |
@@ -114,14 +115,17 @@ server component (reads) ──────────────────�
 | Vercel | Hosting the Next.js app | Electron app shows "cannot reach server" screen |
 
 ## 8. Auth and authorization
-- **Identity:** email + password. Students register via `/sign-up`; teachers are created by
-  `scripts/seed-teachers.ts`. Passwords hashed with bcryptjs (cost 10).
+- **Identity:** email + password. Students register via `/sign-up` (Server Action, D-034) or
+  `POST /api/v1/auth/register`; teachers are created by `npm run seed` (D-036). Passwords hashed with
+  bcryptjs (cost 10); rules in D-032. Auth.js `5.0.0-beta.32`, pinned (D-033).
 - **Session:** Auth.js JWT strategy in an httpOnly, secure, SameSite=Lax cookie. Token holds
-  `userId`, `role`, `name`. Electron uses a persistent session partition so the cookie survives restarts.
+  `userId`, `role`, `name`. Electron uses a persistent session partition so the cookie survives restarts,
+  and flushes the cookie store to disk on every change so a crash can't undo a sign-out (D-035).
 - **Roles:** `student`, `teacher`. (`admin` = a teacher created by seed; no separate powers in V1.)
 - **Enforcement:** every `/api/v1` handler calls `requireUser("teacher" | "student")`. Ownership is
-  checked in services (teacher owns quiz; student owns attempt). Route guards (Next.js
-  middleware/proxy) only redirect for UX — they are **not** the security boundary.
+  checked in services (teacher owns quiz; student owns attempt). `src/proxy.ts` (Next 16's name for
+  middleware) only redirects for UX — it is **not** the security boundary. Pages re-check with
+  `requirePageUser(role)` inside `<Suspense>` (D-035).
 - Students never receive `correctOption` until results are released for that attempt.
 
 ## 9. Error handling and logging conventions

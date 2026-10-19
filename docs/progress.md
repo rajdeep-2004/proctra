@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 02 — Auth & roles (`not-started`)
-**Branch:** —
+**Current phase:** 02 — Auth & roles (`review`)
+**Branch:** `phase/02-auth`
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -9,7 +9,7 @@
 | # | Phase | Status | Branch | Target | Started | Closed |
 |---|---|---|---|---|---|---|
 | 01 | Foundation | done | phase/01-foundation | 10-19 | 2026-10-19 | 2026-10-19 |
-| 02 | Auth & roles | not-started | phase/02-auth | 10-20 | | |
+| 02 | Auth & roles | review | phase/02-auth | 10-20 | 2026-10-19 | |
 | 03 | Quiz management | not-started | phase/03-quiz-management | 10-20 → 10-21 | | |
 | 04 | Taking the exam | not-started | phase/04-exam | 10-21 → 10-22 | | |
 | 05 | Kiosk window & camera | not-started | phase/05-kiosk-camera | 10-23 | | |
@@ -19,6 +19,12 @@
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-19 (phase 02)
+- Done: tasks 02.1–02.6 — registration, Auth.js sign-in/out, requireUser/requirePageUser, proxy redirects, dashboard shells, teacher seed. Verified locally, in Electron and on a Vercel preview.
+- Fixed along the way: Next 16 proxy export shape, Cache Components "blocking route" from auth(), sign-out lost on Electron crash.
+- Next: approve phase 02 → merge + `npx vercel deploy --prod`; then `/phase-start 03`.
+- Blockers: none.
+
 ### 2026-10-19 (phase 01)
 - Done: tasks 01.1–01.7 — Next.js + shadcn scaffold, env loader, DB + health, Electron shell, Vercel deploy (https://proctra-mu.vercel.app).
 - Next: phase 01 approved and merged to `main` (bc8002f); `/phase-start 02`.
@@ -32,6 +38,8 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 ## Known debt
 - No rate limiting on API routes (system-design §11).
 - Manual deploys only (`npx vercel deploy --prod` from `main` after each merge) (D-031).
+- Auth.js is a pinned **beta** (`5.0.0-beta.32`); fallback plan is `jose` + own cookie (D-033).
+- Sign-in has no rate limiting / lockout (brute-force possible; bcrypt cost slows it).
 
 ## Parked ideas
 - Retakes; cohort assignment; configurable snapshot interval; automated snapshot retention cleanup; Windows build; code signing (PRD §5 Later).

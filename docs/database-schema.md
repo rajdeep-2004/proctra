@@ -227,4 +227,4 @@ Purpose: neutral log of window/camera/upload events during an attempt.
 | Date | Change | Migration / script | Backfill needed |
 |---|---|---|---|
 | 2026-10-19 | Initial models | none (Mongoose creates collections; `syncIndexes()` in dev) | no |
-| 2026-10-19 | Teacher accounts | `npm run seed` → `scripts/seed-teachers.ts` (reads `SEED_TEACHER_*` env; idempotent upsert by email) | no |
+| 2026-10-19 | Teacher accounts | `npm run seed` → `scripts/seed-teachers.ts` (reads `SEED_TEACHER_*` env; idempotent upsert by email; refuses to convert an existing student unless `--promote`) | no |

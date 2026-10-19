@@ -23,7 +23,7 @@ npm run dev          # Next.js dev server (http://localhost:3000)
 npm run electron     # compile electron/ and open the shell (run with dev server up)
 npm run build        # production build
 npm run lint         # lint + typecheck
-npm run seed         # create/update teacher account from SEED_TEACHER_* env
+npm run seed         # create/update teacher from SEED_TEACHER_* in .env (--promote to convert a student)
 npm run dist         # build macOS .dmg (phase 07)
 ```
 (Scripts are created in the phase that introduces them; update here if names change.)

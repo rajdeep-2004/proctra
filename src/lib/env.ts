@@ -12,6 +12,8 @@ const EnvSchema = z.object({
     .refine((v) => v.startsWith("mongodb://") || v.startsWith("mongodb+srv://"), {
       message: "must start with mongodb:// or mongodb+srv://",
     }),
+  // Signs/encrypts the session cookie. Generate with: openssl rand -base64 32
+  AUTH_SECRET: z.string().min(32, "must be at least 32 characters (openssl rand -base64 32)"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

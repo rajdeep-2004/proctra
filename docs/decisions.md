@@ -44,6 +44,11 @@ Rules:
 | D-029 | 2026-10-19 | 01 | Mongo connection settings and the standard API wrapper | Active |
 | D-030 | 2026-10-19 | 01 | Electron shell details: single instance, offline page, dev env loading | Active |
 | D-031 | 2026-10-19 | 01 | Deploy with the Vercel CLI; env vars set from .env without echoing | Active |
+| D-032 | 2026-10-19 | 02 | Registration and password handling rules | Active |
+| D-033 | 2026-10-19 | 02 | Auth.js v5 beta wiring: pinned version, split + lazy config | Active |
+| D-034 | 2026-10-19 | 02 | Auth forms use Server Actions (exception to D-003) | Active |
+| D-035 | 2026-10-19 | 02 | Route guarding: proxy redirects + page re-checks; cookie flush in Electron | Active |
+| D-036 | 2026-10-19 | 02 | Teacher seed script with tsx; never silently promote a student | Active |
 
 ---
 
@@ -1082,3 +1087,243 @@ appear on screen or in shell history. A `.vercelignore` excludes `.env*`, `.scra
 
 **Revisit if**
 The course allows CI, or a stable custom domain is needed for the packaged app.
+
+---
+
+### D-032 — Registration and password handling rules
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** edge-case
+
+**Context**
+Student self-registration and password sign-in have several quiet failure modes: role injection,
+duplicate emails differing only by case, bcrypt's 72-byte limit, and revealing which emails exist.
+
+**Decision**
+- `registerStudent()` hardcodes `role: "student"`; the Zod schema doesn't even include `role`, so `{"role":"teacher"}` is dropped.
+- Emails are trimmed + lower-cased in Zod **and** in the Mongoose schema; the unique index on `email` is the real
+  guard (a duplicate-key error `11000` becomes `409 CONFLICT`, which also covers two sign-ups racing).
+- Passwords: 8+ characters, max **72 bytes** (bcrypt ignores anything after 72 bytes, so longer passwords are rejected instead of silently truncated).
+- `verifyCredentials()` always runs one `bcrypt.compare` — against a dummy hash when the email doesn't exist — and returns `null` for any failure.
+- `passwordHash` has `select: false`; only `verifyCredentials` asks for it.
+- `readJson()` turns malformed JSON into `400 VALIDATION_ERROR` instead of a 500.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Check "email exists" before inserting | Race-prone (two requests both see "not exists"); the unique index is atomic |
+| Return early when the email isn't found | Faster response for unknown emails → attacker can enumerate accounts by timing |
+
+**How it works**
+bcrypt is deliberately slow (cost 10 ≈ 50–100 ms per hash). Without the dummy compare, "no such user"
+would answer in ~1 ms and "wrong password" in ~70 ms, leaking which emails are registered.
+
+**Files touched**
+- `src/models/user.ts`, `src/schemas/auth.ts`, `src/services/user-service.ts`,
+  `src/app/api/v1/auth/register/route.ts`, `src/lib/api-response.ts` (`readJson`)
+
+**Concepts worth learning**
+- **Timing attack / user enumeration:** learning secrets from how long a server takes to answer.
+- **Mass assignment:** a client setting fields it shouldn't (here `role`) by adding them to the request body.
+
+**Revisit if**
+Email verification or password reset is added.
+
+---
+
+### D-033 — Auth.js v5 beta wiring: pinned version, split + lazy config
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+D-005 chose Auth.js v5. At phase start it turned out v5 has never left beta (`5.0.0-beta.32`, released
+2026-07-20; roughly one release every 3–4 months). Next.js 16.4's own auth guide shows a hand-written
+`jose` session instead. Asked the user: they chose to stay with Auth.js v5 beta.
+
+**Decision**
+- `next-auth` pinned **exactly** to `5.0.0-beta.32` (no `^`), so an install can never pull a different beta with breaking changes.
+- **Split config:** `src/auth.config.ts` holds the session strategy, sign-in page and jwt/session
+  callbacks with **no DB imports**; `src/auth.ts` adds the Credentials provider. The proxy (02.4) imports only the light part.
+- **Lazy config:** `NextAuth(() => ({ …, secret: env().AUTH_SECRET }))` so the secret is validated at
+  request time and `next build` works without secrets (D-028). `AUTH_SECRET` must be ≥ 32 chars.
+- `requireUser(role?)` in `src/lib/session.ts` is the only way handlers read the user.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `jose` + own cookie (recommended at the time) | User preferred Auth.js; kept as the fallback if the beta breaks |
+| next-auth v4 stable | Legacy API built around the Pages Router |
+| `^5.0.0-beta.32` range | Betas may break between releases; exact pin makes installs reproducible |
+
+**How it works**
+1. Sign-in form → `GET /api/auth/csrf` gives a token (also stored in a cookie) → `POST /api/auth/callback/credentials` with email, password, token.
+2. Auth.js checks the token matches the cookie (CSRF protection), calls our `authorize()` → Zod parse →
+   `verifyCredentials()` (D-032). `null` → redirect with `error=CredentialsSignin`.
+3. On success the `jwt` callback copies `id` and `role` into the token; Auth.js encrypts it with
+   `AUTH_SECRET` into the `authjs.session-token` cookie (HttpOnly, 12 h).
+4. `auth()` decrypts the cookie on each request; the `session` callback exposes `user.id` and `user.role`.
+5. Type extension: in this beta the JWT type lives in `@auth/core/jwt`, so that module is augmented (`src/types/next-auth.d.ts`).
+
+Verified with curl (`.scratch`): signed-out `/me` → 401; wrong password and unknown email → identical
+`CredentialsSignin` redirect; correct login (email in capitals) → `/me` returns the student; cookie HttpOnly
+with 12.00 h expiry; sign-out → 401; sign-in without CSRF token → rejected.
+
+**Files touched**
+- `src/auth.ts`, `src/auth.config.ts`, `src/app/api/auth/[...nextauth]/route.ts`, `src/lib/session.ts`,
+  `src/app/api/v1/me/route.ts`, `src/types/next-auth.d.ts`, `src/lib/env.ts`, `.env.example`
+
+**Concepts worth learning**
+- **CSRF (cross-site request forgery):** another site making your browser submit a form to ours with your cookies; the token proves the form came from our page.
+- **Encrypted JWT session (JWE):** the session data travels in the cookie itself, encrypted, so the server needs no session table.
+- **Module augmentation:** adding fields to a library's TypeScript interfaces from your own code.
+
+**Revisit if**
+A new beta is needed for a bug fix, or Auth.js breaks with a Next.js upgrade → switch to `jose` (Next's documented pattern).
+
+---
+
+### D-034 — Auth forms use Server Actions (exception to D-003)
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+D-003 says mutations go through `/api/v1` route handlers. But Auth.js's sign-in has to run on the server
+and set its cookie, and its recommended App Router pattern is calling `signIn()` inside a Server Action.
+
+**Decision**
+Sign-in, sign-up and sign-out pages submit to Server Actions in `src/app/(auth)/actions.ts`. Those actions
+call the same services as the API (`registerStudent`, Auth.js `signIn` → `verifyCredentials`), so rules
+still live in one place. `POST /api/v1/auth/register` stays for API clients/scripts. Every other feature keeps using `/api/v1`.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Client `fetch` to `/api/v1/auth/register` then `signIn()` from `next-auth/react` | Two round trips, and client-side Auth.js adds a SessionProvider + extra JS |
+
+**How it works**
+1. The form is a Client Component using React's `useActionState(action, {})`; `pending` disables the button.
+2. The action validates with the same Zod schema, then calls `signIn("credentials", { …, redirectTo: "/" })`.
+3. On success `signIn` **throws** Next's redirect signal — the action must re-throw anything that isn't an
+   `AuthError`, or the redirect would be swallowed.
+4. On failure the action returns `{ error | fieldErrors, values }`; the form re-renders with messages and
+   keeps name/email (never the password). Fields use `aria-invalid` + `aria-describedby` for screen readers.
+5. Server Actions are POST-only and Next checks the `Origin` header, which gives CSRF protection for sign-out.
+
+Verified in Electron via CDP: wrong password → generic alert, email kept; duplicate email → field error;
+empty/invalid fields → three field errors; new sign-up → signed in immediately (`/me` returns the student).
+
+**Files touched**
+- `src/app/(auth)/actions.ts`, `src/app/(auth)/layout.tsx`, `src/app/(auth)/sign-in/page.tsx`,
+  `src/app/(auth)/sign-up/page.tsx`, `src/components/auth/*`, `src/app/page.tsx`, shadcn `card/input/label/alert`
+
+**Concepts worth learning**
+- **Server Action:** a server function a form can call directly; Next.js creates the POST endpoint for you.
+- **Progressive enhancement:** `<form action={…}>` works even before JavaScript loads.
+
+**Revisit if**
+Auth moves off Auth.js.
+
+---
+
+### D-035 — Route guarding: proxy redirects + page re-checks; cookie flush in Electron
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+Users must land on their role's dashboard and never see the other role's pages. Next.js 16 renamed
+middleware to `proxy.ts`, and Cache Components changes how session reads must be written.
+
+**Decision**
+Three layers, each with one job:
+1. **`src/proxy.ts`** — optimistic redirects from the cookie only (no DB): signed-in users skip `/`,
+   `/sign-in`, `/sign-up`; signed-out users are sent from `/student*`, `/teacher*`, `/exam*` to `/sign-in`;
+   wrong role → own dashboard; `/exam*` is students only.
+2. **Pages** — `requirePageUser(role)` inside `<Suspense>` (signed out → `/sign-in`, wrong role → own dashboard).
+3. **API** — `requireUser(role)` → 401/403 (the real security boundary, unchanged).
+
+**Problems hit and how they were solved**
+- `export default auth((req) => …)` (Auth.js's documented middleware form) made **every page 500** in
+  Next 16: "The Proxy file must export a function named `proxy` or a default function" — the wrapped
+  value isn't recognised. With the lazy config its TypeScript type is also the route-handler form. Fix:
+  a plain `export async function proxy(req)` that calls `await auth()` itself (the shape Next's own docs use).
+- Dev overlay **"Blocking Route"**: `auth()` calls `crypto.getRandomValues()` before it reads the cookie,
+  so during prerendering Next sees "random value" instead of "request data". Fix: `await connection()`
+  at the top of `getSessionUser()` marks it request-time first.
+- **Sign-out undone by a crash:** Chromium writes cookie changes to disk lazily. After sign-out and a
+  force-quit, Electron reloaded the old session cookie — on a shared lab Mac the next student would be
+  signed in as the previous one. Fix: `session.cookies.on("changed")` → `flushStore()` (debounced 200 ms).
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Proxy only | Proxy is skippable in principle (matcher mistakes, future routes); pages/API must check themselves |
+| DB lookup in proxy | Runs on every navigation and prefetch — Next's docs warn against it |
+| Clear all cookies on app start | Would sign users out on every launch; persistence across restarts is wanted |
+
+**How it works**
+Result: `/student` and `/teacher` are **partially prerendered** — header and title are static HTML; the
+user name and page content stream in. Verified with curl (all redirect cases above, tampered cookie →
+treated as signed out) and in Electron with `kill -9` (signed-in survives a hard kill; sign-out survives a hard kill).
+
+**Files touched**
+- `src/proxy.ts`, `src/lib/session.ts` (`requirePageUser`, `connection()`), `src/components/layout/app-header.tsx`,
+  `src/app/student/*`, `src/app/teacher/*`, `electron/main.ts` (cookie flush)
+
+**Concepts worth learning**
+- **Defense in depth:** several independent checks, so one mistake doesn't expose data.
+- **Partial prerendering:** static shell served instantly, dynamic holes streamed in.
+- **Write-back caching:** data changed in memory and written to disk later — fast, but lost on a crash unless flushed.
+
+**Revisit if**
+Auth.js ships a Next-16-native proxy helper.
+
+---
+
+### D-036 — Teacher seed script with tsx; never silently promote a student
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+Teachers can't self-register, so an admin needs a repeatable way to create them. The script must reuse
+the app's models/services (which use the `@/` path alias and the `server-only` guard).
+
+**Decision**
+`npm run seed` = `tsx --conditions=react-server scripts/seed-teachers.ts`. Added **`tsx`** as a
+devDependency: it runs TypeScript directly and understands the tsconfig `@/` alias; `--conditions=react-server`
+makes `import "server-only"` resolve to its no-op server version. The script reads `.env` with Node's
+built-in `process.loadEnvFile` (real environment variables win), validates `SEED_TEACHER_*` with the same
+`RegisterInput` schema as sign-up, and calls `upsertTeacher()`.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Plain `node` + compiled JS | Needs a separate build step and alias rewriting |
+| `npx tsx` without installing | Unpinned version on every run; teammates get different behaviour |
+| Seed endpoint in the app | A route that can create teachers is an attack surface |
+
+**How it works**
+Upsert by email → running it twice updates name/password instead of duplicating. If the email belongs
+to a **student**, it stops with an error unless `--promote` is passed, so a typo can't silently hand a
+student teacher powers. It prints only name + email, never the password. Verified: create → update →
+student collision refused → invalid password rejected with a clear message.
+
+Note: local dev and production share one Atlas database, so a seeded teacher works in both.
+
+**Files touched**
+- `scripts/seed-teachers.ts`, `package.json` (`seed` script, `tsx` devDependency)
+
+**Concepts worth learning**
+- **Idempotent script:** safe to run any number of times with the same end state.
+- **Principle of least surprise:** destructive or privilege-changing actions require an explicit flag.
+
+**Revisit if**
+Multiple teachers need seeding (switch to a CSV/JSON list).
