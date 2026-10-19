@@ -79,5 +79,5 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 ## Parked ideas
 - Drag-and-drop question reordering (up/down buttons for now).
 - Resume at the last viewed question instead of question 1.
-- Developer ID signing + notarization (removes Gatekeeper steps); GitHub Release with the .dmgs.
+- Developer ID signing + notarization (removes Gatekeeper steps).
 - Retakes; cohort assignment; configurable snapshot interval; automated snapshot retention cleanup; Windows build; code signing (PRD §5 Later).
