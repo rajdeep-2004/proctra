@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/06-results` |
 | Depends on | Phase 05 |
 | PRD features | F-09 (teacher view), F-11, F-12, F-13 |

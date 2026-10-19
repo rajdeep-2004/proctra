@@ -13,7 +13,18 @@ A downloadable unsigned macOS `.dmg` that runs the full flow against the product
 for the GitHub repo, and — only if time remains — the snapshot gallery and DevClub/GSAP polish.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+From phase 06 (Results, profile & leaderboard, merged 2026-10-20) — the full product loop now works end to end:
+sign-in → quiz editor (fixed slot, countdown) → kiosk exam with camera, snapshots, events, autosave → grading → student profile,
+result page, live leaderboard → teacher results, attempt detail with event timeline.
+- **For packaging (07.1):** Electron entry `electron/dist/main.js` (compiled by `npm run electron:build`); it reads `PROCTRA_APP_URL`
+  from `.env` only in dev (`!app.isPackaged`). The packaged app must get https://proctra-mu.vercel.app another way (baked config /
+  `extraMetadata`). Needs `NSCameraUsageDescription` in Info.plist, offline page `electron/offline.html` included, universal arch,
+  unsigned (D-012). Dev switches `PROCTRA_FAKE_CAMERA` / `PROCTRA_KIOSK` are ignored when packaged.
+- **For S-01 gallery (07.4):** `signedImageUrl(publicId)` in `src/lib/cloudinary.ts`; owner check pattern in `results-service.ts`;
+  "Snapshots" card on `/teacher/attempts/[id]` is the place to render it; contract planned as `GET /api/v1/teacher/attempts/:id/snapshots`.
+- **Production:** Vercel has MONGODB_URI, AUTH_SECRET, CLOUDINARY_* (Production + Preview). Deploy with `npx vercel deploy --prod` from `main`.
+- **Open debt worth considering for hardening:** CSP header, rate limiting, snapshot retention (all in progress.md "Known debt").
+- Decisions: D-049 – D-050.
 
 ## In scope — exact features
 1. **Packaging (must)**
