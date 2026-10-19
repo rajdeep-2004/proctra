@@ -57,6 +57,10 @@ Rules:
 | D-042 | 2026-10-19 | 04 | Attempt lifecycle: insert-or-read start, atomic grade-and-close with optimistic retry | Active |
 | D-043 | 2026-10-19 | 04 | Exam UI: one question at a time, native radios, shared server clock | Active |
 | D-044 | 2026-10-19 | 04 | Submit only after saves are confirmed; auto-submit with server backstop | Active |
+| D-045 | 2026-10-19 | 05 | Kiosk exam window lifecycle, camera-only permission, dev test switches | Active |
+| D-046 | 2026-10-19 | 05 | Proctor events and the hidden exam camera | Active |
+| D-047 | 2026-10-19 | 05 | Leave kiosk before revealing the result window (macOS Spaces bug) | Active |
+| D-048 | 2026-10-19 | 05 | Cmd+Q quits during the kiosk exam (scoped global shortcut) | Active |
 
 ---
 
@@ -422,6 +426,19 @@ Canvas grabs a frame from a hidden `<video>` → `canvas.toBlob("image/jpeg", 0.
 Server validates type/size (≤ 500 KB) → `cloudinary.uploader.upload_stream({ type: "authenticated", folder })`.
 Teachers (S-01) get `cloudinary.url(publicId, { sign_url: true, type: "authenticated" })` links.
 
+**Implementation (phase 05)**
+`src/lib/cloudinary.ts` validates the three `CLOUDINARY_*` keys separately from `env()` — if they're missing, only snapshot
+uploads fail (502 → `snapshot_failed` event), the rest of the app keeps working. `useSnapshots` captures via
+`useExamCamera().grabFrame()` (640×480 JPEG ≈ 7–40 KB) only while the attempt is active **and** the camera is live.
+The server checks the JPEG magic bytes (`FF D8 FF`), size ≤ 500 KB, ownership, active + within deadline grace.
+Verified live: 4 snapshots ~10 s apart; Cloudinary `type: authenticated`; public URL → 404, unsigned authenticated URL → 401,
+signed URL → 200 image/jpeg; snapshot count unchanged 25 s after submit; failure path (secret missing) → `snapshot_failed`
+events and an unaffected exam.
+
+**Gotcha:** newer Cloudinary accounts give API keys **roles**. Our key could ping but uploads returned
+`403 … missing permissions (actions=["create"])` until the key's role allowed creating assets. A disabled key returns
+`disabled api_key`. The SDK rejects with plain `{ message, http_code }` objects (not `Error`), so logs print those fields.
+
 **Concepts worth learning**
 - **Signed URLs:** a URL containing a signature made with a secret, so only the server can produce valid links.
 
@@ -490,6 +507,12 @@ answers can't be changed meanwhile; the server deadline keeps running; `camera_l
 
 **How it works**
 Video track `ended` → overlay + event → retry `getUserMedia` every 2 s → success → hide overlay + event.
+
+**Start gate (implemented in phase 05, `src/lib/camera.ts`)**
+Start/Resume first calls `window.proctra.requestCamera()` (macOS prompt only if undecided), then a real
+`getUserMedia({ video: true })` test that is stopped immediately. Each failure gets its own instruction: permission
+(`NotAllowedError` → System Settings → Privacy & Security → Camera), no camera (`NotFoundError`), camera busy
+(`NotReadableError`). No attempt is created unless the check passes (verified: 3 forced errors → 0 attempts).
 
 **Revisit if**
 Course requires time accommodations for hardware failures.
@@ -561,6 +584,15 @@ Chrome session produces visible gaps (no kiosk, focus events) that teachers can 
 
 **Why**
 Real client attestation is out of scope for a capstone (and the brief disclaims lockdown).
+
+**Implemented (phase 05)** — `StartButton` shows "Use the Proctra desktop app" and disables Start when `window.proctra` is
+missing; the exam page renders "Open this exam in the Proctra desktop app" instead of questions. Verified in headless Chrome.
+As designed, the start **API** still works from a browser — the server enforces identity, the time slot and grading, and the
+missing snapshots/events are visible to the teacher.
+
+**Accessibility fix made alongside:** shadcn's `Alert` always set `role="alert"`, so informational notices (camera notice,
+"desktop app" notice) were announced like errors. `Alert` now defaults to `role="alert"` only for the `destructive` variant and
+`role="note"` otherwise.
 
 **Revisit if**
 Exams become high-stakes.
@@ -1739,3 +1771,170 @@ result page 3 / 20 (4 − 1 + 0×3). Timeout run with 1-minute quiz: timer 0m 02
 
 **Revisit if**
 Kiosk mode (phase 05) needs to close the window before navigating to the result.
+
+---
+
+### D-045 — Kiosk exam window lifecycle, camera-only permission, dev test switches
+- **Date:** 2026-10-19
+- **Phase:** 05 — Kiosk window & camera
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+The exam must run in a focused, full-screen window (F-05) with camera access (F-04), without giving the web page
+more power than it needs (D-009) — and it must be testable by scripts without taking over the developer's screen.
+
+**Decision**
+- `startExam(id)` → main creates a second `BrowserWindow` with `kiosk: true`, `fullscreen`, `closable: false`,
+  `minimizable: false`, always-on-top at `"screen-saver"` level, loads `/exam/:id`, and **hides** the main window.
+  One exam window at a time. `endExam(id)` (called by the exam page on submit, time's up or `ATTEMPT_CLOSED`) destroys it
+  and loads `/student/attempts/:id` in the main window. If the exam window closes any other way, the main window reappears.
+- IPC handlers check the **sender frame's origin** is the app, and validate the attempt id (24-hex); the server still checks ownership.
+- Permissions: only `media` with **video only**, only for the app origin. Microphone is always denied.
+- `requestCamera()` reads macOS's camera status first and only shows the system prompt when the user hasn't decided yet
+  (after a "deny", macOS never asks again — the page must send the student to System Settings).
+- Dev-only switches (ignored when packaged): `PROCTRA_FAKE_CAMERA=1` (Chromium fake camera, no real device/prompt) and
+  `PROCTRA_KIOSK=0` (normal window). No auto-accept switch, so the permission handler is still exercised in tests.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Turn the main window itself into kiosk mode | Main window keeps the dashboard state; a separate window is cleaner to open/close and to lock down |
+| `use-fake-ui-for-media-stream` in tests | It auto-accepts every request (even microphone) and bypasses our handler — found when the mic test wrongly passed |
+
+**Limitations (documented, not hidden)**
+Kiosk is not a lockdown: Cmd+Q (kept on purpose, D-048), other devices, the power button and a second screen still work.
+(Correction: macOS kiosk mode *does* disable the Force Quit dialog and app switching — see D-048.) Quitting simply leaves the
+attempt active; on relaunch the student can resume (time keeps running) or it auto-submits at the deadline.
+
+**Verified (Electron, fake camera, windowed):** Start → exam window opened, main window hidden; `startExam("../../etc")` and
+`endExam(<other id>)` → `{ ok: false }`; asking to start again → focuses the same window; camera granted (`fake_device_0`),
+microphone and camera+mic denied (`NotAllowedError`; Permissions API: camera=granted, microphone=denied); Submit → exam
+window gone, main window on the result page.
+
+**Files touched**
+- `electron/main.ts`, `electron/preload.ts`, `src/types/proctra.d.ts`, `src/components/quiz/start-button.tsx`,
+  `src/components/exam/exam-client.tsx`
+
+**Concepts worth learning**
+- **IPC sender validation:** the main process must not trust which page is calling — check the frame's origin.
+- **macOS TCC:** the OS-level privacy database; apps get one prompt per permission, later changes go through System Settings.
+
+**Revisit if**
+The course requires stronger lockdown (then a dedicated lockdown browser is needed — out of scope).
+
+---
+
+### D-046 — Proctor events and the hidden exam camera
+- **Date:** 2026-10-19
+- **Phase:** 05 — Kiosk window & camera
+- **Status:** Active
+- **Type:** architecture
+
+**Decision**
+- **Events** (`proctorEvents`, separate collection per D-020): the exam page logs `window_blur/focus`, `tab_hidden/visible`,
+  `fullscreen_exit`, `camera_lost/restored`, `snapshot_failed`; the server alone logs `resumed`. The client buffers them and
+  POSTs every 5 s plus a final `keepalive` flush when proctoring stops. Server: owner check, accepts until 30 s after the attempt
+  ends, clamps `occurredAt` into the attempt's span, caps 2 000 per attempt. Wording is neutral everywhere (PRD §9).
+- **Camera** (`useExamCamera`): `getUserMedia` (640×480, no audio) plays into a `<video>` element that is **never attached to the
+  page** (no preview, F-07). A 2 s health check + `ended`/`devicechange` listeners detect loss; while lost it retries every 2 s.
+  `grabFrame()` draws the current frame to a canvas → JPEG (q 0.7) for snapshots (05.3).
+- **Camera-loss overlay:** blocks the question area (header with timer stays visible) until the camera is back; the deadline is
+  unchanged (D-010). Proctoring (camera + events) stops when the student submits or time runs out.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Hidden `<video>` with CSS | Still in the DOM/accessibility tree; an element never attached is simpler and can't be shown by accident |
+| Send each event immediately | Many tiny requests (every Cmd+Tab); a 5 s batch is enough for a teacher's timeline |
+
+**Verified:** Electron (fake camera) — camera live with 0 `<video>` elements in the DOM; stopping the track → overlay within 2 s,
+timer still counting; stays while the camera is unavailable; returns → overlay gone, new live stream; stored events include
+`camera_lost`, `camera_restored`, `window_blur`, `window_focus`. API (11/11): unknown type 400, client `resumed` 400, batch
+limits, other student 404, teacher 403, times clamped, server `resumed` on resume, final flush accepted, 60 s later 409.
+
+**Files touched**
+- `src/models/proctor-event.ts`, `src/schemas/proctor.ts`, `src/services/proctor-service.ts`,
+  `src/app/api/v1/attempts/[attemptId]/events/route.ts`, `src/services/attempt-service.ts` (resumed event),
+  `src/components/exam/{use-proctor-events,use-exam-camera}.ts`, `src/components/exam/exam-client.tsx`
+
+**Revisit if**
+Teachers need more signals (e.g. screen count) — Electron could report them from main, but only neutral facts.
+
+---
+
+### D-047 — Leave kiosk before revealing the result window (macOS Spaces bug)
+- **Date:** 2026-10-19
+- **Phase:** 05 — Kiosk window & camera
+- **Status:** Active
+- **Type:** edge-case
+
+**Context**
+In the user's real kiosk test, submitting closed the exam window and the app seemed to quit. Automated tests had passed
+because they used `PROCTRA_KIOSK=0` (normal window). There was no crash report, and the app process was still alive with the
+result page loaded — Electron even reported the main window as visible and focused. But macOS's own window list
+(`CGWindowListCopyWindowInfo`, on-screen only) showed **no** Proctra window.
+
+**Cause**
+macOS puts a full-screen/kiosk window in its own Space. We destroyed the exam window and immediately showed the (hidden) main
+window while that Space was still being torn down, so the main window was "shown" somewhere the user couldn't see.
+
+**Decision**
+`closeExamWindow()` now: loads the result page in the main window → turns off always-on-top, kiosk and full screen on the exam
+window → waits for `leave-full-screen` (1.5 s fallback) → destroys it → after 150 ms shows, raises and focuses the main window
+and calls `app.focus({ steal: true })`. The exam window's `closed` handler only re-shows the main window if the exam window
+closed *unexpectedly*, so the two paths don't race. Dev-only `[proctra]` traces log the lifecycle.
+
+**Verified** with real kiosk mode (fake camera) and the macOS on-screen window list: during the exam a 1800×1130 kiosk window;
+after submit the trace shows `leave-full-screen → exam window closed → main revealed`, and a 1200×800 Proctra window is on
+screen with the result page. Before the fix the same probe showed no Proctra window at all.
+
+**Lesson**
+Test the real mode at least once: the windowed test switch (D-045) hid exactly the behaviour that differs.
+
+**Files touched**
+- `electron/main.ts`
+
+**Concepts worth learning**
+- **macOS Spaces:** full-screen windows get their own virtual desktop; windows shown during a Space transition can land off-screen.
+- **Verify from the OS's point of view:** the app's own state ("visible: true") can disagree with what the user actually sees.
+
+---
+
+### D-048 — Cmd+Q quits during the kiosk exam (scoped global shortcut)
+- **Date:** 2026-10-19
+- **Phase:** 05 — Kiosk window & camera
+- **Status:** Active
+- **Type:** edge-case
+
+**Context**
+In the user's real test, Cmd+Q did nothing inside the exam window. Electron's macOS kiosk mode sets presentation options that
+hide the Dock and menu bar and **disable the app menu**, app switching and the Force Quit dialog — so the menu's Cmd+Q never
+fires. Our docs had wrongly said Cmd+Q and Force Quit still work. Asked the user: they want Cmd+Q to quit during the exam.
+
+**Decision**
+While (and only while) the exam window exists, register an OS-level shortcut `globalShortcut.register("CommandOrControl+Q")` →
+`app.quit()`. It's unregistered when the exam window closes (submit, time's up, unexpected close) and on `will-quit`, so normal
+windows use the regular menu shortcut. `before-quit` takes the exam window out of kiosk and destroys it first, because a
+`closable: false` kiosk window would otherwise block quitting and leave the Dock/menu bar hidden.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `webContents.on("before-input-event")` in the exam window | Tried first; couldn't be verified (DevTools-injected keys bypass it), and it depends on the page having focus |
+| Keep Cmd+Q blocked | User wants students to be able to quit; the attempt is safe either way (resume / auto-submit) |
+| An IPC "quit" button in the exam page | Adds a desktop capability to the page (D-009); a keyboard shortcut needs no new bridge |
+
+**What quitting means for the attempt**
+Nothing is lost: every answer is saved on click (D-007). The attempt stays `active` with the same deadline; relaunching shows
+**Resume exam** (camera check again, a `resumed` event is logged), or the server auto-submits at the deadline (D-006).
+
+**Verified:** windowed run — `exam Cmd+Q shortcut registered: true` when the exam opens, removed after submit; quitting runs
+`before-quit` with the exam window torn down. The physical keypress in real kiosk mode can't be simulated without macOS Accessibility permission — **confirmed by the user's manual
+test**: Cmd+Q quit the app during the exam, and relaunching showed Resume with the earlier answers.
+
+**Files touched**
+- `electron/main.ts`, `docs/system-design.md`, D-045 limitation text corrected
+
+**Concepts worth learning**
+- **Global shortcut:** an OS-level hotkey registered by the app; must be removed when no longer needed so it doesn't hijack keys elsewhere.

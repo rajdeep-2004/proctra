@@ -6,6 +6,7 @@ import { ANSWER_GRACE_MS, Attempt, type AttemptDoc, type AttemptStatus, type Sco
 import { Quiz, type QuizDoc } from "@/models/quiz";
 import type { AnswerInput } from "@/schemas/attempt";
 import { grade, resultFor, type QuestionResult } from "@/services/grading";
+import { recordServerEvent } from "@/services/proctor-service";
 
 // ---------- response shapes ----------
 
@@ -177,7 +178,10 @@ export async function startOrResume(student: { id: string; name: string }, quizI
   const existing = await Attempt.findOne({ quizId, studentId: student.id }).lean<AttemptDoc>();
   if (existing) {
     const a = await finalizeIfExpired(existing);
-    if (a.status === "active") return { attemptId: a._id.toString(), status: a.status, deadline: a.deadline.toISOString(), resumed: true };
+    if (a.status === "active") {
+      await recordServerEvent(a, "resumed"); // neutral log entry: the student reopened the exam
+      return { attemptId: a._id.toString(), status: a.status, deadline: a.deadline.toISOString(), resumed: true };
+    }
     throw new AppError("ALREADY_ATTEMPTED", "You have already taken this quiz", 409);
   }
 

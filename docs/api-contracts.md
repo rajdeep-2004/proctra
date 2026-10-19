@@ -256,7 +256,9 @@ it is recorded as `auto_submitted` with `submittedAt = deadline`.
 - Auth: student (owner) · Phase: 05 · Content-Type: `multipart/form-data`
 Fields: `image` (JPEG, ≤ 500 KB), `capturedAt` (ISO string)
 Response `201` `{ "data": { "id": "…", "capturedAt": "…" } }`
-Errors: `400` (not JPEG), `413 PAYLOAD_TOO_LARGE`, `409 ATTEMPT_CLOSED`, `502 UPSTREAM_FAILED`
+Errors: `400` (not a JPEG — checked by the file's first bytes, not the claimed type), `413 PAYLOAD_TOO_LARGE`, `409 ATTEMPT_CLOSED`
+(not active or past `deadline + 5 s`), `404` (not mine), `502 UPSTREAM_FAILED` (Cloudinary down or not configured)
+Notes: `capturedAt` is clamped to [startedAt, now]. Client: one shortly after the camera starts, then every 10 s; 2 retries (2 s, 5 s) then a `snapshot_failed` event.
 
 #### `POST /api/v1/attempts/:attemptId/events`
 - Auth: student (owner) · Phase: 05 · Purpose: batch of proctoring events
@@ -264,9 +266,11 @@ Request
 ```json
 { "events": [ { "type": "window_blur", "occurredAt": "…" }, { "type": "window_focus", "occurredAt": "…" } ] }
 ```
-1–50 events per request.
+1–50 events per request. Types: `window_blur`, `window_focus`, `tab_hidden`, `tab_visible`, `fullscreen_exit`, `camera_lost`,
+`camera_restored`, `snapshot_failed` (`resumed` is recorded by the server only). `occurredAt` is clamped to the attempt's span;
+at most 2 000 events are stored per attempt.
 Response `201` `{ "data": { "accepted": 2 } }`
-Errors: `400`, `404`, `409 ATTEMPT_CLOSED` (except within grace window, so the final flush on submit succeeds)
+Errors: `400`, `403` (teacher), `404` (not mine), `409 ATTEMPT_CLOSED` (more than 30 s after the attempt ended — the final flush on submit still succeeds)
 
 #### `GET /api/v1/me/attempts`
 - Auth: student · Phase: 06 · Purpose: profile history
@@ -283,9 +287,11 @@ Not HTTP, but a contract between the web app and the Electron shell.
 | Page API (`window.proctra`) | IPC channel | Args | Returns | Main-side validation |
 |---|---|---|---|---|
 | `isDesktop` | — | — | `true` | — |
-| `requestCamera()` | `proctra:request-camera` | none | `Promise<boolean>` | macOS `askForMediaAccess("camera")` |
-| `startExam(attemptId)` | `proctra:start-exam` | 24-hex string | `Promise<void>` | regex; one exam window at a time |
-| `endExam(attemptId)` | `proctra:end-exam` | 24-hex string | `Promise<void>` | must match the open exam window's id |
+| `requestCamera()` | `proctra:request-camera` | none | `Promise<{ granted, status }>` (`status`: granted / denied / restricted) | sender must be the app origin; macOS `getMediaAccessStatus` → `askForMediaAccess("camera")` only if not yet decided |
+| `startExam(attemptId)` | `proctra:start-exam` | 24-hex string | `Promise<{ ok }>` | sender origin; regex; one exam window at a time (asking again focuses it) |
+| `endExam(attemptId)` | `proctra:end-exam` | 24-hex string | `Promise<{ ok }>` | sender origin; regex; must match the open exam window's id; shows `/student/attempts/:id` in the main window |
+
+Permissions: the session grants only `media` with **video only** to the app origin (microphone always denied).
 
 ## 4. Endpoint index
 | Method | Path | Auth | Phase | Status |
@@ -307,8 +313,8 @@ Not HTTP, but a contract between the web app and the Electron shell.
 | GET | /api/v1/attempts/:attemptId | student | 04 | built |
 | PUT | /api/v1/attempts/:attemptId/answers/:questionId | student | 04 | built |
 | POST | /api/v1/attempts/:attemptId/submit | student | 04 | built |
-| POST | /api/v1/attempts/:attemptId/snapshots | student | 05 | planned |
-| POST | /api/v1/attempts/:attemptId/events | student | 05 | planned |
+| POST | /api/v1/attempts/:attemptId/snapshots | student | 05 | built |
+| POST | /api/v1/attempts/:attemptId/events | student | 05 | built |
 | GET | /api/v1/me/attempts | student | 06 | planned |
 | GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | planned |
 | GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | planned |
