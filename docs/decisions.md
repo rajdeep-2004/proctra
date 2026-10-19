@@ -1983,6 +1983,10 @@ refresh, without reloading.
   `src/app/api/v1/me/attempts/route.ts`, `src/app/student/profile/page.tsx`, `src/components/layout/app-header.tsx` (nav),
   leaderboard files in 06.3
 
+**Result release, end to end (06.4):** with a future `resultsReleaseAt`, the submit response, result page, profile and leaderboard
+all hide marks/answers (leaderboard → `RESULTS_NOT_RELEASED`) while the teacher still sees scores; the teacher can move the release
+time even on a locked quiz, after which all three views show the score immediately (`.scratch/release.check.mts`, 11/11).
+
 **Revisit if**
 Classes grow large enough that 10 s polling per viewer matters, or the course wants leaderboards hidden until the exam ends.
 

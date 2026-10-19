@@ -53,7 +53,8 @@ From phase 05 (Kiosk window & camera, merged 2026-10-19), building on phase 04's
 - [x] 06.1 — `GET /me/attempts` + student profile page → `feat(results): add student attempt history`
 - [x] 06.2 — Teacher submissions + attempt detail routes and pages → `feat(results): add teacher submissions and attempt detail`
 - [x] 06.3 — Leaderboard service (competition ranking) + route + teacher/student pages → `feat(results): add quiz leaderboard`
-- [ ] 06.4 — Result-release enforcement across result/profile/leaderboard → `feat(results): enforce result release time`
+- [x] 06.4 — Result-release enforcement across result/profile/leaderboard → enforcement was built into each view (04.2, 06.1, 06.3);
+  this task verified it end to end (11/11) → `docs: verify result release across result, profile and leaderboard`
 - [ ] 06.5 — Update docs → `docs: update docs for phase 06`
 
 ## Done criteria
