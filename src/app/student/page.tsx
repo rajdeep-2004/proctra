@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { AvailabilityBadge } from "@/components/quiz/availability-badge";
+import { Countdown } from "@/components/quiz/countdown";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePageUser } from "@/lib/session";
 import { listQuizzesForStudent, type Availability, type QuizForStudent } from "@/services/quiz-service";
@@ -28,7 +29,7 @@ const GROUPS: { key: Availability; title: string; empty: string }[] = [
 
 async function QuizGroups() {
   const user = await requirePageUser("student");
-  const { quizzes } = await listQuizzesForStudent(user.id);
+  const { quizzes, serverNow } = await listQuizzesForStudent(user.id);
   if (quizzes.length === 0) return <p className="text-muted-foreground">No quizzes have been published yet.</p>;
   return (
     <div className="grid gap-8">
@@ -41,7 +42,7 @@ async function QuizGroups() {
             {items.length === 0 ? (
               <p className="text-sm text-muted-foreground">{g.empty}</p>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">{items.map((q) => <QuizCard key={q.id} quiz={q} />)}</div>
+              <div className="grid gap-3 sm:grid-cols-2">{items.map((q) => <QuizCard key={q.id} quiz={q} serverNow={serverNow} />)}</div>
             )}
           </section>
         );
@@ -50,7 +51,7 @@ async function QuizGroups() {
   );
 }
 
-function QuizCard({ quiz: q }: { quiz: QuizForStudent }) {
+function QuizCard({ quiz: q, serverNow }: { quiz: QuizForStudent; serverNow: string }) {
   return (
     <Link href={`/student/quizzes/${q.id}`} className="rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
       <Card className="h-full transition-colors hover:bg-muted/50">
@@ -62,9 +63,12 @@ function QuizCard({ quiz: q }: { quiz: QuizForStudent }) {
           <CardDescription className="grid gap-1">
             <span>{q.questionCount} questions · {q.durationMinutes} min</span>
             <span>
-              {q.availability === "upcoming" ? "Opens " : "Closes "}
-              <LocalTime iso={q.availability === "upcoming" ? q.startsAt : q.endsAt} />
+              <LocalTime iso={q.startsAt} /> – <LocalTime iso={q.endsAt} />
             </span>
+            {q.availability !== "closed" && (
+              <Countdown startsAt={q.startsAt} endsAt={q.endsAt} serverNow={serverNow} refreshOnChange
+                className="font-medium text-foreground tabular-nums" />
+            )}
             {q.myAttempt && <span className="font-medium text-foreground">{q.myAttempt.status === "active" ? "In progress" : "Submitted"}</span>}
           </CardDescription>
         </CardHeader>

@@ -1582,6 +1582,10 @@ API (29/29): derived duration (4 h → 240) with `durationMinutes` input ignored
 earlier 409 on `endsAt`, later end 200 and a fake **active** attempt's deadline moved while a **submitted** one
 didn't. Schema tests: 30 s and 5 h + 1 s rejected, exactly 1 min and 5 h accepted.
 
+Countdown verified live in Electron: a quiz starting in 70 s showed "Starts in 0m 56s" ticking down; at the start
+it switched to "Ends in 19m 45s" and the page refreshed itself (badge Upcoming → Open now). One shared 1-second
+ticker (`useSyncExternalStore`) drives all countdowns; `role="timer"` + `aria-live="off"` so screen readers aren't spammed.
+
 **Files touched**
 - Docs: `prd.md` (F-02, F-03, flows), `database-schema.md`, `api-contracts.md`, `system-design.md`, phase 03/04 files
 - Code (03.7–03.8): `src/models/quiz.ts`, `src/schemas/quiz.ts`, `src/services/quiz-service.ts`, editor, student pages, countdown component

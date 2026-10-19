@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { AvailabilityBadge } from "@/components/quiz/availability-badge";
+import { Countdown } from "@/components/quiz/countdown";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,14 +52,19 @@ async function Detail({ params }: { params: Params }) {
         <h1 className="text-2xl font-semibold tracking-tight">{q.title}</h1>
         <AvailabilityBadge availability={q.availability} />
       </div>
+      {q.availability !== "closed" && (
+        <p className="text-lg">
+          <Countdown startsAt={q.startsAt} endsAt={q.endsAt} serverNow={q.serverNow} refreshOnChange className="font-semibold tabular-nums" />
+        </p>
+      )}
 
       <Card>
         <CardHeader><CardTitle>About this quiz</CardTitle></CardHeader>
         <CardContent className="grid gap-3 text-sm">
           <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
-            <dt className="text-muted-foreground">Opens</dt><dd><LocalTime iso={q.startsAt} /></dd>
-            <dt className="text-muted-foreground">Closes</dt><dd><LocalTime iso={q.endsAt} /></dd>
-            <dt className="text-muted-foreground">Duration</dt><dd>{q.durationMinutes} minutes (ends earlier if the quiz closes first)</dd>
+            <dt className="text-muted-foreground">Starts</dt><dd><LocalTime iso={q.startsAt} /></dd>
+            <dt className="text-muted-foreground">Ends</dt><dd><LocalTime iso={q.endsAt} /></dd>
+            <dt className="text-muted-foreground">Duration</dt><dd>{q.durationMinutes} minutes — everyone finishes at the end time, so starting late means less time</dd>
             <dt className="text-muted-foreground">Questions</dt><dd>{q.questionCount}, multiple choice</dd>
             <dt className="text-muted-foreground">Marking</dt>
             <dd>{fmtMark(q.marking.correct)} correct · {fmtMark(q.marking.incorrect)} wrong · {fmtMark(q.marking.unanswered)} unanswered</dd>

@@ -58,7 +58,7 @@ From phase 02 (Auth & roles, merged 2026-10-19):
 User asked for a fixed exam slot and a student countdown (D-041):
 - [x] 03.6 — Docs: fixed exam slot, derived duration, extend-only end time, countdown → `docs: switch quizzes to fixed exam slots`
 - [x] 03.7 — Remove duration input; derive it; extend-only end time while locked → `feat(quiz): derive duration from exam slot`
-- [ ] 03.8 — Live server-time countdown on student list and detail → `feat(quiz): add live countdown for students`
+- [x] 03.8 — Live server-time countdown on student list and detail → `feat(quiz): add live countdown for students`
 
 ## Done criteria
 - [x] Teacher creates a 5-question quiz with negative marking, publishes it; a student sees it
