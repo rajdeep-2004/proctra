@@ -21,6 +21,15 @@ export type AnswerState = { selectedIndex: number | null; markedForReview: boole
 export function ExamClient({ attempt }: { attempt: ActiveAttemptView }) {
   const isClient = useIsClient();
   if (!isClient) return <div className="m-8 h-96 animate-pulse rounded-xl bg-muted" aria-label="Loading exam" />;
+  if (!window.proctra) {
+    // A normal browser can't give the kiosk window or the camera; the server still enforces time and grading (D-013).
+    return (
+      <div className="mx-auto grid max-w-lg gap-3 p-8 text-center">
+        <h1 className="text-xl font-semibold">Open this exam in the Proctra desktop app</h1>
+        <p className="text-muted-foreground">Exams run in a full-screen window with the camera on. Your attempt is saved — resume it from the app.</p>
+      </div>
+    );
+  }
   return <Exam attempt={attempt} />;
 }
 

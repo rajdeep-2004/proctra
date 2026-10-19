@@ -26,7 +26,8 @@ function Alert({
   return (
     <div
       data-slot="alert"
-      role="alert"
+      // Only errors interrupt screen readers; informational notices are plain notes (an explicit role prop still wins).
+      role={variant === "destructive" ? "alert" : "note"}
       className={cn(alertVariants({ variant }), className)}
       {...props}
     />

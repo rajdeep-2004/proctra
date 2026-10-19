@@ -492,6 +492,12 @@ answers can't be changed meanwhile; the server deadline keeps running; `camera_l
 **How it works**
 Video track `ended` → overlay + event → retry `getUserMedia` every 2 s → success → hide overlay + event.
 
+**Start gate (implemented in phase 05, `src/lib/camera.ts`)**
+Start/Resume first calls `window.proctra.requestCamera()` (macOS prompt only if undecided), then a real
+`getUserMedia({ video: true })` test that is stopped immediately. Each failure gets its own instruction: permission
+(`NotAllowedError` → System Settings → Privacy & Security → Camera), no camera (`NotFoundError`), camera busy
+(`NotReadableError`). No attempt is created unless the check passes (verified: 3 forced errors → 0 attempts).
+
 **Revisit if**
 Course requires time accommodations for hardware failures.
 
@@ -562,6 +568,15 @@ Chrome session produces visible gaps (no kiosk, focus events) that teachers can 
 
 **Why**
 Real client attestation is out of scope for a capstone (and the brief disclaims lockdown).
+
+**Implemented (phase 05)** — `StartButton` shows "Use the Proctra desktop app" and disables Start when `window.proctra` is
+missing; the exam page renders "Open this exam in the Proctra desktop app" instead of questions. Verified in headless Chrome.
+As designed, the start **API** still works from a browser — the server enforces identity, the time slot and grading, and the
+missing snapshots/events are visible to the teacher.
+
+**Accessibility fix made alongside:** shadcn's `Alert` always set `role="alert"`, so informational notices (camera notice,
+"desktop app" notice) were announced like errors. `Alert` now defaults to `role="alert"` only for the `destructive` variant and
+`role="note"` otherwise.
 
 **Revisit if**
 Exams become high-stakes.
