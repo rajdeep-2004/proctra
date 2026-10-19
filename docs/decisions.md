@@ -47,6 +47,7 @@ Rules:
 | D-032 | 2026-10-19 | 02 | Registration and password handling rules | Active |
 | D-033 | 2026-10-19 | 02 | Auth.js v5 beta wiring: pinned version, split + lazy config | Active |
 | D-034 | 2026-10-19 | 02 | Auth forms use Server Actions (exception to D-003) | Active |
+| D-035 | 2026-10-19 | 02 | Route guarding: proxy redirects + page re-checks; cookie flush in Electron | Active |
 
 ---
 
@@ -1225,3 +1226,59 @@ empty/invalid fields → three field errors; new sign-up → signed in immediate
 
 **Revisit if**
 Auth moves off Auth.js.
+
+---
+
+### D-035 — Route guarding: proxy redirects + page re-checks; cookie flush in Electron
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+Users must land on their role's dashboard and never see the other role's pages. Next.js 16 renamed
+middleware to `proxy.ts`, and Cache Components changes how session reads must be written.
+
+**Decision**
+Three layers, each with one job:
+1. **`src/proxy.ts`** — optimistic redirects from the cookie only (no DB): signed-in users skip `/`,
+   `/sign-in`, `/sign-up`; signed-out users are sent from `/student*`, `/teacher*`, `/exam*` to `/sign-in`;
+   wrong role → own dashboard; `/exam*` is students only.
+2. **Pages** — `requirePageUser(role)` inside `<Suspense>` (signed out → `/sign-in`, wrong role → own dashboard).
+3. **API** — `requireUser(role)` → 401/403 (the real security boundary, unchanged).
+
+**Problems hit and how they were solved**
+- `export default auth((req) => …)` (Auth.js's documented middleware form) made **every page 500** in
+  Next 16: "The Proxy file must export a function named `proxy` or a default function" — the wrapped
+  value isn't recognised. With the lazy config its TypeScript type is also the route-handler form. Fix:
+  a plain `export async function proxy(req)` that calls `await auth()` itself (the shape Next's own docs use).
+- Dev overlay **"Blocking Route"**: `auth()` calls `crypto.getRandomValues()` before it reads the cookie,
+  so during prerendering Next sees "random value" instead of "request data". Fix: `await connection()`
+  at the top of `getSessionUser()` marks it request-time first.
+- **Sign-out undone by a crash:** Chromium writes cookie changes to disk lazily. After sign-out and a
+  force-quit, Electron reloaded the old session cookie — on a shared lab Mac the next student would be
+  signed in as the previous one. Fix: `session.cookies.on("changed")` → `flushStore()` (debounced 200 ms).
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Proxy only | Proxy is skippable in principle (matcher mistakes, future routes); pages/API must check themselves |
+| DB lookup in proxy | Runs on every navigation and prefetch — Next's docs warn against it |
+| Clear all cookies on app start | Would sign users out on every launch; persistence across restarts is wanted |
+
+**How it works**
+Result: `/student` and `/teacher` are **partially prerendered** — header and title are static HTML; the
+user name and page content stream in. Verified with curl (all redirect cases above, tampered cookie →
+treated as signed out) and in Electron with `kill -9` (signed-in survives a hard kill; sign-out survives a hard kill).
+
+**Files touched**
+- `src/proxy.ts`, `src/lib/session.ts` (`requirePageUser`, `connection()`), `src/components/layout/app-header.tsx`,
+  `src/app/student/*`, `src/app/teacher/*`, `electron/main.ts` (cookie flush)
+
+**Concepts worth learning**
+- **Defense in depth:** several independent checks, so one mistake doesn't expose data.
+- **Partial prerendering:** static shell served instantly, dynamic holes streamed in.
+- **Write-back caching:** data changed in memory and written to disk later — fast, but lost on a crash unless flushed.
+
+**Revisit if**
+Auth.js ships a Next-16-native proxy helper.

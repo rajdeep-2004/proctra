@@ -38,6 +38,15 @@ function hardenSession(): void {
   // Phase 05 allows "media" (camera) for APP_URL's origin only.
   ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   ses.setPermissionCheckHandler(() => false);
+
+  // Chromium writes cookie changes to disk lazily. If the app is force-quit or crashes right after
+  // sign-out, the old session cookie would come back on next launch (bad on shared lab Macs).
+  // So persist every cookie change promptly (debounced to one write per burst).
+  let flushTimer: NodeJS.Timeout | undefined;
+  ses.cookies.on("changed", () => {
+    clearTimeout(flushTimer);
+    flushTimer = setTimeout(() => void ses.cookies.flushStore(), 200);
+  });
 }
 
 function createMainWindow(): BrowserWindow {

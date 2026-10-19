@@ -121,8 +121,9 @@ server component (reads) ──────────────────�
   `userId`, `role`, `name`. Electron uses a persistent session partition so the cookie survives restarts.
 - **Roles:** `student`, `teacher`. (`admin` = a teacher created by seed; no separate powers in V1.)
 - **Enforcement:** every `/api/v1` handler calls `requireUser("teacher" | "student")`. Ownership is
-  checked in services (teacher owns quiz; student owns attempt). Route guards (Next.js
-  middleware/proxy) only redirect for UX — they are **not** the security boundary.
+  checked in services (teacher owns quiz; student owns attempt). `src/proxy.ts` (Next 16's name for
+  middleware) only redirects for UX — it is **not** the security boundary. Pages re-check with
+  `requirePageUser(role)` inside `<Suspense>` (D-035).
 - Students never receive `correctOption` until results are released for that attempt.
 
 ## 9. Error handling and logging conventions

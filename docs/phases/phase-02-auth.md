@@ -53,7 +53,7 @@ From phase 01 (Foundation, merged 2026-10-19):
 - [x] 02.1 — User model, register Zod schema, user service, `POST /api/v1/auth/register` → `feat(auth): add user model and student registration`
 - [x] 02.2 — Auth.js config (Credentials, JWT callbacks), `requireUser`, `GET /api/v1/me`, Electron persistent session partition → `feat(auth): add credentials sign-in and role helpers`
 - [x] 02.3 — Sign-in / sign-up pages (shadcn forms), sign-out → `feat(auth): add sign-in and sign-up pages`
-- [ ] 02.4 — Route guard (middleware/proxy) + student/teacher dashboard shells → `feat(auth): add role routing and dashboard shells`
+- [x] 02.4 — Route guard (middleware/proxy) + student/teacher dashboard shells → `feat(auth): add role routing and dashboard shells`
 - [ ] 02.5 — `scripts/seed-teachers.ts` + `npm run seed` (tsx) → `feat(auth): add teacher seed script`
 - [ ] 02.6 — Update docs → `docs: update docs for phase 02`
 
