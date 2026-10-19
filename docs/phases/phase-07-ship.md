@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/07-ship` |
 | Depends on | Phase 06 |
 | PRD features | F-14, S-01, S-02 |
@@ -47,7 +47,7 @@ result page, live leaderboard → teacher results, attempt detail with event tim
 - `decisions.md` → D-012, D-015
 
 ## Tasks
-- [ ] 07.1 — electron-builder config, entitlements, icon, `npm run dist` → `chore(desktop): add macOS dmg packaging`
+- [x] 07.1 — electron-builder config, entitlements, icon, `npm run dist` → `chore(desktop): add macOS dmg packaging`
 - [ ] 07.2 — Production deploy + verify `.dmg` end to end → `chore(deploy): ship production build`
 - [ ] 07.3 — README → `docs: add project README`
 - [ ] 07.4 — (should) Snapshot gallery route + UI → `feat(results): add teacher snapshot gallery`

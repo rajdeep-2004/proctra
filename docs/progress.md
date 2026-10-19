@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 07 — Ship: packaging, README, polish (`not-started`)
-**Branch:** —
+**Current phase:** 07 — Ship: packaging, README, polish (`in-progress`)
+**Branch:** `phase/07-ship`
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -14,7 +14,7 @@
 | 04 | Taking the exam | done | phase/04-exam | 10-21 → 10-22 | 2026-10-19 | 2026-10-19 |
 | 05 | Kiosk window & camera | done | phase/05-kiosk-camera | 10-23 | 2026-10-19 | 2026-10-19 |
 | 06 | Results, profile & leaderboard | done | phase/06-results | 10-24 | 2026-10-20 | 2026-10-20 |
-| 07 | Ship: packaging, README, polish | not-started | phase/07-ship | 10-25 | | |
+| 07 | Ship: packaging, README, polish | in-progress | phase/07-ship | 10-25 | 2026-10-20 | |
 
 Status values: `not-started` → `in-progress` → `review` → `done`
 

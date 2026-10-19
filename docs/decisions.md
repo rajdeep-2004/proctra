@@ -63,6 +63,7 @@ Rules:
 | D-048 | 2026-10-19 | 05 | Cmd+Q quits during the kiosk exam (scoped global shortcut) | Active |
 | D-049 | 2026-10-20 | 06 | Live leaderboard for students who finished; profile lists active attempts | Active |
 | D-050 | 2026-10-20 | 06 | Teacher results: separate service, sorted submissions, paired event timeline | Active |
+| D-051 | 2026-10-20 | 07 | Packaging: shell-only bundle, baked production URL, ad-hoc signature, generated icon | Active |
 
 ---
 
@@ -2018,3 +2019,50 @@ access (other teacher/student 403, missing 404), lazy finalization on view, both
 
 **Revisit if**
 Quizzes get thousands of attempts (then paginate the table).
+
+---
+
+### D-051 — Packaging: shell-only bundle, baked production URL, ad-hoc signature, generated icon
+- **Date:** 2026-10-20
+- **Phase:** 07 — Ship
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+The course needs a `.dmg` (F-14). The Electron app is a thin shell (D-002), the demo Mac's chip is unknown, and there is no
+Apple Developer account (user confirmed unsigned is fine).
+
+**Decision**
+- `npm run dist` → `electron-builder --mac --universal` (config in `electron-builder.yml`) → `release/Proctra-0.1.0-mac-universal.dmg`
+  (~218 MB: one Intel + one Apple Silicon Electron inside). Added `electron-builder` as a devDependency (the standard tool; no install
+  scripts; production audit clean).
+- **Shell-only bundle:** `files` includes just `electron/dist/*.js`, `electron/offline.html`, `package.json`, and explicitly excludes
+  `node_modules`; `npmRebuild: false`; `extraMetadata.dependencies: {}`. The bundle contains 4 files.
+- **Production URL baked in:** `extraMetadata.proctraAppUrl: https://proctra-mu.vercel.app` is written into the *packaged* package.json;
+  `main.ts` reads it when `app.isPackaged`, and `.env` only in dev. Override at build time with `-c.extraMetadata.proctraAppUrl=…`.
+- **Ad-hoc signature** (`identity: "-"`): Apple Silicon refuses to run completely unsigned apps; ad-hoc needs no account. Not notarized →
+  the first launch needs right-click → Open (README).
+- `NSCameraUsageDescription` in Info.plist (without it macOS never shows the camera prompt). Category: education.
+- **Icon:** a "P" monogram with a green "camera on" dot, drawn as SVG, rendered to 1024 px by Electron offscreen, converted with macOS
+  `sips` + `iconutil` to `electron/build/icon.icns` — no image tooling added.
+
+**Problems hit**
+- The first build bundled every website dependency (Next.js, sharp, …) and the universal merge failed on sharp's native binary — fixed by
+  the explicit `node_modules` exclusion above.
+- While verifying, `asar extract-file` wrote the packaged package.json **over the project's package.json** (it extracts into the current
+  folder). Caught immediately by `git diff`; restored from git and the three intended edits re-applied. Lesson: extract into a temp dir.
+
+**Verified:** universal binary (`x86_64 arm64`), `codesign --verify --deep --strict` OK (adhoc), Info.plist camera text present, bundle
+contains only the 4 shell files, baked URL = production; launching the packaged app loaded https://proctra-mu.vercel.app with
+`window.proctra` exposing `isDesktop, requestCamera, startExam, endExam`; no dev trace output.
+
+**Files touched**
+- `electron-builder.yml`, `electron/build/icon.icns`, `electron/main.ts` (`resolveAppUrl`), `package.json` (`dist`, devDependency,
+  description), `.gitignore` (`/release`), `docs/architecture.md`
+
+**Concepts worth learning**
+- **Universal binary:** one app containing code for both Intel and Apple Silicon; macOS picks the right half.
+- **Ad-hoc signing:** a signature with no developer identity — proves the bundle wasn't altered, but Gatekeeper still asks on first open.
+
+**Revisit if**
+The course requires a signed/notarized app (Developer ID + notarytool), or the download size matters (build per-arch .dmgs instead).

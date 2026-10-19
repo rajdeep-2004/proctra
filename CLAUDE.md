@@ -24,7 +24,7 @@ npm run electron     # compile electron/ and open the shell (run with dev server
 npm run build        # production build
 npm run lint         # lint + typecheck
 npm run seed         # create/update teacher from SEED_TEACHER_* in .env (--promote to convert a student)
-npm run dist         # build macOS .dmg (phase 07)
+npm run dist         # build universal macOS .dmg → release/ (loads production; D-051)
 ```
 (Scripts are created in the phase that introduces them; update here if names change.)
 

@@ -53,7 +53,7 @@ proctra/
 │   ├── main.ts             # main + kiosk exam window, camera-only permission, 3 IPC handlers, dev test switches
 │   ├── preload.ts          # exposes window.proctra (narrow API only)
 │   ├── offline.html        # shown when the app URL can't be reached
-│   ├── build/              # macOS entitlements, icon (phase 07)
+│   ├── build/              # icon.icns (packaging resources)
 │   └── tsconfig.json
 ├── src/
 │   ├── app/                # Next.js App Router
@@ -77,7 +77,7 @@ proctra/
 │   └── types/              # shared TS types, window.proctra typing
 ├── scripts/                # seed-teachers.ts (run with tsx)
 ├── docs/
-├── electron-builder.yml    # .dmg packaging config
+├── electron-builder.yml    # .dmg packaging config (npm run dist → release/)
 └── package.json            # single package for Next.js + Electron
 ```
 - `electron/` — only desktop concerns. **Must not** import from `src/`, hold secrets, or talk to the DB.
@@ -148,7 +148,7 @@ server component (reads) ──────────────────�
 | `CLOUDINARY_API_KEY` | Cloudinary key | yes | `1234567890` |
 | `CLOUDINARY_API_SECRET` | Cloudinary secret (server only). The API key needs a role that allows **creating** assets | yes (snapshots) | `abc...` |
 | `SEED_TEACHER_EMAIL` / `SEED_TEACHER_PASSWORD` / `SEED_TEACHER_NAME` | Seed script input | for seeding | `teacher@uni.edu` |
-| `PROCTRA_APP_URL` | URL the Electron shell loads (baked in at package time) | yes (Electron) | `http://localhost:3000` / `https://proctra-mu.vercel.app` |
+| `PROCTRA_APP_URL` | URL the Electron shell loads in **dev** (from `.env`). The packaged app uses `proctraAppUrl` baked into its package.json by `electron-builder.yml` (D-051) | dev only | `http://localhost:3000` |
 
 All server env reads go through `env()` in `src/lib/env.ts` (validated with Zod on first use, D-028; keys are added in the phase that needs them). Electron reads only `PROCTRA_APP_URL`. `.env.example` lists every
 key; real values live in `.env` (gitignored) locally and in Vercel project settings for production.
