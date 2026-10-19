@@ -4,13 +4,22 @@ import path from "node:path";
 
 const PARTITION = "persist:proctra"; // persistent cookie jar, so sign-in survives restarts
 
-/** URL of the hosted Next.js app. Dev: from .env. Packaged build: baked in at package time (phase 07). */
+/**
+ * URL of the hosted Next.js app.
+ * Dev: PROCTRA_APP_URL from .env (or the shell). Packaged: `proctraAppUrl` that electron-builder writes into the
+ * app's own package.json (electron-builder.yml → extraMetadata), so the .dmg always talks to production (D-051).
+ */
 function resolveAppUrl(): URL {
-  if (!app.isPackaged) {
+  let raw: string | undefined;
+  if (app.isPackaged) {
+    const pkg = JSON.parse(fs.readFileSync(path.join(app.getAppPath(), "package.json"), "utf8")) as { proctraAppUrl?: string };
+    raw = pkg.proctraAppUrl;
+  } else {
     const envFile = path.join(__dirname, "..", "..", ".env");
     if (fs.existsSync(envFile)) process.loadEnvFile(envFile);
+    raw = process.env.PROCTRA_APP_URL;
   }
-  const raw = process.env.PROCTRA_APP_URL ?? "http://localhost:3000";
+  raw ??= "http://localhost:3000";
   const url = new URL(raw); // throws on a malformed value — better than loading something unexpected
   if (url.protocol !== "https:" && url.protocol !== "http:") {
     throw new Error(`PROCTRA_APP_URL must be http(s), got ${url.protocol}`);

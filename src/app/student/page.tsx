@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { AvailabilityBadge } from "@/components/quiz/availability-badge";
 import { Countdown } from "@/components/quiz/countdown";
+import { StaggerIn } from "@/components/motion/stagger-in";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requirePageUser } from "@/lib/session";
 import { listQuizzesForStudent, type Availability, type QuizForStudent } from "@/services/quiz-service";
@@ -32,7 +33,7 @@ async function QuizGroups() {
   const { quizzes, serverNow } = await listQuizzesForStudent(user.id);
   if (quizzes.length === 0) return <p className="text-muted-foreground">No quizzes have been published yet.</p>;
   return (
-    <div className="grid gap-8">
+    <StaggerIn className="grid gap-8">
       {GROUPS.map((g) => {
         const items = quizzes.filter((q) => q.availability === g.key);
         if (items.length === 0 && !g.empty) return null;
@@ -47,13 +48,13 @@ async function QuizGroups() {
           </section>
         );
       })}
-    </div>
+    </StaggerIn>
   );
 }
 
 function QuizCard({ quiz: q, serverNow }: { quiz: QuizForStudent; serverNow: string }) {
   return (
-    <Link href={`/student/quizzes/${q.id}`} className="rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+    <Link href={`/student/quizzes/${q.id}`} data-animate className="rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
       <Card className="h-full transition-colors hover:bg-muted/50">
         <CardHeader className="gap-2">
           <div className="flex items-start justify-between gap-2">

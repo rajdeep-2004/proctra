@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | review |
 | Branch | `phase/07-ship` |
 | Depends on | Phase 06 |
 | PRD features | F-14, S-01, S-02 |
@@ -47,28 +47,36 @@ result page, live leaderboard → teacher results, attempt detail with event tim
 - `decisions.md` → D-012, D-015
 
 ## Tasks
-- [ ] 07.1 — electron-builder config, entitlements, icon, `npm run dist` → `chore(desktop): add macOS dmg packaging`
-- [ ] 07.2 — Production deploy + verify `.dmg` end to end → `chore(deploy): ship production build`
-- [ ] 07.3 — README → `docs: add project README`
-- [ ] 07.4 — (should) Snapshot gallery route + UI → `feat(results): add teacher snapshot gallery`
-- [ ] 07.5 — (should) DevClub UI + GSAP polish → `feat(ui): integrate devclub components and motion`
-- [ ] 07.6 — Final docs pass → `docs: update docs for phase 07`
+- [x] 07.1 — electron-builder config, entitlements, icon, `npm run dist` → `chore(desktop): add macOS dmg packaging`
+- [x] 07.2 — Production deploy + verify `.dmg` end to end → `chore(deploy): ship production build` (verified by the user from the installed .dmg: full teacher → student → results/snapshots/leaderboard flow)
+- [x] 07.3 — README → `docs: add project README`
+- [x] 07.4 — (should) Snapshot gallery route + UI → `feat(results): add teacher snapshot gallery`
+- [x] 07.5 — (should) DevClub UI + GSAP polish → `feat(ui): integrate devclub components and motion`
+- [x] 07.6 — Final docs pass → `docs: update docs for phase 07`
 
 ## Done criteria
-- [ ] `.dmg` installs and runs all 10 `idea.md` §12 acceptance criteria against production
-- [ ] README lets a new person set up and run the project
-- [ ] Should-haves either done or explicitly parked in progress.md
-- [ ] Docs match what was built; decisions logged
+- [x] `.dmg` installs and runs all 10 `idea.md` §12 acceptance criteria against production
+  - User-confirmed ("everything is working"). Sharing with a friend surfaced Gatekeeper + size issues → D-054.
+- [x] README lets a new person set up and run the project
+- [x] Should-haves either done or explicitly parked in progress.md (S-01 and S-02 both done)
+- [x] Docs match what was built; decisions logged
 
 ## How to verify
 1. Fresh install from `.dmg` → walk the demo script (teacher creates quiz → student takes it → results → leaderboard).
 
 ## Phase summary
 <!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
-- **Next phase should know:**
+- **Built:** macOS installers via `npm run dist` — separate Apple Silicon and Intel `.dmg`s (~120 MB each), ad-hoc signed,
+  camera usage text, generated "P" icon, production URL baked in, shell-only bundle; production deployed; teacher **snapshot gallery**
+  (signed 10-minute links); light **DevClub UI** (animated score counter) + **GSAP** dashboard entrance; professional README
+  (setup, configuration, install steps per macOS version, deployment, security, limitations).
+- **Key decisions:** D-051 (packaging), D-052 (gallery links), D-053 (DevClub via shadcn registry, GSAP), D-054 (per-chip installers,
+  Gatekeeper steps).
+- **Known limitations:** Not notarized — first launch needs Open Anyway / right-click Open / `xattr -cr`. Production was deployed from
+  the phase branch before merge for final verification (code identical to what merges). Known debt unchanged: CSP, rate limiting,
+  snapshot retention.
+- **Next phase should know:** This is the final planned phase. Future work is listed under "Parked ideas" / "Known debt" in
+  `docs/progress.md`; Developer ID signing + notarization would remove the Gatekeeper steps.
 
 ## Next phase preview
-None — final phase.
+None — final phase. After approval: merge to `main`, deploy, and optionally attach the two `.dmg`s to a GitHub Release.

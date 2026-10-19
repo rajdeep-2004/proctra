@@ -1,0 +1,40 @@
+# macOS .dmg packaging (D-012, D-051). Run: npm run dist
+appId: com.proctra.desktop
+productName: Proctra
+copyright: Copyright © 2026 Proctra
+directories:
+  output: release
+  buildResources: electron/build
+# The app only needs the Electron shell; the UI is loaded from the hosted site (D-002).
+files:
+  - electron/dist/**/*.js
+  - electron/offline.html
+  - package.json
+  - "!**/*.map"
+  # electron-builder otherwise copies every production dependency of the website (Next.js, sharp, …).
+  - "!node_modules{,/**/*}"
+npmRebuild: false
+extraMetadata:
+  main: electron/dist/main.js
+  # Server the packaged app loads. Override: npm run dist -- -c.extraMetadata.proctraAppUrl=https://…
+  proctraAppUrl: https://proctra-mu.vercel.app
+  # No runtime npm dependencies in the shell — keeps Next.js, Mongoose etc. out of the app bundle.
+  dependencies: {}
+mac:
+  # One installer per chip (D-054): each ~half the size of a universal build (which carries two copies of Electron).
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.education
+  icon: electron/build/icon.icns
+  # Ad-hoc signature ("-"): no Apple Developer account needed; Apple Silicon refuses fully unsigned apps.
+  # Not notarized → first launch needs right-click → Open (README).
+  identity: "-"
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  extendInfo:
+    # Without this key macOS never shows the camera permission prompt.
+    NSCameraUsageDescription: Proctra uses your camera to take still photos while an exam is in progress.
+dmg:
+  title: Proctra
+  artifactName: Proctra-${version}-mac-${arch}.${ext}

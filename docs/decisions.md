@@ -63,6 +63,10 @@ Rules:
 | D-048 | 2026-10-19 | 05 | Cmd+Q quits during the kiosk exam (scoped global shortcut) | Active |
 | D-049 | 2026-10-20 | 06 | Live leaderboard for students who finished; profile lists active attempts | Active |
 | D-050 | 2026-10-20 | 06 | Teacher results: separate service, sorted submissions, paired event timeline | Active |
+| D-051 | 2026-10-20 | 07 | Packaging: shell-only bundle, baked production URL, ad-hoc signature, generated icon | Active |
+| D-052 | 2026-10-20 | 07 | Snapshot gallery: on-demand, signed 10-minute download links | Active |
+| D-053 | 2026-10-20 | 07 | Light DevClub UI + GSAP polish via the shadcn registry | Active |
+| D-054 | 2026-10-20 | 07 | Per-chip installers instead of universal; install steps for macOS 15+ | Active |
 
 ---
 
@@ -2018,3 +2022,157 @@ access (other teacher/student 403, missing 404), lazy finalization on view, both
 
 **Revisit if**
 Quizzes get thousands of attempts (then paginate the table).
+
+---
+
+### D-051 — Packaging: shell-only bundle, baked production URL, ad-hoc signature, generated icon
+- **Date:** 2026-10-20
+- **Phase:** 07 — Ship
+- **Status:** Active — universal target replaced by per-chip installers in D-054
+- **Type:** tooling
+
+**Context**
+The course needs a `.dmg` (F-14). The Electron app is a thin shell (D-002), the demo Mac's chip is unknown, and there is no
+Apple Developer account (user confirmed unsigned is fine).
+
+**Decision**
+- `npm run dist` → `electron-builder --mac --universal` (config in `electron-builder.yml`) → `release/Proctra-0.1.0-mac-universal.dmg`
+  (~218 MB: one Intel + one Apple Silicon Electron inside). Added `electron-builder` as a devDependency (the standard tool; no install
+  scripts; production audit clean).
+- **Shell-only bundle:** `files` includes just `electron/dist/*.js`, `electron/offline.html`, `package.json`, and explicitly excludes
+  `node_modules`; `npmRebuild: false`; `extraMetadata.dependencies: {}`. The bundle contains 4 files.
+- **Production URL baked in:** `extraMetadata.proctraAppUrl: https://proctra-mu.vercel.app` is written into the *packaged* package.json;
+  `main.ts` reads it when `app.isPackaged`, and `.env` only in dev. Override at build time with `-c.extraMetadata.proctraAppUrl=…`.
+- **Ad-hoc signature** (`identity: "-"`): Apple Silicon refuses to run completely unsigned apps; ad-hoc needs no account. Not notarized →
+  the first launch needs right-click → Open (README).
+- `NSCameraUsageDescription` in Info.plist (without it macOS never shows the camera prompt). Category: education.
+- **Icon:** a "P" monogram with a green "camera on" dot, drawn as SVG, rendered to 1024 px by Electron offscreen, converted with macOS
+  `sips` + `iconutil` to `electron/build/icon.icns` — no image tooling added.
+
+**Problems hit**
+- The first build bundled every website dependency (Next.js, sharp, …) and the universal merge failed on sharp's native binary — fixed by
+  the explicit `node_modules` exclusion above.
+- While verifying, `asar extract-file` wrote the packaged package.json **over the project's package.json** (it extracts into the current
+  folder). Caught immediately by `git diff`; restored from git and the three intended edits re-applied. Lesson: extract into a temp dir.
+
+**Verified:** universal binary (`x86_64 arm64`), `codesign --verify --deep --strict` OK (adhoc), Info.plist camera text present, bundle
+contains only the 4 shell files, baked URL = production; launching the packaged app loaded https://proctra-mu.vercel.app with
+`window.proctra` exposing `isDesktop, requestCamera, startExam, endExam`; no dev trace output.
+
+**Files touched**
+- `electron-builder.yml`, `electron/build/icon.icns`, `electron/main.ts` (`resolveAppUrl`), `package.json` (`dist`, devDependency,
+  description), `.gitignore` (`/release`), `docs/architecture.md`
+
+**Concepts worth learning**
+- **Universal binary:** one app containing code for both Intel and Apple Silicon; macOS picks the right half.
+- **Ad-hoc signing:** a signature with no developer identity — proves the bundle wasn't altered, but Gatekeeper still asks on first open.
+
+**Revisit if**
+The course requires a signed/notarized app (Developer ID + notarytool), or the download size matters (build per-arch .dmgs instead).
+
+---
+
+### D-052 — Snapshot gallery: on-demand, signed 10-minute download links
+- **Date:** 2026-10-20
+- **Phase:** 07 — Ship (S-01)
+- **Status:** Active
+- **Type:** api
+
+**Decision**
+`GET /api/v1/teacher/attempts/:id/snapshots` (owner only) returns each snapshot with a URL from Cloudinary's
+`private_download_url(publicId, "jpg", { type: "authenticated", expires_at: now + 600 })`. The teacher's attempt page loads nothing
+until "Show snapshots" is clicked, then shows 60 lazy-loaded thumbnails at a time, a full-size dialog, and "Refresh links"; a timer
+marks the links expired at `expiresAt`.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Signed *delivery* URLs (`res.cloudinary.com/…/authenticated/s--sig--/…`) | Fast CDN delivery but they never expire; true expiry needs Cloudinary's paid token auth |
+| Proxy images through our API | Every image would pass through a Vercel function (bandwidth + latency) |
+| Load the gallery automatically | Up to ~360 images per hour-long attempt — wasteful when the teacher only wants the answers |
+
+**How it works**
+The signature covers the public id, format and expiry time using our API secret, so a link can't be altered or extended (verified:
+a tampered signature is rejected) and stops working after 10 minutes. Links are generated locally — no Cloudinary API call per image.
+
+**Verified:** `.scratch/gallery.check.mts` 8/8 (owner gets 3 in time order, ~600 s expiry, URL returns `image/jpeg`, tampered
+signature rejected, other teacher/student 403, missing 404); headless Chrome: 3/3 thumbnails loaded.
+
+**Files touched**
+- `src/services/results-service.ts` (`getSnapshotGallery`), `src/app/api/v1/teacher/attempts/[attemptId]/snapshots/route.ts`,
+  `src/components/results/snapshot-gallery.tsx`, `src/app/teacher/attempts/[attemptId]/page.tsx`, shadcn `dialog`, `docs/api-contracts.md`
+
+**Revisit if**
+Teachers review many long attempts (download-endpoint latency) — then consider token-authenticated CDN URLs.
+
+---
+
+### D-053 — Light DevClub UI + GSAP polish via the shadcn registry
+- **Date:** 2026-10-20
+- **Phase:** 07 — Ship (S-02)
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+The brief asks to use the DevClub UI library "where it fits" and GSAP "sparingly", never on exam controls. The user chose a light touch.
+
+**Decision**
+- Read the library's README first (as the brief requires). Its own CLI (`npx @devclubnst/ui add …`) **failed to run** — the npm package
+  lists the whole showcase site as dependencies (Next.js, three.js, PostHog…) and npm crashed resolving them. The README's other route,
+  the shadcn registry (`npx shadcn add https://ui.devclubxnst.com/r/<name>.json`), installs one component's source only — used that.
+- Reviewed the registry JSON before installing (dependencies, imports, no network/analytics/eval). Added **Animated Counter** to the
+  student result score (`gooey` off; it respects reduced motion and keeps screen-reader text).
+- Skipped **Dither** (WebGL via OGL — too heavy for a light touch); "noise-background" isn't in the registry.
+- **GSAP:** one `StaggerIn` wrapper (`useGSAP` + `gsap.matchMedia`) fades/slides dashboard quiz cards and teacher table rows in
+  (0.35 s, 0.04 s stagger, `clearProps` afterwards); disabled under `prefers-reduced-motion`. Not used on any exam screen.
+- New dependencies: `motion`, `clsx`, `tailwind-merge` (required by the counter), `gsap`, `@gsap/react`. Production audit stays clean.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Restyle more screens with DevClub components | User chose a light touch; every extra animated component is more to verify before the deadline |
+| Use `motion` for the entrance too (one library) | The brief names GSAP for motion; the counter brings `motion` with it anyway |
+
+**Verified:** build + regression suites (release 11/11, profile 9/9); headless Chrome: 9 dashboard cards end fully visible after the
+stagger, result page renders "7.50 / 12.50" with screen-reader text "7.50", no console errors.
+
+**Files touched**
+- `src/components/ui/animated-counter.tsx` (DevClub source), `src/components/motion/stagger-in.tsx`, `src/app/student/page.tsx`,
+  `src/app/teacher/page.tsx`, `src/app/student/attempts/[attemptId]/page.tsx`, `package.json`, `docs/architecture.md`, `CLAUDE.md`
+
+**Concepts worth learning**
+- **Copy-in component registries (shadcn style):** you own the copied source, so review it like your own code before committing.
+- **Reduced motion:** respect the OS accessibility setting — animation must never be required to use the app.
+
+**Revisit if**
+The DevClub CLI's package is fixed (then it's the documented route), or more screens get polish after the deadline.
+
+---
+
+### D-054 — Per-chip installers instead of universal; install steps for macOS 15+
+- **Date:** 2026-10-20
+- **Phase:** 07 — Ship
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+The user shared the universal `.dmg` with a friend: it showed as ~518 MB and "cannot be opened" on the friend's Mac.
+
+**Findings**
+- Size: the installed universal app was 510 MB, of which 506 MB is the Electron framework — a universal build carries two
+  complete copies (Apple Silicon + Intel). Our own code is a few KB.
+- "Cannot be opened": Gatekeeper rejects un-notarized apps that carry the quarantine flag macOS adds to downloaded/AirDropped files.
+  Reproduced locally by adding the flag to a copy: `spctl` → `rejected`; `xattr -cr` removes the flag and the ad-hoc signature stays valid.
+  macOS 15 removed the old right-click → Open shortcut; the way through is Privacy & Security → **Open Anyway**.
+
+**Decision**
+- Build two installers: `Proctra-<v>-mac-arm64.dmg` (121 MB download, 288 MB installed) and `Proctra-<v>-mac-x64.dmg` (128 MB / 294 MB).
+  User chose this over universal-only or Apple-Silicon-only.
+- README install steps per macOS version (Open Anyway on 15+, right-click → Open on 14 and older, `xattr -cr` for "is damaged").
+- Real fix (not done — needs a paid Apple Developer ID): Developer ID signing + notarization removes all of these prompts.
+
+**Files touched**
+- `electron-builder.yml` (`arch: [arm64, x64]`, `artifactName` with `${arch}`), `package.json` (`dist`), `README.md`, D-051 status
+
+**Revisit if**
+The project gets an Apple Developer ID (sign + notarize, then a single universal build is fine again).

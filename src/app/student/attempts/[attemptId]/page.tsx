@@ -5,6 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppError } from "@/lib/api-response";
 import { requirePageUser } from "@/lib/session";
@@ -70,8 +71,10 @@ function ResultView({ a }: { a: FinishedAttemptView }) {
           <Card>
             <CardHeader><CardTitle>Your score</CardTitle></CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-8">
-              <p className="text-4xl font-semibold tabular-nums">
-                {fmt(a.score.total)} <span className="text-xl text-muted-foreground">/ {fmt(a.score.maxPossible)}</span>
+              <p className="flex items-baseline gap-2 text-4xl font-semibold tabular-nums">
+                {/* DevClub UI counter (S-02): rolls up to the score; respects reduced motion, has screen-reader text */}
+                <AnimatedCounter value={a.score.total} decimals={Number.isInteger(a.score.total) ? 0 : 2} gooey={false} />
+                <span className="text-xl text-muted-foreground">/ {fmt(a.score.maxPossible)}</span>
               </p>
               <dl className="grid grid-cols-3 gap-4 text-sm">
                 <div><dt className="text-muted-foreground">Correct</dt><dd className="text-lg font-medium">{a.score.correct}</dd></div>

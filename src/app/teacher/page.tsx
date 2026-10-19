@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { StatusBadge } from "@/components/quiz/status-badge";
+import { StaggerIn } from "@/components/motion/stagger-in";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requirePageUser } from "@/lib/session";
@@ -33,6 +34,7 @@ async function QuizTable() {
     return <p className="text-muted-foreground">You haven&apos;t created any quizzes yet.</p>;
   }
   return (
+    <StaggerIn>
     <Table>
       <TableHeader>
         <TableRow>
@@ -46,7 +48,7 @@ async function QuizTable() {
       </TableHeader>
       <TableBody>
         {quizzes.map((q) => (
-          <TableRow key={q.id}>
+          <TableRow key={q.id} data-animate>
             <TableCell className="font-medium">
               <Link href={`/teacher/quizzes/${q.id}`} className="hover:underline">{q.title}</Link>
             </TableCell>
@@ -61,5 +63,6 @@ async function QuizTable() {
         ))}
       </TableBody>
     </Table>
+    </StaggerIn>
   );
 }

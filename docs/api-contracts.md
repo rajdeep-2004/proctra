@@ -165,8 +165,10 @@ Response `200`
 
 #### `GET /api/v1/teacher/attempts/:attemptId/snapshots`
 - Auth: teacher (owner of the quiz) · Phase: 07 (S-01, should-have)
-Response `200` `{ "data": [ { "capturedAt": "…", "url": "https://res.cloudinary.com/…signed…" } ] }`
-Notes: URLs are signed and expire after 10 minutes.
+Response `200` `{ "data": { "expiresAt": "…", "snapshots": [ { "id": "…", "capturedAt": "…", "url": "https://api.cloudinary.com/…/image/download?…signature…" } ] } }`
+Errors: `403` (not the quiz owner), `404`
+Notes: images are private (`type: authenticated`); each URL is signed by the server and expires after 10 minutes
+(`expiresAt`), so links can't be shared or reused later. Time order, at most 2 000.
 
 ### Leaderboard
 
@@ -324,4 +326,4 @@ Permissions: the session grants only `media` with **video only** to the app orig
 | GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | built |
 | GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | built |
 | GET | /api/v1/quizzes/:quizId/leaderboard | teacher, student | 06 | built |
-| GET | /api/v1/teacher/attempts/:attemptId/snapshots | teacher | 07 | planned (S-01) |
+| GET | /api/v1/teacher/attempts/:attemptId/snapshots | teacher | 07 | built (S-01) |
