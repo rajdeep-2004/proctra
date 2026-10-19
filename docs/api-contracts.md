@@ -94,6 +94,7 @@ Response `200`
   "startsAt": "…", "endsAt": "…", "durationMinutes": 30, "questionCount": 10,
   "attemptCount": 42, "updatedAt": "…" } ] }
 ```
+`durationMinutes` is derived from `endsAt − startsAt` (D-041).
 
 #### `POST /api/v1/teacher/quizzes`
 - Auth: teacher · Phase: 03 · Purpose: create a draft
