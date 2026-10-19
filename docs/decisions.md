@@ -57,6 +57,7 @@ Rules:
 | D-042 | 2026-10-19 | 04 | Attempt lifecycle: insert-or-read start, atomic grade-and-close with optimistic retry | Active |
 | D-043 | 2026-10-19 | 04 | Exam UI: one question at a time, native radios, shared server clock | Active |
 | D-044 | 2026-10-19 | 04 | Submit only after saves are confirmed; auto-submit with server backstop | Active |
+| D-045 | 2026-10-19 | 05 | Kiosk exam window lifecycle, camera-only permission, dev test switches | Active |
 
 ---
 
@@ -1739,3 +1740,53 @@ result page 3 / 20 (4 − 1 + 0×3). Timeout run with 1-minute quiz: timer 0m 02
 
 **Revisit if**
 Kiosk mode (phase 05) needs to close the window before navigating to the result.
+
+---
+
+### D-045 — Kiosk exam window lifecycle, camera-only permission, dev test switches
+- **Date:** 2026-10-19
+- **Phase:** 05 — Kiosk window & camera
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+The exam must run in a focused, full-screen window (F-05) with camera access (F-04), without giving the web page
+more power than it needs (D-009) — and it must be testable by scripts without taking over the developer's screen.
+
+**Decision**
+- `startExam(id)` → main creates a second `BrowserWindow` with `kiosk: true`, `fullscreen`, `closable: false`,
+  `minimizable: false`, always-on-top at `"screen-saver"` level, loads `/exam/:id`, and **hides** the main window.
+  One exam window at a time. `endExam(id)` (called by the exam page on submit, time's up or `ATTEMPT_CLOSED`) destroys it
+  and loads `/student/attempts/:id` in the main window. If the exam window closes any other way, the main window reappears.
+- IPC handlers check the **sender frame's origin** is the app, and validate the attempt id (24-hex); the server still checks ownership.
+- Permissions: only `media` with **video only**, only for the app origin. Microphone is always denied.
+- `requestCamera()` reads macOS's camera status first and only shows the system prompt when the user hasn't decided yet
+  (after a "deny", macOS never asks again — the page must send the student to System Settings).
+- Dev-only switches (ignored when packaged): `PROCTRA_FAKE_CAMERA=1` (Chromium fake camera, no real device/prompt) and
+  `PROCTRA_KIOSK=0` (normal window). No auto-accept switch, so the permission handler is still exercised in tests.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Turn the main window itself into kiosk mode | Main window keeps the dashboard state; a separate window is cleaner to open/close and to lock down |
+| `use-fake-ui-for-media-stream` in tests | It auto-accepts every request (even microphone) and bypasses our handler — found when the mic test wrongly passed |
+
+**Limitations (documented, not hidden)**
+Kiosk is not a lockdown: Cmd+Q, Force Quit, other devices, and macOS-level shortcuts still work. Quitting simply leaves the
+attempt active; on relaunch the student can resume (time keeps running) or it auto-submits at the deadline.
+
+**Verified (Electron, fake camera, windowed):** Start → exam window opened, main window hidden; `startExam("../../etc")` and
+`endExam(<other id>)` → `{ ok: false }`; asking to start again → focuses the same window; camera granted (`fake_device_0`),
+microphone and camera+mic denied (`NotAllowedError`; Permissions API: camera=granted, microphone=denied); Submit → exam
+window gone, main window on the result page.
+
+**Files touched**
+- `electron/main.ts`, `electron/preload.ts`, `src/types/proctra.d.ts`, `src/components/quiz/start-button.tsx`,
+  `src/components/exam/exam-client.tsx`
+
+**Concepts worth learning**
+- **IPC sender validation:** the main process must not trust which page is calling — check the frame's origin.
+- **macOS TCC:** the OS-level privacy database; apps get one prompt per permission, later changes go through System Settings.
+
+**Revisit if**
+The course requires stronger lockdown (then a dedicated lockdown browser is needed — out of scope).

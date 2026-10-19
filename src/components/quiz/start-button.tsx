@@ -22,7 +22,6 @@ export function StartButton({ quizId, availability, myAttempt }: Props) {
   async function start() {
     setBusy(true);
     setError(null);
-    // Phase 05 adds the camera check and opens the exam in the kiosk window here.
     const res = await api<{ attemptId: string }>("POST", `/api/v1/quizzes/${quizId}/attempts`);
     if (!res.ok) {
       setBusy(false);
@@ -30,7 +29,14 @@ export function StartButton({ quizId, availability, myAttempt }: Props) {
       router.refresh();
       return;
     }
-    router.push(`/exam/${res.data.attemptId}`);
+    if (window.proctra) {
+      // Desktop app: the exam opens in its own kiosk window; this window is hidden meanwhile.
+      const opened = await window.proctra.startExam(res.data.attemptId);
+      setBusy(false);
+      if (!opened.ok) setError("Couldn't open the exam window. Try again.");
+      return;
+    }
+    router.push(`/exam/${res.data.attemptId}`); // browser fallback — removed by the desktop-only check (05.2)
   }
 
   const resuming = myAttempt?.status === "active";

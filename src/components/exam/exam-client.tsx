@@ -33,7 +33,11 @@ function Exam({ attempt }: { attempt: ActiveAttemptView }) {
   const q = attempt.questions[current];
   const a = answers[q.id] ?? { selectedIndex: null, markedForReview: false };
 
-  const goToResult = useCallback(() => router.replace(`/student/attempts/${attempt.id}`), [router, attempt.id]);
+  const goToResult = useCallback(() => {
+    // In the desktop app, closing the kiosk window and showing the result in the main window is main.ts's job.
+    if (window.proctra) void window.proctra.endExam(attempt.id);
+    else router.replace(`/student/attempts/${attempt.id}`);
+  }, [router, attempt.id]);
   const autosave = useAutosave(attempt.id, goToResult);
 
   const update = (questionId: string, next: AnswerState) => {

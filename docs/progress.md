@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 05 — Kiosk window & camera (`not-started`)
-**Branch:** —
+**Current phase:** 05 — Kiosk window & camera (`in-progress`)
+**Branch:** `phase/05-kiosk-camera`
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -12,7 +12,7 @@
 | 02 | Auth & roles | done | phase/02-auth | 10-20 | 2026-10-19 | 2026-10-19 |
 | 03 | Quiz management | done | phase/03-quiz-management | 10-20 → 10-21 | 2026-10-19 | 2026-10-19 |
 | 04 | Taking the exam | done | phase/04-exam | 10-21 → 10-22 | 2026-10-19 | 2026-10-19 |
-| 05 | Kiosk window & camera | not-started | phase/05-kiosk-camera | 10-23 | | |
+| 05 | Kiosk window & camera | in-progress | phase/05-kiosk-camera | 10-23 | 2026-10-19 | |
 | 06 | Results, profile & leaderboard | not-started | phase/06-results | 10-24 | | |
 | 07 | Ship: packaging, README, polish | not-started | phase/07-ship | 10-25 | | |
 

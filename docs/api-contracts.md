@@ -283,9 +283,11 @@ Not HTTP, but a contract between the web app and the Electron shell.
 | Page API (`window.proctra`) | IPC channel | Args | Returns | Main-side validation |
 |---|---|---|---|---|
 | `isDesktop` | — | — | `true` | — |
-| `requestCamera()` | `proctra:request-camera` | none | `Promise<boolean>` | macOS `askForMediaAccess("camera")` |
-| `startExam(attemptId)` | `proctra:start-exam` | 24-hex string | `Promise<void>` | regex; one exam window at a time |
-| `endExam(attemptId)` | `proctra:end-exam` | 24-hex string | `Promise<void>` | must match the open exam window's id |
+| `requestCamera()` | `proctra:request-camera` | none | `Promise<{ granted, status }>` (`status`: granted / denied / restricted) | sender must be the app origin; macOS `getMediaAccessStatus` → `askForMediaAccess("camera")` only if not yet decided |
+| `startExam(attemptId)` | `proctra:start-exam` | 24-hex string | `Promise<{ ok }>` | sender origin; regex; one exam window at a time (asking again focuses it) |
+| `endExam(attemptId)` | `proctra:end-exam` | 24-hex string | `Promise<{ ok }>` | sender origin; regex; must match the open exam window's id; shows `/student/attempts/:id` in the main window |
+
+Permissions: the session grants only `media` with **video only** to the app origin (microphone always denied).
 
 ## 4. Endpoint index
 | Method | Path | Auth | Phase | Status |

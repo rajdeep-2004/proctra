@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/05-kiosk-camera` |
 | Depends on | Phase 04 |
 | PRD features | F-04, F-05, F-07, F-08, F-09 (capture side) |
@@ -55,7 +55,7 @@ From phase 04 (Taking the exam, merged 2026-10-19):
 - `decisions.md` → D-008, D-009, D-010, D-013, D-020
 
 ## Tasks
-- [ ] 05.1 — Preload API + IPC handlers + kiosk exam window + permission handler → `feat(desktop): add kiosk exam window and camera bridge`
+- [x] 05.1 — Preload API + IPC handlers + kiosk exam window + permission handler → `feat(desktop): add kiosk exam window and camera bridge`
 - [ ] 05.2 — Camera gate and desktop-only check on pre-start + exam page → `feat(proctor): add camera permission gate`
 - [ ] 05.3 — Snapshot model, Cloudinary lib, upload route, capture loop → `feat(proctor): add periodic snapshot capture`
 - [ ] 05.4 — ProctorEvent model + events route + client event batching + camera-loss overlay → `feat(proctor): add event log and camera-loss overlay`
