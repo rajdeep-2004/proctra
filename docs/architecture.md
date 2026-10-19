@@ -64,9 +64,11 @@ proctra/
 │   │   └── api/v1/         # route handlers (thin: auth → validate → service → respond)
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
-│   │   └── <feature>/      # quiz-editor/, exam/, results/ ...
+│   │   ├── auth/, layout/  # sign-in/up forms, app header
+│   │   ├── quiz/           # quiz editor, question card, status/availability badges
+│   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
-│   ├── lib/                # db.ts, env.ts, api-response.ts, session.ts (requireUser), utils.ts (cn) · later: cloudinary.ts (05), desktop.ts (05)
+│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client · utils (cn) · later: cloudinary (05), desktop (05)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
