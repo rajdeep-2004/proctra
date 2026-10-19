@@ -227,8 +227,16 @@ What breaks first beyond a single class:
 ## 11. Trade-offs accepted
 | Trade-off | Why acceptable now | Revisit when |
 |---|---|---|
-| Kiosk mode is not a lockdown (Cmd+Q, force quit, other devices still work) | Explicit non-goal; documented to users | Institution requires lockdown browser |
+| Kiosk mode is not a lockdown (see list below) | Explicit non-goal; documented to users | Institution requires lockdown browser |
 | Exam page can be opened in a normal browser by a determined user (desktop check is client-side) | Server still enforces deadline/grading; snapshot gaps are visible to teacher | Need verified desktop clients |
 | Lazy finalization instead of a scheduler | No extra infra; correctness preserved | Many quizzes / analytics need timely state |
 | Time lost to disconnection/camera loss is not refunded | Prevents "quit to pause the clock" abuse | Course wants accommodations |
 | No rate limiting | Small trusted user base, one week deadline | Public deployment |
+
+### Kiosk mode — what it does and does not do (macOS)
+Does: full-screen exam window with no window controls, can't be closed or minimised by the student, kept above other
+windows, main window hidden during the exam, only the app's own pages can load, camera only (no microphone), focus loss /
+tab hiding / camera loss are logged neutrally.
+Does **not**: block Cmd+Q, Force Quit (⌥⌘⎋), the power button, Mission Control/Spotlight in every case, a second display, a
+phone or another computer, or a student opening the exam URL in a normal browser (blocked by the page, not by the server — D-013).
+Quitting leaves the attempt active: the student can resume with the remaining time, or it is auto-submitted at the deadline.

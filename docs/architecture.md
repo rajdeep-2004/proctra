@@ -50,7 +50,7 @@ flowchart LR
 ```
 proctra/
 ├── electron/               # Electron main + preload (TypeScript, compiled to electron/dist/)
-│   ├── main.ts             # windows, kiosk exam window, permissions, IPC handlers
+│   ├── main.ts             # main + kiosk exam window, camera-only permission, 3 IPC handlers, dev test switches
 │   ├── preload.ts          # exposes window.proctra (narrow API only)
 │   ├── offline.html        # shown when the app URL can't be reached
 │   ├── build/              # macOS entitlements, icon (phase 07)
@@ -66,10 +66,10 @@ proctra/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
 │   │   ├── auth/, layout/  # sign-in/up forms, app header
 │   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
-│   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue + useAutosave
+│   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue/useAutosave, useExamCamera, useSnapshots, useProctorEvents
 │   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
-│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock · utils (cn) · later: cloudinary (05), desktop (05)
+│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · utils (cn)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
@@ -96,8 +96,8 @@ proctra/
 | Attempt service | Start/resume, save answer, submit, lazy finalization (`src/services/attempt-service.ts`, D-042) | Quiz, Attempt models, grading | Trust client time, score or role |
 | Grading service | Score computation (pure function, `src/services/grading.ts`) | none | Touch the DB |
 | Leaderboard service | Competition ranking per quiz | Attempt model | Expose snapshots/events |
-| Snapshot service | Upload to Cloudinary, record metadata, signed URLs | Cloudinary SDK, Snapshot model | Store image bytes in MongoDB |
-| Proctor events | Record and list window/camera events | ProctorEvent model | Label events as cheating |
+| Snapshot service | Upload to Cloudinary, record metadata, signed URLs (`snapshot-service.ts`, `lib/cloudinary.ts`) | Cloudinary SDK, Snapshot model | Store image bytes in MongoDB |
+| Proctor events | Record and list window/camera events (`proctor-service.ts`) | ProctorEvent model | Label events as cheating |
 
 ## 6. Layering rules
 ```
