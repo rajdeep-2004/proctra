@@ -50,7 +50,7 @@ From phase 02 (Auth & roles, merged 2026-10-19):
 ## Tasks
 - [x] 03.1 — Quiz model + Zod quiz schemas → `feat(quiz): add quiz model and validation schemas`
 - [x] 03.2 — Quiz service + teacher quiz routes (CRUD + state transitions) → `feat(quiz): add teacher quiz api`
-- [ ] 03.3 — Teacher dashboard quiz table + quiz editor page → `feat(quiz): add teacher dashboard and quiz editor`
+- [x] 03.3 — Teacher dashboard quiz table + quiz editor page → `feat(quiz): add teacher dashboard and quiz editor`
 - [ ] 03.4 — Student quiz list + quiz detail routes and pages → `feat(quiz): add student quiz list and detail`
 - [ ] 03.5 — Update docs → `docs: update docs for phase 03`
 

@@ -51,6 +51,7 @@ Rules:
 | D-036 | 2026-10-19 | 02 | Teacher seed script with tsx; never silently promote a student | Active |
 | D-037 | 2026-10-19 | 03 | Quiz validation in two layers; times are UTC with explicit offsets | Active |
 | D-038 | 2026-10-19 | 03 | Quiz service: validate in memory, write with one conditional update | Active |
+| D-039 | 2026-10-19 | 03 | Quiz editor: browser-only render, whole-quiz save, local-time display | Active |
 
 ---
 
@@ -1424,3 +1425,64 @@ with id preservation, foreign id → 400, other teacher → 403, every state tra
 
 **Revisit if**
 Teachers need collaborative editing (then add version numbers / optimistic concurrency).
+
+---
+
+### D-039 — Quiz editor: browser-only render, whole-quiz save, local-time display
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+The editor shows date-times in the teacher's time zone, but pages are first rendered on a server running
+in UTC (Vercel). Rendering a date on the server and again in the browser produces two different strings
+(a hydration mismatch) and, worse, a wrong time if the server's version sticks.
+
+**Decision**
+- `QuizEditor` renders a skeleton on the server and the real editor only in the browser, using a
+  `useIsClient()` hook built on `useSyncExternalStore` (server snapshot `false`, client snapshot `true`).
+- Read-only dates elsewhere use `<LocalTime iso>` with the same technique: placeholder on the server,
+  `Intl.DateTimeFormat` in the browser right after hydration.
+- Form state keeps numbers as **strings** (so typing `-` or `0.` isn't mangled) and converts on save
+  (`toPayload`). Saving sends the whole quiz (D-022); the response replaces the form so new questions get their ids.
+- Errors come from the server's Zod issues, mapped by path (`questions.1.options.0`) next to each field —
+  no second copy of the rules in the browser.
+- Publish/unpublish are disabled while there are unsaved changes ("save first"); a `beforeunload` prompt
+  warns about leaving with unsaved changes; archive asks for confirmation.
+- Locked quizzes disable question/marking/start/duration fields and explain why; archived is fully read-only.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `useEffect(() => setState(...))` after mount | Flagged by React's lint rule (extra render cascade); `useSyncExternalStore` is the idiomatic way |
+| `suppressHydrationWarning` | Silences the warning but keeps the server's (UTC) text |
+| `next/dynamic(..., { ssr: false })` | Works too; the hook keeps it explicit and reusable for other browser-only UI |
+| react-hook-form / form library | Another dependency; one form with a simple shape doesn't need it |
+
+**How it works**
+`stateFromQuiz()` turns API data into form state (ISO → `datetime-local` string in local time);
+`toPayload()` does the reverse (`new Date("2026-10-19T10:00")` is parsed as local time → `.toISOString()`).
+Verified in Electron against a production build: empty submit → 5 field errors; create → URL switches to
+`/teacher/quizzes/<id>`; add option, pick correct, add second question, move it up, save → order persists after
+reload; publish → badge + message; dashboard lists the quiz with local times (10:00 IST shown for 04:30Z).
+
+**Gotchas found while testing (not app bugs)**
+- `next start` on localhost needs `AUTH_TRUST_HOST=true` (Auth.js only auto-trusts the host on Vercel or in dev).
+- A long-running `next dev` stopped running `proxy.ts` (all routes 200); restarting it fixes it.
+- Scripted checks against a hidden/covered Electron window see streamed sections "stuck": Chromium doesn't
+  paint hidden windows, and React 19 reveals streamed Suspense content on the next animation frame. Forcing a
+  frame (a screenshot) reveals it. Real, visible windows are unaffected.
+
+**Files touched**
+- `src/components/quiz/*`, `src/components/local-time.tsx`, `src/lib/use-is-client.ts`, `src/lib/datetime.ts`,
+  `src/lib/api-client.ts`, `src/app/teacher/page.tsx`, `src/app/teacher/quizzes/new/page.tsx`,
+  `src/app/teacher/quizzes/[quizId]/page.tsx`, shadcn `table/badge/textarea/radio-group/alert-dialog`
+
+**Concepts worth learning**
+- **Hydration:** React attaching to server-rendered HTML; both renders must produce the same markup.
+- **`useSyncExternalStore`:** subscribes to values outside React and lets server and client snapshots differ safely.
+- **Controlled inputs:** React state is the source of truth for each input's value.
+
+**Revisit if**
+Teachers need autosave of drafts or collaborative editing.
