@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/04-exam` |
 | Depends on | Phase 03 |
 | PRD features | F-06, F-10, F-11 (enforcement) |
@@ -52,7 +52,7 @@ From phase 03 (Quiz management, merged 2026-10-19):
 - `decisions.md` → D-006, D-007, D-019, D-024
 
 ## Tasks
-- [ ] 04.1 — Attempt model + `grading.ts` → `feat(exam): add attempt model and grading`
+- [x] 04.1 — Attempt model + `grading.ts` → `feat(exam): add attempt model and grading`
 - [ ] 04.2 — Attempt service (start/resume, get, finalize, save, submit) + routes → `feat(exam): add attempt api with server-side deadline`
 - [ ] 04.3 — Exam page: countdown, question view, navigation, palette, mark for review → `feat(exam): add exam interface`
 - [ ] 04.4 — Autosave queue with local pending store and status indicator → `feat(exam): add resilient answer autosave`

@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 04 — Taking the exam (`not-started`)
-**Branch:** —
+**Current phase:** 04 — Taking the exam (`in-progress`)
+**Branch:** `phase/04-exam`
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -11,7 +11,7 @@
 | 01 | Foundation | done | phase/01-foundation | 10-19 | 2026-10-19 | 2026-10-19 |
 | 02 | Auth & roles | done | phase/02-auth | 10-20 | 2026-10-19 | 2026-10-19 |
 | 03 | Quiz management | done | phase/03-quiz-management | 10-20 → 10-21 | 2026-10-19 | 2026-10-19 |
-| 04 | Taking the exam | not-started | phase/04-exam | 10-21 → 10-22 | | |
+| 04 | Taking the exam | in-progress | phase/04-exam | 10-21 → 10-22 | 2026-10-19 | |
 | 05 | Kiosk window & camera | not-started | phase/05-kiosk-camera | 10-23 | | |
 | 06 | Results, profile & leaderboard | not-started | phase/06-results | 10-24 | | |
 | 07 | Ship: packaging, README, polish | not-started | phase/07-ship | 10-25 | | |

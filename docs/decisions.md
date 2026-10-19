@@ -806,7 +806,9 @@ for (const q of questions) {
 total = correct * marking.correct + incorrect * marking.incorrect + unanswered * marking.unanswered;
 maxPossible = questions.length * marking.correct;
 ```
-Rounded to 2 decimals to avoid float noise (e.g. `0.1 + 0.2`). Storing the score means leaderboards and
+Rounded to 2 decimals to avoid float noise (e.g. `0.1 + 0.2`). Implemented in phase 04 as `src/services/grading.ts`
+(no `server-only`, so `.scratch/grading.test.ts` checks it by hand: 9 cases incl. negative and fractional marks).
+Storing the score means leaderboards and
 profiles never re-grade; questions are locked (D-022), so the stored score can't go stale.
 
 **Concepts worth learning**
