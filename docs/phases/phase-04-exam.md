@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | in-progress |
+| Status | review |
 | Branch | `phase/04-exam` |
 | Depends on | Phase 03 |
 | PRD features | F-06, F-10, F-11 (enforcement) |
@@ -60,23 +60,38 @@ From phase 03 (Quiz management, merged 2026-10-19):
 - [x] 04.6 — Update docs → `docs: update docs for phase 04`
 
 ## Done criteria
-- [ ] Full flow works: start → answer → submit → score matches hand calculation
-- [ ] Kill the dev server mid-exam, click answers, restart → pending answers sync, status returns to Saved
-- [ ] Close the window mid-exam, reopen → Resume restores answers and the same deadline
-- [ ] Let the timer run out with the tab closed → attempt shows auto-submitted with saved answers graded
-- [ ] Double-click Start creates one attempt; save after submit returns `409 ATTEMPT_CLOSED`
-- [ ] Docs match what was built; decisions logged
+- [x] Full flow works: start → answer → submit → score matches hand calculation
+- [x] Kill the dev server mid-exam, click answers, restart → pending answers sync, status returns to Saved
+  - Verified by blocking `/answers/` requests via CDP (same failure as a dead server) incl. a page reload while offline.
+- [x] Close the window mid-exam, reopen → Resume restores answers and the same deadline
+- [x] Let the timer run out with the tab closed → attempt shows auto-submitted with saved answers graded
+  - API check (deadline moved into the past) + live 1-minute run with the tab open.
+- [x] Double-click Start creates one attempt; save after submit returns `409 ATTEMPT_CLOSED`
+- [x] Docs match what was built; decisions logged
 
 ## How to verify
 1. Create a 2-minute quiz with marking 4 / −1 / 0 and run the flows above.
 2. `node --test .scratch/grading.test.mjs` (grading + tie cases); `.scratch/race-check.mjs` fires parallel start/submit.
 
 ## Phase summary
-<!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
+- **Built:** Attempt model + pure grading; attempt API (start/resume inside the slot with quiz lock, GET exam/result view,
+  per-answer autosave, idempotent submit, lazy auto-submit); exam page `/exam/[id]` (server-time timer, one question at a
+  time, palette, mark for review, clear); `SaveQueue` autosave with localStorage backup + retry + honest status;
+  submit confirmation; time's-up auto-submit; result page `/student/attempts/[id]` (score, breakdown, review, release time);
+  Start/Resume/View result on the quiz page. Phase-03 helpers now use the Attempt model.
+- **Key decisions:** D-042 (attempt lifecycle, optimistic grade-and-close), D-043 (exam UI, shared server clock),
+  D-044 (submit after confirmed saves, auto-submit backstop); D-007 / D-024 implementation notes.
+- **Known limitations:** Exam opens as a normal page (kiosk, camera and desktop-only check are phase 05). A hard crash within
+  ~1–2 s of a click can lose that one unconfirmed answer (localStorage is written lazily). Resume reopens at question 1. No
+  profile history page or teacher result views yet (phase 06). Rate limiting still absent.
 - **Next phase should know:**
+  - Start flow lives in `src/components/quiz/start-button.tsx` → add camera check + `window.proctra.startExam(attemptId)` there;
+    keep `router.push("/exam/…")` as the non-desktop fallback only if D-013 allows (it says block it).
+  - The exam ends via `goToResult()` in `exam-client.tsx` (submit, time's up, `ATTEMPT_CLOSED`) → in kiosk mode this should call
+    `window.proctra.endExam(attemptId)` so main closes the kiosk window and shows the result in the main window.
+  - Snapshots/events must stop when `submitState` leaves `idle` or the attempt closes.
+  - Testing: `.scratch/attempt-api.check.mts` (32 checks), `.scratch/save-queue.test.ts`, `.scratch/autosave-e2e.mjs` (CDP request
+    blocking), `.scratch/mk-exam.mts` (MINUTES/TITLE env) — re-seed `t2@scratch.test` after cleanup.
 
 ## Next phase preview
 Phase 05 moves the exam page into an Electron kiosk window and adds the camera gate, snapshots, camera-loss overlay and event log.
