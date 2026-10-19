@@ -50,6 +50,7 @@ Rules:
 | D-035 | 2026-10-19 | 02 | Route guarding: proxy redirects + page re-checks; cookie flush in Electron | Active |
 | D-036 | 2026-10-19 | 02 | Teacher seed script with tsx; never silently promote a student | Active |
 | D-037 | 2026-10-19 | 03 | Quiz validation in two layers; times are UTC with explicit offsets | Active |
+| D-038 | 2026-10-19 | 03 | Quiz service: validate in memory, write with one conditional update | Active |
 
 ---
 
@@ -1372,3 +1373,54 @@ show each message next to its field. Verified by `.scratch/quiz-schema.test.ts` 
 
 **Revisit if**
 Students in different time zones need a single "official" display zone.
+
+---
+
+### D-038 — Quiz service: validate in memory, write with one conditional update
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management
+- **Status:** Active
+- **Type:** algorithm
+
+**Context**
+Saving the editor replaces the whole quiz (D-022) and must (a) run the Mongoose validators, (b) keep
+existing question ids, and (c) never overwrite questions after a student has started (`locked`), even if
+the teacher saves at the same instant a student starts.
+
+**Decision**
+`updateQuiz()` does: load + ownership check → map questions (keep known ids, new id for `null`, 400 for
+an id from another quiz) → `new Quiz(fields).validate()` in memory → one `findOneAndUpdate` whose filter
+includes `locked: false`. If it matches nothing, reload to report the exact reason (`QUIZ_LOCKED` vs archived).
+State changes (`publish`/`unpublish`/`archive`) are each one conditional update on the current status
+(plus "has a question" and "window not over" for publish).
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `findOneAndUpdate(..., { runValidators: true })` | Update validators run with `this` = the query, so the "correctIndex < options.length" check can't see the options |
+| Load the document, change it, `save()` | Not atomic against a concurrent "lock" from a starting student unless we add version checks |
+| Check status in JS, then update unconditionally | Two requests can both pass the check (time-of-check vs time-of-use race) |
+
+**How it works**
+```ts
+await new Quiz({ ...current, ...changes }).validate();          // all rules, correct `this`
+const updated = await Quiz.findOneAndUpdate(
+  { _id: quizId, teacherId, locked: false, status: { $ne: "archived" } }, // the guard IS the filter
+  { $set: changes }, { returnDocument: "after" });
+if (!updated) /* reload → QUIZ_LOCKED or INVALID_STATE */;
+```
+`attemptCount` is read from the raw `attempts` collection with one `$group` aggregation, so the dashboard
+works now (always 0) and becomes correct in phase 04 without code changes.
+
+Verified by `.scratch/quiz-api.check.mts` against the running app (24/24): roles (403/401), create, reorder
+with id preservation, foreign id → 400, other teacher → 403, every state transition, locked rules, archive is final.
+
+**Files touched**
+- `src/services/quiz-service.ts`, `src/app/api/v1/teacher/quizzes/**/route.ts`, `src/models/quiz.ts` (explicit TS types)
+
+**Concepts worth learning**
+- **TOCTOU race (time-of-check to time-of-use):** checking a condition and acting on it in two steps lets another request slip in between.
+- **Compare-and-set:** put the condition in the update's filter so check and write are one atomic step.
+
+**Revisit if**
+Teachers need collaborative editing (then add version numbers / optimistic concurrency).

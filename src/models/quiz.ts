@@ -1,5 +1,5 @@
 import "server-only";
-import { Schema, Types, model, models, type InferSchemaType, type Model } from "mongoose";
+import { Schema, Types, model, models, type Model } from "mongoose";
 
 export const QUIZ_STATUSES = ["draft", "published", "archived"] as const;
 export type QuizStatus = (typeof QUIZ_STATUSES)[number];
@@ -71,7 +71,23 @@ const quizSchema = new Schema(
 quizSchema.index({ teacherId: 1, updatedAt: -1 }); // teacher dashboard: my quizzes, newest first
 quizSchema.index({ status: 1, startsAt: 1 }); // student dashboard: published quizzes by start time
 
-export type QuizDoc = InferSchemaType<typeof quizSchema> & { _id: Types.ObjectId };
-export type QuestionDoc = QuizDoc["questions"][number];
+/** Plain shape of a stored question / quiz (what `.lean()` returns). Written out for readability. */
+export type QuestionDoc = { _id: Types.ObjectId; text: string; options: string[]; correctIndex: number };
+export type QuizDoc = {
+  _id: Types.ObjectId;
+  teacherId: Types.ObjectId;
+  title: string;
+  instructions: string;
+  startsAt: Date;
+  endsAt: Date;
+  durationMinutes: number;
+  marking: { correct: number; incorrect: number; unanswered: number };
+  resultsReleaseAt: Date | null;
+  status: QuizStatus;
+  locked: boolean;
+  questions: QuestionDoc[];
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 export const Quiz: Model<QuizDoc> = (models.Quiz as Model<QuizDoc>) ?? model<QuizDoc>("Quiz", quizSchema);

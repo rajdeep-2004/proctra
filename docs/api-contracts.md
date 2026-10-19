@@ -123,7 +123,8 @@ Errors: `404 NOT_FOUND`, `403 FORBIDDEN` (not owner)
 - Auth: teacher (owner) · Phase: 03 · Purpose: save the whole editor state (add/edit/reorder/remove = send the new array)
 
 Request: `QuizInput` · Response `200` `{ "data": QuizForTeacher }`
-Errors: `400`, `403`, `404`, `409 QUIZ_LOCKED` (questions or marking differ while `locked`), `409 INVALID_STATE` (archived)
+Errors: `400` (incl. a `questions[].id` that isn't in this quiz), `403`, `404`, `409 QUIZ_LOCKED` (questions, marking,
+`startsAt` or `durationMinutes` differ while `locked`), `409 INVALID_STATE` (archived)
 Notes: when `locked`, only `title`, `instructions`, `endsAt`, `resultsReleaseAt` may change.
 
 #### `POST /api/v1/teacher/quizzes/:quizId/publish` · `/unpublish` · `/archive`
@@ -287,13 +288,13 @@ Not HTTP, but a contract between the web app and the Electron shell.
 | POST | /api/v1/auth/register | public | 02 | built |
 | * | /api/auth/* (Auth.js) | public | 02 | built |
 | GET | /api/v1/me | any | 02 | built |
-| GET | /api/v1/teacher/quizzes | teacher | 03 | planned |
-| POST | /api/v1/teacher/quizzes | teacher | 03 | planned |
-| GET | /api/v1/teacher/quizzes/:quizId | teacher | 03 | planned |
-| PUT | /api/v1/teacher/quizzes/:quizId | teacher | 03 | planned |
-| POST | /api/v1/teacher/quizzes/:quizId/publish | teacher | 03 | planned |
-| POST | /api/v1/teacher/quizzes/:quizId/unpublish | teacher | 03 | planned |
-| POST | /api/v1/teacher/quizzes/:quizId/archive | teacher | 03 | planned |
+| GET | /api/v1/teacher/quizzes | teacher | 03 | built |
+| POST | /api/v1/teacher/quizzes | teacher | 03 | built |
+| GET | /api/v1/teacher/quizzes/:quizId | teacher | 03 | built |
+| PUT | /api/v1/teacher/quizzes/:quizId | teacher | 03 | built |
+| POST | /api/v1/teacher/quizzes/:quizId/publish | teacher | 03 | built |
+| POST | /api/v1/teacher/quizzes/:quizId/unpublish | teacher | 03 | built |
+| POST | /api/v1/teacher/quizzes/:quizId/archive | teacher | 03 | built |
 | GET | /api/v1/quizzes | student | 03 | planned |
 | GET | /api/v1/quizzes/:quizId | student | 03 | planned |
 | POST | /api/v1/quizzes/:quizId/attempts | student | 04 | planned |
