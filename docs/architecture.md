@@ -65,7 +65,8 @@ proctra/
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
 │   │   └── <feature>/      # quiz-editor/, exam/, results/ ...
-│   ├── lib/                # built: db.ts, env.ts, api-response.ts, utils.ts (cn) · later: auth.ts (02), cloudinary.ts (05), desktop.ts (05)
+│   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
+│   ├── lib/                # db.ts, env.ts, api-response.ts, session.ts (requireUser), utils.ts (cn) · later: cloudinary.ts (05), desktop.ts (05)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
@@ -87,7 +88,7 @@ proctra/
 |---|---|---|---|
 | Electron main | Windows, kiosk mode, camera permission, navigation allow-list, IPC | APP_URL config | Hold DB/Cloudinary secrets; trust renderer input without validation |
 | Preload bridge | `window.proctra` API (start/end exam, window events) | Electron `contextBridge`, `ipcRenderer` | Expose `ipcRenderer`, Node, or fs to the page |
-| Auth (`lib/auth.ts`) | Sign-in, session cookie, `requireUser(role?)` helper | User model, bcryptjs | Be bypassed by any `/api/v1` handler |
+| Auth (`src/auth.ts`, `lib/session.ts`) | Sign-in, session cookie, `requireUser(role?)` helper | User model, bcryptjs | Be bypassed by any `/api/v1` handler |
 | Quiz service | Quiz CRUD, publish/unpublish/archive, edit lock | Quiz, Attempt models | Return `correctOption` to students |
 | Attempt service | Start/resume, save answer, submit, lazy finalization | Quiz, Attempt, grading | Trust client time, score or role |
 | Grading service | Score computation (pure function) | none | Touch the DB |

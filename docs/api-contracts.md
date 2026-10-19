@@ -72,9 +72,13 @@ Response `201` `{ "data": { "id": "…", "name": "Asha Rao", "email": "asha@uni.
 Errors: `400 VALIDATION_ERROR`, `409 CONFLICT` (email taken)
 Notes: the client then signs in via Auth.js. Any `role` field in the body is ignored.
 
-#### Auth.js — `POST /api/auth/callback/credentials`, `POST /api/auth/signout`, `GET /api/auth/session`
-- Auth: public · Phase: 02 · Called through `signIn("credentials")` / `signOut()` helpers, not by hand.
-- Wrong email or password → generic "Invalid email or password".
+#### Auth.js — `GET /api/auth/csrf`, `POST /api/auth/callback/credentials`, `POST /api/auth/signout`, `GET /api/auth/session`
+- Auth: public · Phase: 02 · Called through Auth.js's `signIn("credentials")` / `signOut()` helpers, not by hand.
+- Both POSTs are form-encoded and require the `csrfToken` from `GET /api/auth/csrf` (double-submit cookie);
+  without it Auth.js redirects with `error=MissingCSRF`.
+- Success → `302` to the callback URL and sets the `authjs.session-token` cookie (HttpOnly, SameSite=Lax,
+  12 h; `__Secure-` prefixed on https). Wrong email **or** password → `302 /sign-in?error=CredentialsSignin`
+  (same response for both).
 
 #### `GET /api/v1/me`
 - Auth: any signed-in user · Phase: 02
@@ -281,8 +285,8 @@ Not HTTP, but a contract between the web app and the Electron shell.
 |---|---|---|---|---|
 | GET | /api/v1/health | public | 01 | built |
 | POST | /api/v1/auth/register | public | 02 | built |
-| * | /api/auth/* (Auth.js) | public | 02 | planned |
-| GET | /api/v1/me | any | 02 | planned |
+| * | /api/auth/* (Auth.js) | public | 02 | built |
+| GET | /api/v1/me | any | 02 | built |
 | GET | /api/v1/teacher/quizzes | teacher | 03 | planned |
 | POST | /api/v1/teacher/quizzes | teacher | 03 | planned |
 | GET | /api/v1/teacher/quizzes/:quizId | teacher | 03 | planned |

@@ -45,6 +45,7 @@ Rules:
 | D-030 | 2026-10-19 | 01 | Electron shell details: single instance, offline page, dev env loading | Active |
 | D-031 | 2026-10-19 | 01 | Deploy with the Vercel CLI; env vars set from .env without echoing | Active |
 | D-032 | 2026-10-19 | 02 | Registration and password handling rules | Active |
+| D-033 | 2026-10-19 | 02 | Auth.js v5 beta wiring: pinned version, split + lazy config | Active |
 
 ---
 
@@ -1125,3 +1126,56 @@ would answer in ~1 ms and "wrong password" in ~70 ms, leaking which emails are r
 
 **Revisit if**
 Email verification or password reset is added.
+
+---
+
+### D-033 — Auth.js v5 beta wiring: pinned version, split + lazy config
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+D-005 chose Auth.js v5. At phase start it turned out v5 has never left beta (`5.0.0-beta.32`, released
+2026-07-20; roughly one release every 3–4 months). Next.js 16.4's own auth guide shows a hand-written
+`jose` session instead. Asked the user: they chose to stay with Auth.js v5 beta.
+
+**Decision**
+- `next-auth` pinned **exactly** to `5.0.0-beta.32` (no `^`), so an install can never pull a different beta with breaking changes.
+- **Split config:** `src/auth.config.ts` holds the session strategy, sign-in page and jwt/session
+  callbacks with **no DB imports**; `src/auth.ts` adds the Credentials provider. The proxy (02.4) imports only the light part.
+- **Lazy config:** `NextAuth(() => ({ …, secret: env().AUTH_SECRET }))` so the secret is validated at
+  request time and `next build` works without secrets (D-028). `AUTH_SECRET` must be ≥ 32 chars.
+- `requireUser(role?)` in `src/lib/session.ts` is the only way handlers read the user.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `jose` + own cookie (recommended at the time) | User preferred Auth.js; kept as the fallback if the beta breaks |
+| next-auth v4 stable | Legacy API built around the Pages Router |
+| `^5.0.0-beta.32` range | Betas may break between releases; exact pin makes installs reproducible |
+
+**How it works**
+1. Sign-in form → `GET /api/auth/csrf` gives a token (also stored in a cookie) → `POST /api/auth/callback/credentials` with email, password, token.
+2. Auth.js checks the token matches the cookie (CSRF protection), calls our `authorize()` → Zod parse →
+   `verifyCredentials()` (D-032). `null` → redirect with `error=CredentialsSignin`.
+3. On success the `jwt` callback copies `id` and `role` into the token; Auth.js encrypts it with
+   `AUTH_SECRET` into the `authjs.session-token` cookie (HttpOnly, 12 h).
+4. `auth()` decrypts the cookie on each request; the `session` callback exposes `user.id` and `user.role`.
+5. Type extension: in this beta the JWT type lives in `@auth/core/jwt`, so that module is augmented (`src/types/next-auth.d.ts`).
+
+Verified with curl (`.scratch`): signed-out `/me` → 401; wrong password and unknown email → identical
+`CredentialsSignin` redirect; correct login (email in capitals) → `/me` returns the student; cookie HttpOnly
+with 12.00 h expiry; sign-out → 401; sign-in without CSRF token → rejected.
+
+**Files touched**
+- `src/auth.ts`, `src/auth.config.ts`, `src/app/api/auth/[...nextauth]/route.ts`, `src/lib/session.ts`,
+  `src/app/api/v1/me/route.ts`, `src/types/next-auth.d.ts`, `src/lib/env.ts`, `.env.example`
+
+**Concepts worth learning**
+- **CSRF (cross-site request forgery):** another site making your browser submit a form to ours with your cookies; the token proves the form came from our page.
+- **Encrypted JWT session (JWE):** the session data travels in the cookie itself, encrypted, so the server needs no session table.
+- **Module augmentation:** adding fields to a library's TypeScript interfaces from your own code.
+
+**Revisit if**
+A new beta is needed for a bug fix, or Auth.js breaks with a Next.js upgrade → switch to `jose` (Next's documented pattern).
