@@ -120,6 +120,11 @@ function Editor({ initial }: { initial: QuizForTeacher | null }) {
               {busy ? "Saving…" : meta.id ? "Save" : "Create draft"}
             </Button>
           )}
+          {meta.id && (
+            <Button variant="ghost" asChild>
+              <Link href={`/teacher/quizzes/${meta.id}/results`}>Results ({meta.attemptCount})</Link>
+            </Button>
+          )}
           {meta.id && meta.status === "draft" && (
             <Button variant="outline" onClick={() => transition("publish")} disabled={busy || dirty} title={dirty ? "Save first" : undefined}>
               Publish

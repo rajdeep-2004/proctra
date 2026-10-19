@@ -62,6 +62,7 @@ Rules:
 | D-047 | 2026-10-19 | 05 | Leave kiosk before revealing the result window (macOS Spaces bug) | Active |
 | D-048 | 2026-10-19 | 05 | Cmd+Q quits during the kiosk exam (scoped global shortcut) | Active |
 | D-049 | 2026-10-20 | 06 | Live leaderboard for students who finished; profile lists active attempts | Active |
+| D-050 | 2026-10-20 | 06 | Teacher results: separate service, sorted submissions, paired event timeline | Active |
 
 ---
 
@@ -1978,3 +1979,32 @@ row `isMe`. The client compares nothing; it just re-renders the latest list.
 
 **Revisit if**
 Classes grow large enough that 10 s polling per viewer matters, or the course wants leaderboards hidden until the exam ends.
+
+---
+
+### D-050 — Teacher results: separate service, sorted submissions, paired event timeline
+- **Date:** 2026-10-20
+- **Phase:** 06 — Results, profile & leaderboard
+- **Status:** Active
+- **Type:** architecture
+
+**Decision**
+- Teacher-facing reads live in `src/services/results-service.ts` (owner check → lazy finalization → one query + two `$group`
+  count aggregations), keeping `attempt-service.ts` about the student's exam lifecycle.
+- Submissions are sorted by `score.total` descending then name; in-progress attempts (score `null`) sort last.
+- The event timeline pairs "lost/hidden/disconnected" with the next matching "regained/visible/reconnected" event and shows
+  the gap ("— back after 12 s"). Wording is factual everywhere and the page states events are not evidence of misconduct.
+- Links: editor top bar "Results (n)" and the dashboard's attempt count open `/teacher/quizzes/[id]/results`; each student name
+  opens `/teacher/attempts/[id]`. Missing or other teachers' quizzes/attempts render the 404 screen.
+
+**Verified:** `.scratch/teacher-results.check.mts` 16/16 — order, marks (8, −1), counts (2 events, 1 snapshot), active row, owner-only
+access (other teacher/student 403, missing 404), lazy finalization on view, both pages render.
+
+**Files touched**
+- `src/services/results-service.ts`, `src/app/api/v1/teacher/quizzes/[quizId]/attempts/route.ts`,
+  `src/app/api/v1/teacher/attempts/[attemptId]/route.ts`, `src/app/teacher/quizzes/[quizId]/results/page.tsx`,
+  `src/app/teacher/attempts/[attemptId]/page.tsx`, `src/components/results/event-timeline.tsx`,
+  `src/components/quiz/quiz-editor.tsx`, `src/app/teacher/page.tsx`
+
+**Revisit if**
+Quizzes get thousands of attempts (then paginate the table).

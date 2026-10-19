@@ -54,7 +54,9 @@ async function QuizTable() {
             <TableCell><LocalTime iso={q.startsAt} /></TableCell>
             <TableCell><LocalTime iso={q.endsAt} /></TableCell>
             <TableCell className="text-right">{q.questionCount}</TableCell>
-            <TableCell className="text-right">{q.attemptCount}</TableCell>
+            <TableCell className="text-right">
+              {q.attemptCount > 0 ? <Link href={`/teacher/quizzes/${q.id}/results`} className="underline underline-offset-4">{q.attemptCount}</Link> : 0}
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>

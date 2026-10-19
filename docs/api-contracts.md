@@ -145,9 +145,10 @@ Errors: `403`, `404`, `409 INVALID_STATE`
 - Runs lazy finalization for the quiz first.
 Response `200`
 ```json
-{ "data": [ { "id": "…", "studentName": "Asha Rao", "status": "submitted",
+{ "data": { "quiz": { "id": "…", "title": "…", "startsAt": "…", "endsAt": "…", "questionCount": 10, "maxPossible": 40 },
+  "rows": [ { "id": "…", "studentName": "Asha Rao", "status": "submitted",
   "startedAt": "…", "submittedAt": "…", "score": { "total": 36, "correct": 9, "incorrect": 0, "unanswered": 1, "maxPossible": 40 },
-  "eventCount": 3, "snapshotCount": 172 } ] }
+  "eventCount": 3, "snapshotCount": 172 } ] } }
 ```
 
 #### `GET /api/v1/teacher/attempts/:attemptId`
@@ -157,7 +158,7 @@ Response `200`
 { "data": {
   "id": "…", "studentName": "…", "status": "submitted", "startedAt": "…", "deadline": "…", "submittedAt": "…",
   "score": { "total": 36, "correct": 9, "incorrect": 0, "unanswered": 1, "maxPossible": 40 },
-  "questions": [ { "id": "…", "text": "…", "options": ["…"], "correctIndex": 2, "selectedIndex": 2, "result": "correct" } ],
+  "questions": [ { "id": "…", "text": "…", "options": ["…"], "correctIndex": 2, "selectedIndex": 2, "markedForReview": false, "result": "correct" } ],
   "events": [ { "type": "window_blur", "occurredAt": "…" } ],
   "snapshotCount": 172 } }
 ```
@@ -320,7 +321,7 @@ Permissions: the session grants only `media` with **video only** to the app orig
 | POST | /api/v1/attempts/:attemptId/snapshots | student | 05 | built |
 | POST | /api/v1/attempts/:attemptId/events | student | 05 | built |
 | GET | /api/v1/me/attempts | student | 06 | built |
-| GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | planned |
-| GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | planned |
+| GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | built |
+| GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | built |
 | GET | /api/v1/quizzes/:quizId/leaderboard | teacher, student | 06 | planned |
 | GET | /api/v1/teacher/attempts/:attemptId/snapshots | teacher | 07 | planned (S-01) |
