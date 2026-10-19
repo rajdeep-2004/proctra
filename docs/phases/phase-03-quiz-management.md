@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/03-quiz-management` |
 | Depends on | Phase 02 |
 | PRD features | F-02, F-03, (F-11 field) |
@@ -48,7 +48,7 @@ From phase 02 (Auth & roles, merged 2026-10-19):
 - `decisions.md` → D-016, D-018, D-022
 
 ## Tasks
-- [ ] 03.1 — Quiz model + Zod quiz schemas → `feat(quiz): add quiz model and validation schemas`
+- [x] 03.1 — Quiz model + Zod quiz schemas → `feat(quiz): add quiz model and validation schemas`
 - [ ] 03.2 — Quiz service + teacher quiz routes (CRUD + state transitions) → `feat(quiz): add teacher quiz api`
 - [ ] 03.3 — Teacher dashboard quiz table + quiz editor page → `feat(quiz): add teacher dashboard and quiz editor`
 - [ ] 03.4 — Student quiz list + quiz detail routes and pages → `feat(quiz): add student quiz list and detail`

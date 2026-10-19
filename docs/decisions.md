@@ -49,6 +49,7 @@ Rules:
 | D-034 | 2026-10-19 | 02 | Auth forms use Server Actions (exception to D-003) | Active |
 | D-035 | 2026-10-19 | 02 | Route guarding: proxy redirects + page re-checks; cookie flush in Electron | Active |
 | D-036 | 2026-10-19 | 02 | Teacher seed script with tsx; never silently promote a student | Active |
+| D-037 | 2026-10-19 | 03 | Quiz validation in two layers; times are UTC with explicit offsets | Active |
 
 ---
 
@@ -1327,3 +1328,47 @@ Note: local dev and production share one Atlas database, so a seeded teacher wor
 
 **Revisit if**
 Multiple teachers need seeding (switch to a CSV/JSON list).
+
+---
+
+### D-037 — Quiz validation in two layers; times are UTC with explicit offsets
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management
+- **Status:** Active
+- **Type:** data
+
+**Context**
+Quizzes have many rules (2–6 options, a valid correct option, window order, mark ranges) and a
+schedule entered by a teacher in local time but enforced by a server running in UTC.
+
+**Decision**
+- **Zod `QuizInput`** (`src/schemas/quiz.ts`) validates every request and drives the editor's error
+  messages; **Mongoose validators** (`src/models/quiz.ts`) repeat the critical rules as a last line of defence.
+- Times travel as ISO-8601 strings **with an offset** (`2026-10-22T15:30:00+05:30` or `…Z`). A string
+  without an offset (`2026-10-22T10:00`) is rejected, because the server can't know whose 10:00 it is.
+  The editor converts the browser's `datetime-local` value with `new Date(local).toISOString()`; MongoDB
+  stores UTC; every screen formats in the viewer's own time zone.
+- Drafts may have zero questions, but every question present must be complete. Publishing needs ≥ 1 question.
+- Marks: any number in −100…100, fractions allowed (e.g. 0.25 for "¼ negative marking").
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Store local time + a time-zone name | More complex; every viewer here shares one time zone anyway, and UTC + local display covers it |
+| Allow incomplete questions in drafts | Needs a second, looser schema and "is it publishable?" checks everywhere |
+| Validate only in Mongoose | Errors arrive late (on save) and in a shape that's awkward to map to form fields |
+
+**How it works**
+Zod `refine` rules attach errors to exact paths (`questions.0.correctIndex`, `endsAt`) so the editor can
+show each message next to its field. Verified by `.scratch/quiz-schema.test.ts` (10 cases incl. IST offset
+→ UTC, out-of-range correct option, 1 and 7 options, duplicate ids, whitespace-only text).
+
+**Files touched**
+- `src/models/quiz.ts`, `src/schemas/quiz.ts`
+
+**Concepts worth learning**
+- **UTC storage, local display:** store one unambiguous instant, convert only at the edges (input and display).
+- **Defence in depth for data:** request validation for good UX, DB validation so bad data can't slip in from other code paths.
+
+**Revisit if**
+Students in different time zones need a single "official" display zone.
