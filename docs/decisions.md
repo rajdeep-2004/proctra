@@ -55,6 +55,7 @@ Rules:
 | D-040 | 2026-10-19 | 03 | Student quiz views: projection-only reads; streamed 404 pages | Active |
 | D-041 | 2026-10-19 | 03 | Fixed exam slot: duration derived from start/end; extend-only end time | Active |
 | D-042 | 2026-10-19 | 04 | Attempt lifecycle: insert-or-read start, atomic grade-and-close with optimistic retry | Active |
+| D-043 | 2026-10-19 | 04 | Exam UI: one question at a time, native radios, shared server clock | Active |
 
 ---
 
@@ -1651,3 +1652,35 @@ the stored answers; teacher extension moves active deadlines.
 
 **Revisit if**
 Writes per attempt grow enough that retries become frequent (then use a per-attempt version counter).
+
+---
+
+### D-043 — Exam UI: one question at a time, native radios, shared server clock
+- **Date:** 2026-10-19
+- **Phase:** 04 — Taking the exam
+- **Status:** Active
+- **Type:** architecture
+
+**Decision**
+- `/exam/[attemptId]` has its own bare layout (title + timer only, no app navigation) so phase 05 can show it in a kiosk window as is.
+  A finished attempt redirects to `/student/attempts/[id]`.
+- One question per screen with Previous/Next, a palette (filled = answered, outline = not answered, flag = marked,
+  ring = current) and counts. "Clear answer" sets the selection back to none.
+- Options are **native `<input type="radio">`** inside large clickable `<label>` cards: keyboard arrows, focus and screen
+  readers work for free, no animation on exam controls (D-015).
+- Timers use one shared hook, `useServerNow(serverNow)` (`src/lib/server-clock.ts`): a single 1-second ticker, with the
+  device clock corrected by the server's time. The countdown (D-041) was refactored onto the same hook. `ExamTimer` turns red
+  under 5 minutes and calls `onExpire` exactly once at zero (used by auto-submit in 04.5).
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| All questions on one long page | Harder to see progress; palette navigation is the expected exam pattern (brief §6.3) |
+| Radix RadioGroup | Native radios already give the needed accessibility with less code |
+
+**Files touched**
+- `src/app/exam/[attemptId]/page.tsx`, `src/components/exam/{exam-client,exam-timer,question-palette}.tsx`,
+  `src/lib/server-clock.ts`, `src/components/quiz/countdown.tsx`
+
+**Revisit if**
+Exams need sections or very long questions with images.

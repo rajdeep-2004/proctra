@@ -54,7 +54,7 @@ From phase 03 (Quiz management, merged 2026-10-19):
 ## Tasks
 - [x] 04.1 — Attempt model + `grading.ts` → `feat(exam): add attempt model and grading`
 - [x] 04.2 — Attempt service (start/resume, get, finalize, save, submit) + routes → `feat(exam): add attempt api with server-side deadline`
-- [ ] 04.3 — Exam page: countdown, question view, navigation, palette, mark for review → `feat(exam): add exam interface`
+- [x] 04.3 — Exam page: countdown, question view, navigation, palette, mark for review → `feat(exam): add exam interface`
 - [ ] 04.4 — Autosave queue with local pending store and status indicator → `feat(exam): add resilient answer autosave`
 - [ ] 04.5 — Submit confirm, auto-submit, result page, resume on dashboard → `feat(exam): add submission, results and resume`
 - [ ] 04.6 — Update docs → `docs: update docs for phase 04`
