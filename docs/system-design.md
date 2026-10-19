@@ -52,7 +52,8 @@ sequenceDiagram
   M->>M: validate id, open kiosk exam window at /exam/:attemptId, hide main window
 ```
 Notes:
-- `deadline = min(startedAt + durationMinutes, quiz.endsAt)` — computed once on insert, never changed.
+- `deadline = quiz.endsAt` (fixed exam slot, D-041). Stored on the attempt so every write can check it atomically;
+  if the teacher extends the quiz, `updateMany({ quizId, status: "active" }, { deadline: newEndsAt })` moves all active attempts.
 - Calling start again while an attempt is `active` just returns it → this **is** the resume path.
 - If the attempt is already submitted, start returns `409 CONFLICT` (one attempt per quiz).
 
@@ -170,6 +171,7 @@ and shows `deadline − (Date.now() + offset)`. The client countdown is cosmetic
 | Two saves for the same question out of order | Older value overwrites newer | Client queue: one in-flight request, coalesce to newest value |
 | Manual submit + auto-submit + lazy finalize at once | Double grading / status flip-flop | `findOneAndUpdate({status:'active'})` — only one caller wins; others read the final result (idempotent) |
 | Teacher edits questions while a student starts | Student sees questions that then change | Starting sets `quiz.locked = true` **before** creating the attempt; question edits update with condition `locked:false` |
+| Teacher extends end time during active attempts | Some attempts keep the old deadline | Quiz update and `updateMany` on active attempts' `deadline`; end time can only move later, so no attempt is ever cut short (D-041) |
 | Teacher unpublishes during active attempts | Students mid-exam lose quiz | Unpublish only hides it from listings/new starts; active attempts continue to deadline |
 
 ## 5. Async work and realtime

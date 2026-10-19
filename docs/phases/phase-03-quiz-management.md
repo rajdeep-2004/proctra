@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | in-progress |
 | Branch | `phase/03-quiz-management` |
 | Depends on | Phase 02 |
 | PRD features | F-02, F-03, (F-11 field) |
@@ -29,11 +29,11 @@ From phase 02 (Auth & roles, merged 2026-10-19):
 
 ## In scope — exact features
 1. **Quiz model + validation**
-   - Acceptance: Quiz schema per `database-schema.md`; Zod `QuizInput` enforces window, duration, 2–6 options, valid `correctIndex`, marking range.
+   - Acceptance: Quiz schema per `database-schema.md`; Zod `QuizInput` enforces the exam slot (end 1 min–5 h after start; duration derived), 2–6 options, valid `correctIndex`, marking range.
 2. **Teacher quiz API**
    - Acceptance: list/create/get/update/publish/unpublish/archive per `api-contracts.md`; only the owner can access; state machine enforced; `QUIZ_LOCKED` logic present (lock itself is set in phase 04).
 3. **Quiz editor UI**
-   - Acceptance: form for title, instructions, start/end, duration, marking (correct/incorrect/unanswered), optional results-release time; add/edit/remove/reorder (up/down buttons) questions and options; pick correct option; save draft; publish/unpublish/archive buttons with status badge.
+   - Acceptance: form for title, instructions, start/end (computed duration shown), marking (correct/incorrect/unanswered), optional results-release time; add/edit/remove/reorder (up/down buttons) questions and options; pick correct option; save draft; publish/unpublish/archive buttons with status badge.
 4. **Teacher dashboard**
    - Acceptance: table of my quizzes with status, window, question count, attempt count.
 5. **Student quiz list + detail**
@@ -53,6 +53,12 @@ From phase 02 (Auth & roles, merged 2026-10-19):
 - [x] 03.3 — Teacher dashboard quiz table + quiz editor page → `feat(quiz): add teacher dashboard and quiz editor`
 - [x] 03.4 — Student quiz list + quiz detail routes and pages → `feat(quiz): add student quiz list and detail`
 - [x] 03.5 — Update docs → `docs: update docs for phase 03`
+
+### Change request (2026-10-19, during review)
+User asked for a fixed exam slot and a student countdown (D-041):
+- [x] 03.6 — Docs: fixed exam slot, derived duration, extend-only end time, countdown → `docs: switch quizzes to fixed exam slots`
+- [ ] 03.7 — Remove duration input; derive it; extend-only end time while locked → `feat(quiz): derive duration from exam slot`
+- [ ] 03.8 — Live server-time countdown on student list and detail → `feat(quiz): add live countdown for students`
 
 ## Done criteria
 - [x] Teacher creates a 5-question quiz with negative marking, publishes it; a student sees it

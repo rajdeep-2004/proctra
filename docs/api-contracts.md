@@ -103,14 +103,14 @@ Request (`QuizInput` — same shape for create and update)
 {
   "title": "DBMS Quiz 1",
   "instructions": "Answer all questions.",
-  "startsAt": "2026-10-22T10:00:00Z", "endsAt": "2026-10-22T12:00:00Z",
-  "durationMinutes": 30,
+  "startsAt": "2026-10-22T10:00:00Z", "endsAt": "2026-10-22T10:30:00Z",
   "marking": { "correct": 4, "incorrect": -1, "unanswered": 0 },
   "resultsReleaseAt": null,
   "questions": [ { "id": null, "text": "…", "options": ["1NF","2NF","3NF","BCNF"], "correctIndex": 2 } ]
 }
 ```
-Response `201` `{ "data": QuizForTeacher }` (full quiz, questions with `id` + `correctIndex`)
+Response `201` `{ "data": QuizForTeacher }` (full quiz, questions with `id` + `correctIndex`; includes derived `durationMinutes`)
+Notes: there is no `durationMinutes` input — the server derives it from `endsAt − startsAt` (must be 1–300 min). Any `durationMinutes` sent is ignored.
 Errors: `400 VALIDATION_ERROR`
 Notes: `questions[].id` is `null` for new questions; existing ids are kept so attempts' answer keys stay valid.
 
@@ -123,9 +123,10 @@ Errors: `404 NOT_FOUND`, `403 FORBIDDEN` (not owner)
 - Auth: teacher (owner) · Phase: 03 · Purpose: save the whole editor state (add/edit/reorder/remove = send the new array)
 
 Request: `QuizInput` · Response `200` `{ "data": QuizForTeacher }`
-Errors: `400` (incl. a `questions[].id` that isn't in this quiz), `403`, `404`, `409 QUIZ_LOCKED` (questions, marking,
-`startsAt` or `durationMinutes` differ while `locked`), `409 INVALID_STATE` (archived)
-Notes: when `locked`, only `title`, `instructions`, `endsAt`, `resultsReleaseAt` may change.
+Errors: `400` (incl. a `questions[].id` that isn't in this quiz), `403`, `404`, `409 QUIZ_LOCKED` (questions, marking or
+`startsAt` differ while `locked`, or `endsAt` moved earlier), `409 INVALID_STATE` (archived)
+Notes: when `locked`, only `title`, `instructions`, `resultsReleaseAt` and a **later** `endsAt` are accepted. Extending
+`endsAt` also moves the `deadline` of every active attempt of this quiz.
 
 #### `POST /api/v1/teacher/quizzes/:quizId/publish` · `/unpublish` · `/archive`
 - Auth: teacher (owner) · Phase: 03
@@ -186,14 +187,16 @@ Notes: competition ranking (1, 1, 3). Never includes events, snapshots or answer
 - Auth: student · Phase: 03 · Purpose: dashboard list of published quizzes + my status
 Response `200`
 ```json
-{ "data": [ { "id": "…", "title": "…", "startsAt": "…", "endsAt": "…", "durationMinutes": 30,
-  "questionCount": 10, "availability": "open", "myAttempt": { "id": "…", "status": "active" } } ] }
+{ "data": { "serverNow": "2026-10-22T09:58:12.000Z",
+  "quizzes": [ { "id": "…", "title": "…", "startsAt": "…", "endsAt": "…", "durationMinutes": 30,
+  "questionCount": 10, "availability": "open", "myAttempt": { "id": "…", "status": "active" } } ] } }
 ```
-`availability`: `"upcoming" | "open" | "closed"`. `myAttempt` is `null` if not started.
+`availability`: `"upcoming" | "open" | "closed"`. `myAttempt` is `null` if not started. `durationMinutes` is derived.
+`serverNow` lets the client run its countdown on server time (offset = serverNow − local clock).
 
 #### `GET /api/v1/quizzes/:quizId`
 - Auth: student · Phase: 03 · Purpose: pre-start screen (instructions, timing, camera notice). No questions.
-Response `200` `{ "data": { "id", "title", "instructions", "startsAt", "endsAt", "durationMinutes", "questionCount", "marking", "availability", "myAttempt" } }`
+Response `200` `{ "data": { "id", "title", "instructions", "startsAt", "endsAt", "durationMinutes", "questionCount", "marking", "availability", "myAttempt", "serverNow" } }`
 Errors: `404` (missing, draft or archived — indistinguishable to students)
 Note: the page `/student/quizzes/:id` streams, so for a hidden quiz it renders the 404 screen (with `noindex`) but the HTTP status is 200 (D-040).
 

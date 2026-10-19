@@ -18,7 +18,7 @@ Rules:
 | D-003 | 2026-10-19 | 00 | One Next.js codebase: route handlers + service layer | Active |
 | D-004 | 2026-10-19 | 00 | MongoDB Atlas + Mongoose | Active |
 | D-005 | 2026-10-19 | 00 | Auth.js Credentials with JWT session cookies | Active |
-| D-006 | 2026-10-19 | 00 | Server-authoritative deadline with lazy finalization | Active |
+| D-006 | 2026-10-19 | 00 | Server-authoritative deadline with lazy finalization | Active (formula amended by D-041) |
 | D-007 | 2026-10-19 | 00 | Per-answer autosave with a local pending queue | Active |
 | D-008 | 2026-10-19 | 00 | Snapshots uploaded through the server to private Cloudinary | Active |
 | D-009 | 2026-10-19 | 00 | Electron security model and narrow preload bridge | Active |
@@ -53,6 +53,7 @@ Rules:
 | D-038 | 2026-10-19 | 03 | Quiz service: validate in memory, write with one conditional update | Active |
 | D-039 | 2026-10-19 | 03 | Quiz editor: browser-only render, whole-quiz save, local-time display | Active |
 | D-040 | 2026-10-19 | 03 | Student quiz views: projection-only reads; streamed 404 pages | Active |
+| D-041 | 2026-10-19 | 03 | Fixed exam slot: duration derived from start/end; extend-only end time | Active |
 
 ---
 
@@ -284,7 +285,7 @@ We need instant session revocation (JWTs stay valid until expiry), or Auth.js v5
 ### D-006 — Server-authoritative deadline with lazy finalization
 - **Date:** 2026-10-19
 - **Phase:** 00 — Planning
-- **Status:** Active
+- **Status:** Active — deadline formula amended by D-041 (lazy finalization unchanged)
 - **Type:** algorithm
 
 **Context**
@@ -1533,3 +1534,50 @@ no `SECRET` question text or `correctIndex` in list/detail/HTML, teacher 403, si
 
 **Revisit if**
 Search engines or external links ever need correct 404 status codes for these pages.
+
+---
+
+### D-041 — Fixed exam slot: duration derived from start/end; extend-only end time
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management (change request during review)
+- **Status:** Active
+- **Type:** data
+
+**Context**
+The original model had an *availability window* (start/end) plus a separate *duration*, with
+`deadline = min(startedAt + duration, endsAt)` (D-006). The user pointed out that two independent inputs can
+conflict (e.g. a 90-minute duration inside a 60-minute window) and asked for one source of truth: the teacher
+picks start and end, the server computes the duration. Students should also see a live "starts in" countdown.
+
+**Decision**
+- A quiz is a **fixed exam slot**: `startsAt` → `endsAt`, 1 minute to 5 hours long. `durationMinutes` is no longer
+  stored or accepted; responses include it computed as `round((endsAt − startsAt) / 60 000)`.
+- Every attempt's `deadline = quiz.endsAt` (replaces D-006's formula). A student who starts 10 minutes late has 10 minutes less.
+- Once `locked` (first attempt started): start time, questions and marking are frozen; the end time may only
+  move **later**. Extending also runs `updateMany({ quizId, status: "active" }, { $set: { deadline: newEndsAt } })`
+  so everyone gets the extra time; it can never shorten a running exam.
+- Students see a live countdown driven by **server time**: "Starts in 1h 23m 10s" → "Ends in 42m 05s" → "Closed".
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Keep window + duration, validate duration ≤ window | Still two inputs to keep consistent; user wants a single exam slot |
+| Compute deadline live from `quiz.endsAt` instead of storing it on the attempt | Every answer save would need a second read; the stored copy keeps saves a single atomic, conditional update |
+| Allow shortening the end time | Could end running exams early without warning |
+
+**How it works**
+Countdown: the server sends `serverNow`; the browser computes `offset = serverNow − Date.now()` once and
+then shows `target − (Date.now() + offset)` every second, so a wrong laptop clock doesn't matter. When it
+crosses zero the page refreshes so the Start button / status update. The countdown is display only — the
+server still decides whether an attempt may start.
+
+**Files touched**
+- Docs: `prd.md` (F-02, F-03, flows), `database-schema.md`, `api-contracts.md`, `system-design.md`, phase 03/04 files
+- Code (03.7–03.8): `src/models/quiz.ts`, `src/schemas/quiz.ts`, `src/services/quiz-service.ts`, editor, student pages, countdown component
+
+**Concepts worth learning**
+- **Single source of truth / derived data:** store the minimal facts (start, end) and compute the rest, so they can't disagree.
+- **Clock skew:** client clocks can be wrong; use the server's time and an offset for anything time-critical.
+
+**Revisit if**
+The course wants per-student timers (e.g. "60 minutes from whenever you start within a day-long window").
