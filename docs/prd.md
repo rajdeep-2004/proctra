@@ -104,5 +104,5 @@ exam window and periodic still snapshots, with no claims of full OS lockdown or 
 | # | Question | Owner | Resolved? |
 |---|---|---|---|
 | 1 | Snapshot retention period (default proposal: 30 days, deleted manually via script) | Course owner | No — required only before real student use |
-| 2 | Does the course accept an unsigned `.dmg` (user must right-click → Open on first launch)? | Rajdeep | No |
-| 3 | DevClub UI: install via `@devclubnst/ui` CLI — confirm it's compatible with our Tailwind version at S-02 | Claude | No — checked in polish phase |
+| 2 | Does the course accept an unsigned `.dmg` (user must right-click → Open on first launch)? | Rajdeep | Yes — unsigned (ad-hoc) accepted; install steps in README (D-051, D-054) |
+| 3 | DevClub UI: install via `@devclubnst/ui` CLI — confirm it's compatible with our Tailwind version at S-02 | Claude | Yes — installed via the shadcn registry (the CLI failed to install); works with Tailwind v4 (D-053) |
