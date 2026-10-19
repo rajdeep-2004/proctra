@@ -1,9 +1,13 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Flag } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import type { ActiveAttemptView } from "@/services/attempt-service";
 import { ExamTimer } from "@/components/exam/exam-timer";
+import { SaveIndicator } from "@/components/exam/save-indicator";
+import { readPending, useAutosave } from "@/components/exam/use-autosave";
+import { useIsClient } from "@/lib/use-is-client";
 import { QuestionPalette } from "@/components/exam/question-palette";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,17 +15,29 @@ import { cn } from "@/lib/utils";
 
 export type AnswerState = { selectedIndex: number | null; markedForReview: boolean };
 
+/** Browser-only: it reads unconfirmed answers from localStorage before the first render. */
 export function ExamClient({ attempt }: { attempt: ActiveAttemptView }) {
-  const [answers, setAnswers] = useState<Record<string, AnswerState>>(attempt.answers);
+  const isClient = useIsClient();
+  if (!isClient) return <div className="m-8 h-96 animate-pulse rounded-xl bg-muted" aria-label="Loading exam" />;
+  return <Exam attempt={attempt} />;
+}
+
+function Exam({ attempt }: { attempt: ActiveAttemptView }) {
+  const router = useRouter();
+  // Server copy, overlaid with answers this device saved locally but the server hasn't confirmed yet.
+  const [answers, setAnswers] = useState<Record<string, AnswerState>>(() => ({ ...attempt.answers, ...readPending(attempt.id) }));
   const [current, setCurrent] = useState(0);
   const total = attempt.questions.length;
   const q = attempt.questions[current];
   const a = answers[q.id] ?? { selectedIndex: null, markedForReview: false };
 
-  const update = useCallback((questionId: string, next: AnswerState) => {
+  const goToResult = useCallback(() => router.replace(`/student/attempts/${attempt.id}`), [router, attempt.id]);
+  const autosave = useAutosave(attempt.id, goToResult);
+
+  const update = (questionId: string, next: AnswerState) => {
     setAnswers((prev) => ({ ...prev, [questionId]: next }));
-    // 04.4: hand the change to the autosave queue here.
-  }, []);
+    autosave.enqueue(questionId, next); // saved immediately; retried until the server confirms
+  };
 
   const onExpire = useCallback(() => {
     // 04.5: auto-submit.
@@ -34,6 +50,7 @@ export function ExamClient({ attempt }: { attempt: ActiveAttemptView }) {
       <header className="sticky top-0 z-10 border-b bg-background">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4">
           <h1 className="truncate font-semibold">{attempt.quizTitle}</h1>
+          <SaveIndicator status={autosave.status} />
           <ExamTimer deadline={attempt.deadline} serverNow={attempt.serverNow} onExpire={onExpire} />
         </div>
       </header>

@@ -371,6 +371,17 @@ Smallest possible loss window (only an in-flight click), simple to reason about,
 5. Server: `updateOne({ _id, studentId, status: "active", deadline: { $gt: now - grace } }, { $set: { "answers.<qid>": … } })`
    — a single atomic write that can't touch other answers or a closed attempt.
 
+**Implementation (phase 04)**
+`SaveQueue` (`src/components/exam/save-queue.ts`) is plain TypeScript, wrapped by `useAutosave()`. HTTP outcome →
+queue action: `200` ok, `409` closed (stop + go to result page), `400/404` drop (retrying can't fix it), anything else or a
+network error → retry with backoff 1/2/4/8/10 s (and immediately on the browser's `online` event). The exam renders
+browser-only so the first render can overlay unconfirmed `localStorage` answers on the server copy.
+Verified: `.scratch/save-queue.test.ts` (8 cases: coalescing, replay after "crash", retry sends the newest value,
+closed, drop, flush, no storage) and an Electron scenario that blocked `/answers/` requests via CDP: answer → "retrying"
++ local copy → **page reload while offline still shows it** → network back → saved, local copy cleared, server has it.
+Limitation: Chromium also writes `localStorage` to disk lazily, so a hard crash within ~1–2 s of a click can still lose
+that last unconfirmed answer — the window this design accepts.
+
 **Concepts worth learning**
 - **Optimistic UI:** show the change immediately, reconcile with the server after.
 - **Idempotent writes:** sending the same "set answer to 2" twice has the same effect as once, so retries are safe.
