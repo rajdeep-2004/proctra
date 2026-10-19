@@ -1,7 +1,7 @@
 # macOS .dmg packaging (D-012, D-051). Run: npm run dist
 appId: com.proctra.desktop
 productName: Proctra
-copyright: Proctra capstone project
+copyright: Copyright © 2026 Proctra
 directories:
   output: release
   buildResources: electron/build
