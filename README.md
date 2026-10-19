@@ -6,6 +6,8 @@
 
 Teachers create and grade quizzes on the web. Students take them in a full-screen desktop app with the camera on.
 
+**[⬇ Download for macOS](https://github.com/rajdeep-2004/proctra/releases/latest)** — Apple Silicon and Intel installers · [install steps](#install)
+
 [Features](#features) · [Architecture](#architecture) · [Getting started](#getting-started) · [Desktop app](#desktop-app) · [Deployment](#deployment) · [Limitations](#limitations) · [Docs](#documentation)
 
 </div>
@@ -163,6 +165,7 @@ npm run dist -- -c.extraMetadata.proctraAppUrl=https://your-deployment.example.c
 ```
 
 ### Install
+Ready-made installers are on the [Releases page](https://github.com/rajdeep-2004/proctra/releases/latest).
 Builds are ad-hoc signed but **not notarized** by Apple, so macOS asks for confirmation once per Mac:
 
 1. Open the `.dmg` that matches the Mac (Apple menu → About This Mac) and drag **Proctra** into **Applications**.
