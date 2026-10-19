@@ -261,3 +261,47 @@ export async function submitAttempt(studentId: string, attemptId: string): Promi
   const finished = attempt.status === "active" ? await finalize(attempt._id, "manual") : attempt;
   return toView(finished, await loadQuiz(finished.quizId));
 }
+
+// ---------- student profile (F-12) ----------
+
+export type MyAttemptRow = {
+  id: string;
+  quizId: string;
+  quizTitle: string;
+  startedAt: string;
+  submittedAt: string | null;
+  deadline: string;
+  status: AttemptStatus;
+  released: boolean;
+  resultsReleaseAt: string | null;
+  score: { total: number; maxPossible: number } | null; // null while active or before release
+};
+
+/** The caller's own attempts, newest first. Expired ones are finalized first so statuses are current. */
+export async function listMyAttempts(studentId: string): Promise<MyAttemptRow[]> {
+  await connectDB();
+  await finalizeExpiredForStudent(studentId);
+  const attempts = await Attempt.find({ studentId }).sort({ startedAt: -1 }).limit(200).lean<AttemptDoc[]>();
+  const quizzes = await Quiz.find({ _id: { $in: attempts.map((a) => a.quizId) } }, { title: 1, resultsReleaseAt: 1 }).lean<
+    Pick<QuizDoc, "_id" | "title" | "resultsReleaseAt">[]
+  >();
+  const byId = new Map(quizzes.map((q) => [q._id.toString(), q]));
+  const now = new Date();
+  return attempts.map((a) => {
+    const quiz = byId.get(a.quizId.toString());
+    const released = !quiz?.resultsReleaseAt || quiz.resultsReleaseAt <= now;
+    const finished = a.status !== "active";
+    return {
+      id: a._id.toString(),
+      quizId: a.quizId.toString(),
+      quizTitle: quiz?.title ?? "(deleted quiz)",
+      startedAt: a.startedAt.toISOString(),
+      submittedAt: a.submittedAt ? a.submittedAt.toISOString() : null,
+      deadline: a.deadline.toISOString(),
+      status: a.status,
+      released,
+      resultsReleaseAt: quiz?.resultsReleaseAt ? quiz.resultsReleaseAt.toISOString() : null,
+      score: finished && released && a.score ? { total: a.score.total, maxPossible: a.score.maxPossible } : null,
+    };
+  });
+}

@@ -61,6 +61,7 @@ Rules:
 | D-046 | 2026-10-19 | 05 | Proctor events and the hidden exam camera | Active |
 | D-047 | 2026-10-19 | 05 | Leave kiosk before revealing the result window (macOS Spaces bug) | Active |
 | D-048 | 2026-10-19 | 05 | Cmd+Q quits during the kiosk exam (scoped global shortcut) | Active |
+| D-049 | 2026-10-20 | 06 | Live leaderboard for students who finished; profile lists active attempts | Active |
 
 ---
 
@@ -1938,3 +1939,42 @@ test**: Cmd+Q quit the app during the exam, and relaunching showed Resume with t
 
 **Concepts worth learning**
 - **Global shortcut:** an OS-level hotkey registered by the app; must be removed when no longer needed so it doesn't hijack keys elsewhere.
+
+---
+
+### D-049 — Live leaderboard for students who finished; profile lists active attempts
+- **Date:** 2026-10-20
+- **Phase:** 06 — Results, profile & leaderboard
+- **Status:** Active
+- **Type:** api
+
+**Context**
+The plan said students see a leaderboard "once results are released". Asked when exactly; the user wants it **live**: a
+student who finishes can see the leaderboard right away, and their position updates as classmates finish.
+
+**Decision**
+- Teacher (owner): always. Student: only after **finishing their own attempt** of that quiz (so it never leaks to someone who
+  hasn't taken it yet) **and** once results are released — the teacher's "show results at" time still hides it, consistent with marks.
+- Only finished attempts are ranked; `stillWriting` counts active ones. While `live` (exam not over or someone still writing) the page
+  re-fetches every 10 s and labels ranks as provisional; it stops polling once everything is final.
+- No WebSockets/SSE: polling one small GET is enough for a class (D-014).
+- Profile (`GET /me/attempts`) includes **active** attempts too, with a Resume link, so the profile is a complete history.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Show only after the exam ends | User explicitly wants live positions |
+| Visible to every student once released | Students who haven't taken it could see who scored what before their own attempt |
+| Server-sent events for updates | New realtime infrastructure for a list that changes a few times per minute |
+
+**How it works**
+Each request: finalize expired attempts → load finished attempts sorted by score → competition ranking (D-025) → mark the caller's
+row `isMe`. The client compares nothing; it just re-renders the latest list.
+
+**Files touched**
+- `docs/api-contracts.md` (leaderboard + profile contracts), `src/services/attempt-service.ts` (`listMyAttempts`),
+  `src/app/api/v1/me/attempts/route.ts`, `src/app/student/profile/page.tsx`, `src/components/layout/app-header.tsx` (nav),
+  leaderboard files in 06.3
+
+**Revisit if**
+Classes grow large enough that 10 s polling per viewer matters, or the course wants leaderboards hidden until the exam ends.
