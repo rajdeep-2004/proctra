@@ -1969,8 +1969,14 @@ student who finishes can see the leaderboard right away, and their position upda
 | Server-sent events for updates | New realtime infrastructure for a list that changes a few times per minute |
 
 **How it works**
-Each request: finalize expired attempts → load finished attempts sorted by score → competition ranking (D-025) → mark the caller's
-row `isMe`. The client compares nothing; it just re-renders the latest list.
+Each request: finalize expired attempts → load finished attempts → `competitionRank()` (`src/services/ranking.ts`, pure: sort by
+score desc then name; a new score gets rank = 1-based position, an equal score keeps the previous rank) → mark the caller's row
+`isMe`. `LeaderboardView` re-fetches every 10 s while `live` and keeps the last good board if a refresh fails.
+
+**Verified:** `.scratch/ranking.test.ts` (1,1,3 · 1,1,1,4 · negatives/fractions · no input mutation);
+`.scratch/leaderboard.check.mts` 15/15 (tie ranks, `isMe`, still-writing/never-started 403, owner vs other teacher, release gate,
+draft 404, `live` false after the exam); headless Chrome: student A's open page showed student B appear at rank 2 within one
+refresh, without reloading.
 
 **Files touched**
 - `docs/api-contracts.md` (leaderboard + profile contracts), `src/services/attempt-service.ts` (`listMyAttempts`),

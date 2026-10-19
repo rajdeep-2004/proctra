@@ -323,5 +323,5 @@ Permissions: the session grants only `media` with **video only** to the app orig
 | GET | /api/v1/me/attempts | student | 06 | built |
 | GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | built |
 | GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | built |
-| GET | /api/v1/quizzes/:quizId/leaderboard | teacher, student | 06 | planned |
+| GET | /api/v1/quizzes/:quizId/leaderboard | teacher, student | 06 | built |
 | GET | /api/v1/teacher/attempts/:attemptId/snapshots | teacher | 07 | planned (S-01) |

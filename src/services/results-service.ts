@@ -8,6 +8,7 @@ import { Quiz, type QuizDoc } from "@/models/quiz";
 import { finalizeExpiredForQuiz, finalizeIfExpired } from "@/services/attempt-service";
 import { resultFor, type QuestionResult } from "@/services/grading";
 import { eventCounts } from "@/services/proctor-service";
+import { competitionRank } from "@/services/ranking";
 import { snapshotCounts } from "@/services/snapshot-service";
 
 /** The teacher must own the quiz: 404 if it doesn't exist, 403 if it belongs to someone else. */
@@ -114,5 +115,63 @@ export async function getAttemptForTeacher(teacherId: string, attemptId: string)
     }),
     events: events.map((e) => ({ type: e.type, occurredAt: e.occurredAt.toISOString() })),
     snapshotCount: snaps.get(attempt._id.toString()) ?? 0,
+  };
+}
+
+// ---------- leaderboard (D-025, D-049) ----------
+
+export type Leaderboard = {
+  quizId: string;
+  quizTitle: string;
+  maxPossible: number;
+  live: boolean; // exam not over yet or someone still writing → ranks may change
+  stillWriting: number;
+  serverNow: string;
+  entries: { rank: number; studentName: string; score: number; isMe: boolean }[];
+};
+
+/**
+ * Teacher (owner): always. Student: only after finishing their own attempt AND once results are released.
+ * Ranks finished attempts only; names + scores, never answers, events or snapshots.
+ */
+export async function getLeaderboard(user: { id: string; role: "student" | "teacher" }, quizId: string): Promise<Leaderboard> {
+  await connectDB();
+  const quiz = await Quiz.findById(quizId).lean<QuizDoc>();
+  if (!quiz || (user.role === "student" && quiz.status === "draft")) throw new AppError("NOT_FOUND", "Quiz not found", 404);
+
+  await finalizeExpiredForQuiz(quizId);
+  if (user.role === "teacher") {
+    if (quiz.teacherId.toString() !== user.id) throw new AppError("FORBIDDEN", "This quiz belongs to another teacher", 403);
+  } else {
+    const mine = await Attempt.findOne({ quizId, studentId: user.id }, { status: 1 }).lean<Pick<AttemptDoc, "status">>();
+    if (!mine || mine.status === "active") throw new AppError("FORBIDDEN", "Finish this quiz to see the leaderboard", 403);
+    if (quiz.resultsReleaseAt && quiz.resultsReleaseAt > new Date()) {
+      throw new AppError("RESULTS_NOT_RELEASED", "Results aren't released yet", 403, { resultsReleaseAt: quiz.resultsReleaseAt.toISOString() });
+    }
+  }
+
+  const [finished, stillWriting] = await Promise.all([
+    Attempt.find({ quizId, status: { $ne: "active" } }, { studentId: 1, studentName: 1, score: 1 })
+      .limit(1000)
+      .lean<Pick<AttemptDoc, "studentId" | "studentName" | "score">[]>(),
+    Attempt.countDocuments({ quizId, status: "active" }),
+  ]);
+  const ranked = competitionRank(
+    finished.map((a) => ({ name: a.studentName, score: a.score?.total ?? 0, studentId: a.studentId.toString() })),
+  );
+  const now = new Date();
+  return {
+    quizId: quiz._id.toString(),
+    quizTitle: quiz.title,
+    maxPossible: quiz.questions.length * quiz.marking.correct,
+    live: now < quiz.endsAt || stillWriting > 0,
+    stillWriting,
+    serverNow: now.toISOString(),
+    entries: ranked.map((r) => ({
+      rank: r.rank,
+      studentName: r.name,
+      score: r.score,
+      isMe: user.role === "student" && r.studentId === user.id,
+    })),
   };
 }

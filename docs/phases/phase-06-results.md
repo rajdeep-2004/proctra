@@ -52,7 +52,7 @@ From phase 05 (Kiosk window & camera, merged 2026-10-19), building on phase 04's
 ## Tasks
 - [x] 06.1 — `GET /me/attempts` + student profile page → `feat(results): add student attempt history`
 - [x] 06.2 — Teacher submissions + attempt detail routes and pages → `feat(results): add teacher submissions and attempt detail`
-- [ ] 06.3 — Leaderboard service (competition ranking) + route + teacher/student pages → `feat(results): add quiz leaderboard`
+- [x] 06.3 — Leaderboard service (competition ranking) + route + teacher/student pages → `feat(results): add quiz leaderboard`
 - [ ] 06.4 — Result-release enforcement across result/profile/leaderboard → `feat(results): enforce result release time`
 - [ ] 06.5 — Update docs → `docs: update docs for phase 06`
 
