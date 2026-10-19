@@ -208,8 +208,9 @@ Response `201` (created) or `200` (resumed)
 ```json
 { "data": { "attemptId": "…", "status": "active", "deadline": "…", "resumed": false } }
 ```
-Errors: `409 QUIZ_NOT_AVAILABLE`, `409 ALREADY_ATTEMPTED`, `404`
-Notes: idempotent (unique index). Sets `quiz.locked = true` before creating. On resume logs a `resumed` event.
+Errors: `409 QUIZ_NOT_AVAILABLE` (not started yet / ended), `409 ALREADY_ATTEMPTED`, `404` (missing or not published), `403` (teacher)
+Notes: idempotent (unique index). Only while `startsAt ≤ now < endsAt`; sets `quiz.locked = true` before creating;
+`deadline = quiz.endsAt` (D-041). On resume logs a `resumed` event (phase 05).
 
 #### `GET /api/v1/attempts/:attemptId`
 - Auth: student (owner) · Phase: 04 · Purpose: exam state while active, result after
@@ -302,10 +303,10 @@ Not HTTP, but a contract between the web app and the Electron shell.
 | POST | /api/v1/teacher/quizzes/:quizId/archive | teacher | 03 | built |
 | GET | /api/v1/quizzes | student | 03 | built |
 | GET | /api/v1/quizzes/:quizId | student | 03 | built |
-| POST | /api/v1/quizzes/:quizId/attempts | student | 04 | planned |
-| GET | /api/v1/attempts/:attemptId | student | 04 | planned |
-| PUT | /api/v1/attempts/:attemptId/answers/:questionId | student | 04 | planned |
-| POST | /api/v1/attempts/:attemptId/submit | student | 04 | planned |
+| POST | /api/v1/quizzes/:quizId/attempts | student | 04 | built |
+| GET | /api/v1/attempts/:attemptId | student | 04 | built |
+| PUT | /api/v1/attempts/:attemptId/answers/:questionId | student | 04 | built |
+| POST | /api/v1/attempts/:attemptId/submit | student | 04 | built |
 | POST | /api/v1/attempts/:attemptId/snapshots | student | 05 | planned |
 | POST | /api/v1/attempts/:attemptId/events | student | 05 | planned |
 | GET | /api/v1/me/attempts | student | 06 | planned |

@@ -1,5 +1,7 @@
 import "server-only";
 import mongoose, { Types } from "mongoose";
+import { Attempt } from "@/models/attempt";
+import { finalizeExpiredForStudent } from "@/services/attempt-service";
 import { connectDB } from "@/lib/db";
 import { AppError } from "@/lib/api-response";
 import { Quiz, slotMinutes, type QuizDoc, type QuizStatus } from "@/models/quiz";
@@ -56,20 +58,14 @@ function toTeacherQuiz(q: LeanQuiz, attemptCount: number): QuizForTeacher {
 
 // ---------- helpers ----------
 
-/**
- * Attempt counts per quiz. Reads the `attempts` collection directly so this works before the
- * Attempt model exists (phase 04); an empty/missing collection just gives 0.
- */
+/** Attempt counts per quiz (one $group over the attempts of these quizzes). */
 async function attemptCounts(quizIds: Types.ObjectId[]): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
   if (quizIds.length === 0) return counts;
-  const rows = await mongoose.connection
-    .db!.collection("attempts")
-    .aggregate<{ _id: Types.ObjectId; n: number }>([
+  const rows = await Attempt.aggregate<{ _id: Types.ObjectId; n: number }>([
       { $match: { quizId: { $in: quizIds } } },
       { $group: { _id: "$quizId", n: { $sum: 1 } } },
-    ])
-    .toArray();
+    ]);
   for (const r of rows) counts.set(r._id.toString(), r.n);
   return counts;
 }
@@ -101,12 +97,9 @@ function buildQuestions(input: QuizInput["questions"], existing: LeanQuiz["quest
 /**
  * Every attempt's deadline is the quiz end time (D-041). When a locked quiz's end time moves later,
  * move the deadline of all still-active attempts too, so nobody is cut short by the old time.
- * (Raw collection until phase 04 adds the Attempt model.)
  */
 async function extendActiveAttempts(quizId: string, newEndsAt: Date) {
-  await mongoose.connection
-    .db!.collection("attempts")
-    .updateMany({ quizId: new Types.ObjectId(quizId), status: "active", deadline: { $lt: newEndsAt } }, { $set: { deadline: newEndsAt } });
+  await Attempt.updateMany({ quizId, status: "active", deadline: { $lt: newEndsAt } }, { $set: { deadline: newEndsAt } });
 }
 
 /** Full-document validation in memory (runs the Mongoose validators with correct `this`). */
@@ -292,14 +285,12 @@ function availabilityOf(q: { startsAt: Date; endsAt: Date }, now = new Date()): 
   return "open";
 }
 
-/** The student's attempts for these quizzes (raw collection until the Attempt model exists in phase 04). */
+/** The student's attempts for these quizzes. Expired ones are finalized first (lazy finalization, D-006). */
 async function myAttempts(studentId: string, quizIds: Types.ObjectId[]): Promise<Map<string, MyAttempt>> {
   const map = new Map<string, MyAttempt>();
   if (quizIds.length === 0) return map;
-  const rows = await mongoose.connection
-    .db!.collection("attempts")
-    .find({ studentId: new Types.ObjectId(studentId), quizId: { $in: quizIds } }, { projection: { quizId: 1, status: 1 } })
-    .toArray();
+  await finalizeExpiredForStudent(studentId);
+  const rows = await Attempt.find({ studentId, quizId: { $in: quizIds } }, { quizId: 1, status: 1 }).lean();
   for (const r of rows) map.set(String(r.quizId), { id: String(r._id), status: String(r.status) });
   return map;
 }

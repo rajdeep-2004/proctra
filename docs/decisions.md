@@ -54,6 +54,7 @@ Rules:
 | D-039 | 2026-10-19 | 03 | Quiz editor: browser-only render, whole-quiz save, local-time display | Active |
 | D-040 | 2026-10-19 | 03 | Student quiz views: projection-only reads; streamed 404 pages | Active |
 | D-041 | 2026-10-19 | 03 | Fixed exam slot: duration derived from start/end; extend-only end time | Active |
+| D-042 | 2026-10-19 | 04 | Attempt lifecycle: insert-or-read start, atomic grade-and-close with optimistic retry | Active |
 
 ---
 
@@ -1598,3 +1599,55 @@ ticker (`useSyncExternalStore`) drives all countdowns; `role="timer"` + `aria-li
 
 **Revisit if**
 The course wants per-student timers (e.g. "60 minutes from whenever you start within a day-long window").
+
+---
+
+### D-042 — Attempt lifecycle: insert-or-read start, atomic grade-and-close with optimistic retry
+- **Date:** 2026-10-19
+- **Phase:** 04 — Taking the exam
+- **Status:** Active
+- **Type:** algorithm
+
+**Context**
+Starting, saving and submitting race each other: double-clicked Start, two windows, a last-second answer
+save arriving together with the auto-submit, or a teacher saving while a student starts.
+
+**Decision**
+- **Start:** check for an existing attempt (resume/finished) → lock the quiz with a conditional update that also
+  enforces `published` and `startsAt ≤ now < endsAt` → read the quiz **after** locking → `Attempt.create(...)`. If the
+  unique index `{quizId, studentId}` rejects the insert (duplicate key `11000`), read the attempt the other request made.
+- **Close (submit / auto / lazy):** read the attempt, grade its answers, then one `findOneAndUpdate` filtered on
+  `{ status: "active", updatedAt: <what we graded> }` that sets status, `submittedAt` and `score` together. If an answer
+  save changed `updatedAt` in between, the write misses → re-read, re-grade (up to 5 tries). The close write uses
+  `timestamps: false` so `updatedAt` keeps meaning "last answer change".
+- Submitting at or after the deadline is recorded as `auto_submitted` with `submittedAt = deadline`.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Upsert with `includeResultMetadata` to learn "created vs existing" | Works, but awkward typing; insert + duplicate-key fallback is one clear path for both cases |
+| Flip status first, grade in a second write | A crash between the writes leaves a submitted attempt without a score |
+| Transactions | Needs a replica set session for every write; a conditional single-document update is enough here |
+
+**How it works**
+Every write that matters is a single-document update whose filter states the condition it depends on
+(`status: "active"`, `deadline > now − 5 s`, `updatedAt: x`). MongoDB applies single-document updates atomically, so the
+condition and the change can't be separated by another request.
+
+Verified by `.scratch/attempt-api.check.mts` (32/32): 5 parallel starts → 1 attempt; window enforced; quiz locked;
+no `correctIndex` while active; saves validated (range, foreign question, other student → 404); submit score = hand
+calculation (4 − 1 + 0 = 3); idempotent submit; save after submit → `ATTEMPT_CLOSED`; hidden results until release;
+expired attempt auto-submitted on read with `submittedAt = deadline`; 8 saves racing a submit → stored score equals
+the stored answers; teacher extension moves active deadlines.
+
+**Files touched**
+- `src/models/attempt.ts`, `src/schemas/attempt.ts`, `src/services/attempt-service.ts`, `src/services/grading.ts`,
+  `src/app/api/v1/quizzes/[quizId]/attempts/route.ts`, `src/app/api/v1/attempts/**`, `src/services/quiz-service.ts`
+  (attempt helpers now use the model and finalize expired attempts first)
+
+**Concepts worth learning**
+- **Optimistic concurrency control:** don't lock; instead write only if the data is still what you read, and retry if not.
+- **Idempotency:** repeating start/submit/save gives the same outcome, so retries and double-clicks are harmless.
+
+**Revisit if**
+Writes per attempt grow enough that retries become frequent (then use a per-attempt version counter).
