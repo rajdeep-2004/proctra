@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/07-ship` |
 | Depends on | Phase 06 |
 | PRD features | F-14, S-01, S-02 |

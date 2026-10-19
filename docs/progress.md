@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 07 — Ship: packaging, README, polish (`review`)
-**Branch:** `phase/07-ship`
+**Current phase:** — all planned phases done (project complete; see Parked ideas / Known debt for follow-ups)
+**Branch:** —
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -14,7 +14,7 @@
 | 04 | Taking the exam | done | phase/04-exam | 10-21 → 10-22 | 2026-10-19 | 2026-10-19 |
 | 05 | Kiosk window & camera | done | phase/05-kiosk-camera | 10-23 | 2026-10-19 | 2026-10-19 |
 | 06 | Results, profile & leaderboard | done | phase/06-results | 10-24 | 2026-10-20 | 2026-10-20 |
-| 07 | Ship: packaging, README, polish | review | phase/07-ship | 10-25 | 2026-10-20 | |
+| 07 | Ship: packaging, README, polish | done | phase/07-ship | 10-25 | 2026-10-20 | 2026-10-20 |
 
 Status values: `not-started` → `in-progress` → `review` → `done`
 
@@ -22,7 +22,7 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 ### 2026-10-20 (phase 07)
 - Done: tasks 07.1–07.6 — .dmg packaging (now per-chip, D-054), snapshot gallery (8/8), DevClub counter + GSAP (regressions green), README (industry-style, no "capstone"), production deployed and verified end to end by the user from the installed .dmg.
 - Found + fixed: Vercel upload failed on the 218 MB .dmg (`.vercelignore` now excludes `release/`); shared .dmg blocked by Gatekeeper and 518 MB (universal) → per-chip installers + per-macOS install steps.
-- Next: approve phase 07 → merge to `main` (production already runs this code). Project complete.
+- Next: phase 07 approved and merged to `main` (02e7cd9); production redeployed from `main`. Project complete.
 - Blockers: none. Deadline 2026-10-25 met early.
 
 ### 2026-10-20 (phase 06)
