@@ -19,6 +19,9 @@
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-20 (post-release)
+- Done: GitHub Release v0.1.0 with both installers (https://github.com/rajdeep-2004/proctra/releases/tag/v0.1.0); README links to the latest release.
+
 ### 2026-10-20 (phase 07)
 - Done: tasks 07.1–07.6 — .dmg packaging (now per-chip, D-054), snapshot gallery (8/8), DevClub counter + GSAP (regressions green), README (industry-style, no "capstone"), production deployed and verified end to end by the user from the installed .dmg.
 - Found + fixed: Vercel upload failed on the 218 MB .dmg (`.vercelignore` now excludes `release/`); shared .dmg blocked by Gatekeeper and 518 MB (universal) → per-chip installers + per-macOS install steps.
