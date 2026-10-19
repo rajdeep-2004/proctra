@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | in-progress |
+| Status | review |
 | Branch | `phase/03-quiz-management` |
 | Depends on | Phase 02 |
 | PRD features | F-02, F-03, (F-11 field) |
@@ -78,12 +78,18 @@ User asked for a fixed exam slot and a student countdown (D-041):
   result-release time, field-level errors, unsaved-changes guard, archive confirm); student API + pages
   (grouped list Open/Upcoming/Closed, detail with marking, instructions and camera notice; Start disabled).
   Carried-over phase-02 criterion verified: student → teacher API = 403.
+  **Change request (03.6–03.8):** quizzes are fixed exam slots — teacher sets start + end, server derives the
+  duration (1 min–5 h); once students start, the end can only move later (and active attempts' deadlines move with
+  it); students see a live server-time countdown ("Starts in …" → "Ends in …") that refreshes the page at the boundary.
 - **Key decisions:** D-037 (validation layers, UTC + offsets), D-038 (validate in memory + conditional
-  update), D-039 (browser-only editor, LocalTime), D-040 (projection-only student reads, streamed 404).
+  update), D-039 (browser-only editor, LocalTime), D-040 (projection-only student reads, streamed 404),
+  D-041 (fixed exam slot, derived duration, extend-only end, countdown; amends D-006).
 - **Known limitations:** `locked` is only set by phase 04's attempt start. `attemptCount`/`myAttempt` read the
   raw `attempts` collection until the model exists. Hidden-quiz pages show the 404 screen with HTTP 200
   (streaming). No CSP header yet. No drag-and-drop reordering (up/down buttons).
 - **Next phase should know:**
+  - **Attempt deadline = `quiz.endsAt`** (D-041), copied onto the attempt at start. Start only while
+    `startsAt ≤ now < endsAt`. Use the Attempt model in `extendActiveAttempts()` once it exists.
   - Start an attempt by setting `quiz.locked = true` with `Quiz.updateOne({ _id, status: "published" }, …)`
     **before** inserting the attempt (system-design §4). `updateQuiz()` already refuses question/marking edits once locked.
   - Students must never get `correctIndex` while an attempt is active — reuse the projection approach (D-040).
