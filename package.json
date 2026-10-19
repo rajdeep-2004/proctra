@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint && tsc --noEmit && tsc -p electron/tsconfig.json --noEmit",
     "electron:build": "tsc -p electron/tsconfig.json",
-    "electron": "npm run electron:build && electron ."
+    "electron": "npm run electron:build && electron .",
+    "seed": "tsx --conditions=react-server scripts/seed-teachers.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -36,6 +37,7 @@
     "eslint-config-next": "16.4.2",
     "shadcn": "^4.22.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

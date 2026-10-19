@@ -48,6 +48,7 @@ Rules:
 | D-033 | 2026-10-19 | 02 | Auth.js v5 beta wiring: pinned version, split + lazy config | Active |
 | D-034 | 2026-10-19 | 02 | Auth forms use Server Actions (exception to D-003) | Active |
 | D-035 | 2026-10-19 | 02 | Route guarding: proxy redirects + page re-checks; cookie flush in Electron | Active |
+| D-036 | 2026-10-19 | 02 | Teacher seed script with tsx; never silently promote a student | Active |
 
 ---
 
@@ -1282,3 +1283,47 @@ treated as signed out) and in Electron with `kill -9` (signed-in survives a hard
 
 **Revisit if**
 Auth.js ships a Next-16-native proxy helper.
+
+---
+
+### D-036 — Teacher seed script with tsx; never silently promote a student
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+Teachers can't self-register, so an admin needs a repeatable way to create them. The script must reuse
+the app's models/services (which use the `@/` path alias and the `server-only` guard).
+
+**Decision**
+`npm run seed` = `tsx --conditions=react-server scripts/seed-teachers.ts`. Added **`tsx`** as a
+devDependency: it runs TypeScript directly and understands the tsconfig `@/` alias; `--conditions=react-server`
+makes `import "server-only"` resolve to its no-op server version. The script reads `.env` with Node's
+built-in `process.loadEnvFile` (real environment variables win), validates `SEED_TEACHER_*` with the same
+`RegisterInput` schema as sign-up, and calls `upsertTeacher()`.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Plain `node` + compiled JS | Needs a separate build step and alias rewriting |
+| `npx tsx` without installing | Unpinned version on every run; teammates get different behaviour |
+| Seed endpoint in the app | A route that can create teachers is an attack surface |
+
+**How it works**
+Upsert by email → running it twice updates name/password instead of duplicating. If the email belongs
+to a **student**, it stops with an error unless `--promote` is passed, so a typo can't silently hand a
+student teacher powers. It prints only name + email, never the password. Verified: create → update →
+student collision refused → invalid password rejected with a clear message.
+
+Note: local dev and production share one Atlas database, so a seeded teacher works in both.
+
+**Files touched**
+- `scripts/seed-teachers.ts`, `package.json` (`seed` script, `tsx` devDependency)
+
+**Concepts worth learning**
+- **Idempotent script:** safe to run any number of times with the same end state.
+- **Principle of least surprise:** destructive or privilege-changing actions require an explicit flag.
+
+**Revisit if**
+Multiple teachers need seeding (switch to a CSV/JSON list).
