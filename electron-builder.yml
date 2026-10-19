@@ -21,9 +21,10 @@ extraMetadata:
   # No runtime npm dependencies in the shell — keeps Next.js, Mongoose etc. out of the app bundle.
   dependencies: {}
 mac:
+  # One installer per chip (D-054): each ~half the size of a universal build (which carries two copies of Electron).
   target:
     - target: dmg
-      arch: [universal]
+      arch: [arm64, x64]
   category: public.app-category.education
   icon: electron/build/icon.icns
   # Ad-hoc signature ("-"): no Apple Developer account needed; Apple Silicon refuses fully unsigned apps.
@@ -36,4 +37,4 @@ mac:
     NSCameraUsageDescription: Proctra uses your camera to take still photos while an exam is in progress.
 dmg:
   title: Proctra
-  artifactName: Proctra-${version}-mac-universal.${ext}
+  artifactName: Proctra-${version}-mac-${arch}.${ext}

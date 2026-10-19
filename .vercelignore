@@ -6,3 +6,5 @@
 electron/dist/
 node_modules/
 .next/
+release/
+electron/build/

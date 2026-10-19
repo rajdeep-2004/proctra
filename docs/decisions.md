@@ -66,6 +66,7 @@ Rules:
 | D-051 | 2026-10-20 | 07 | Packaging: shell-only bundle, baked production URL, ad-hoc signature, generated icon | Active |
 | D-052 | 2026-10-20 | 07 | Snapshot gallery: on-demand, signed 10-minute download links | Active |
 | D-053 | 2026-10-20 | 07 | Light DevClub UI + GSAP polish via the shadcn registry | Active |
+| D-054 | 2026-10-20 | 07 | Per-chip installers instead of universal; install steps for macOS 15+ | Active |
 
 ---
 
@@ -2027,7 +2028,7 @@ Quizzes get thousands of attempts (then paginate the table).
 ### D-051 — Packaging: shell-only bundle, baked production URL, ad-hoc signature, generated icon
 - **Date:** 2026-10-20
 - **Phase:** 07 — Ship
-- **Status:** Active
+- **Status:** Active — universal target replaced by per-chip installers in D-054
 - **Type:** tooling
 
 **Context**
@@ -2145,3 +2146,33 @@ stagger, result page renders "7.50 / 12.50" with screen-reader text "7.50", no c
 
 **Revisit if**
 The DevClub CLI's package is fixed (then it's the documented route), or more screens get polish after the deadline.
+
+---
+
+### D-054 — Per-chip installers instead of universal; install steps for macOS 15+
+- **Date:** 2026-10-20
+- **Phase:** 07 — Ship
+- **Status:** Active
+- **Type:** tooling
+
+**Context**
+The user shared the universal `.dmg` with a friend: it showed as ~518 MB and "cannot be opened" on the friend's Mac.
+
+**Findings**
+- Size: the installed universal app was 510 MB, of which 506 MB is the Electron framework — a universal build carries two
+  complete copies (Apple Silicon + Intel). Our own code is a few KB.
+- "Cannot be opened": Gatekeeper rejects un-notarized apps that carry the quarantine flag macOS adds to downloaded/AirDropped files.
+  Reproduced locally by adding the flag to a copy: `spctl` → `rejected`; `xattr -cr` removes the flag and the ad-hoc signature stays valid.
+  macOS 15 removed the old right-click → Open shortcut; the way through is Privacy & Security → **Open Anyway**.
+
+**Decision**
+- Build two installers: `Proctra-<v>-mac-arm64.dmg` (121 MB download, 288 MB installed) and `Proctra-<v>-mac-x64.dmg` (128 MB / 294 MB).
+  User chose this over universal-only or Apple-Silicon-only.
+- README install steps per macOS version (Open Anyway on 15+, right-click → Open on 14 and older, `xattr -cr` for "is damaged").
+- Real fix (not done — needs a paid Apple Developer ID): Developer ID signing + notarization removes all of these prompts.
+
+**Files touched**
+- `electron-builder.yml` (`arch: [arm64, x64]`, `artifactName` with `${arch}`), `package.json` (`dist`), `README.md`, D-051 status
+
+**Revisit if**
+The project gets an Apple Developer ID (sign + notarize, then a single universal build is fine again).

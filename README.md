@@ -92,17 +92,24 @@ Dev-only switches for testing without taking over your screen (ignored in the pa
 ## Building and installing the macOS app
 
 ```bash
-npm run dist            # → release/Proctra-0.1.0-mac-universal.dmg
+npm run dist            # → release/Proctra-0.1.0-mac-arm64.dmg  and  release/Proctra-0.1.0-mac-x64.dmg
 ```
-- Universal (Apple Silicon + Intel), about 220 MB. The app loads the production site,
+- Two installers. Use **`arm64`** for Apple Silicon Macs (M1–M4, everything since late 2020) and **`x64`** for older
+  Intel Macs (Apple menu → About This Mac shows which). Each is about a 120 MB download and 290 MB installed; almost all
+  of that is Electron itself. The app loads the production site,
   `https://proctra-mu.vercel.app`, which is set in `electron-builder.yml` (`extraMetadata.proctraAppUrl`). To build for
   another server:
   `npm run dist -- -c.extraMetadata.proctraAppUrl=https://your-deployment.example`.
-- The app is **ad-hoc signed, not notarized** (no Apple Developer account). To install:
-  1. Open the `.dmg` and drag **Proctra** to Applications.
-  2. The first time, **right-click Proctra → Open → Open**. A double-click shows "can't be opened" until you do this once.
-  3. If macOS says the app "is damaged" (common for files downloaded in a browser), run
-     `xattr -cr /Applications/Proctra.app` once.
+- The app is **ad-hoc signed, not notarized** (no Apple Developer account), so macOS blocks it the first time when it
+  arrives by download, AirDrop or chat. To install:
+  1. Open the `.dmg` and drag **Proctra** to **Applications**.
+  2. Open Proctra once. When macOS refuses ("cannot be opened", "Apple could not verify…"), click **Done**.
+  3. Allow it, depending on your macOS version:
+     - **macOS 15 Sequoia or newer:** System Settings → **Privacy & Security** → scroll down → **Open Anyway** → confirm.
+     - **macOS 14 or older:** right-click Proctra in Applications → **Open** → **Open**.
+  4. If it instead says **"is damaged and can't be opened"**, run this once in Terminal, then open it normally:
+     `xattr -cr /Applications/Proctra.app`
+  This is needed only once per Mac.
 - When you start your first exam, macOS asks for camera access. Allow it. If you denied it, enable it in
   **System Settings → Privacy & Security → Camera → Proctra**.
 
