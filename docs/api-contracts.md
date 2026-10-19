@@ -194,7 +194,8 @@ Response `200`
 #### `GET /api/v1/quizzes/:quizId`
 - Auth: student · Phase: 03 · Purpose: pre-start screen (instructions, timing, camera notice). No questions.
 Response `200` `{ "data": { "id", "title", "instructions", "startsAt", "endsAt", "durationMinutes", "questionCount", "marking", "availability", "myAttempt" } }`
-Errors: `404` (not published)
+Errors: `404` (missing, draft or archived — indistinguishable to students)
+Note: the page `/student/quizzes/:id` streams, so for a hidden quiz it renders the 404 screen (with `noindex`) but the HTTP status is 200 (D-040).
 
 #### `POST /api/v1/quizzes/:quizId/attempts`
 - Auth: student · Phase: 04 · Purpose: start a new attempt **or resume** the active one
@@ -295,8 +296,8 @@ Not HTTP, but a contract between the web app and the Electron shell.
 | POST | /api/v1/teacher/quizzes/:quizId/publish | teacher | 03 | built |
 | POST | /api/v1/teacher/quizzes/:quizId/unpublish | teacher | 03 | built |
 | POST | /api/v1/teacher/quizzes/:quizId/archive | teacher | 03 | built |
-| GET | /api/v1/quizzes | student | 03 | planned |
-| GET | /api/v1/quizzes/:quizId | student | 03 | planned |
+| GET | /api/v1/quizzes | student | 03 | built |
+| GET | /api/v1/quizzes/:quizId | student | 03 | built |
 | POST | /api/v1/quizzes/:quizId/attempts | student | 04 | planned |
 | GET | /api/v1/attempts/:attemptId | student | 04 | planned |
 | PUT | /api/v1/attempts/:attemptId/answers/:questionId | student | 04 | planned |

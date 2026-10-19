@@ -247,3 +247,82 @@ export async function transitionQuiz(teacherId: string, quizId: string, action: 
   }
   throw new AppError("INVALID_STATE", "Quiz changed meanwhile; reload and try again", 409);
 }
+
+// ---------- student-facing (never includes questions or correct answers) ----------
+
+export type Availability = "upcoming" | "open" | "closed";
+export type MyAttempt = { id: string; status: string } | null;
+
+export type QuizForStudent = {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  durationMinutes: number;
+  questionCount: number;
+  availability: Availability;
+  myAttempt: MyAttempt;
+};
+
+export type QuizDetailForStudent = QuizForStudent & {
+  instructions: string;
+  marking: { correct: number; incorrect: number; unanswered: number };
+};
+
+function availabilityOf(q: { startsAt: Date; endsAt: Date }, now = new Date()): Availability {
+  if (now < q.startsAt) return "upcoming";
+  if (now >= q.endsAt) return "closed";
+  return "open";
+}
+
+/** The student's attempts for these quizzes (raw collection until the Attempt model exists in phase 04). */
+async function myAttempts(studentId: string, quizIds: Types.ObjectId[]): Promise<Map<string, MyAttempt>> {
+  const map = new Map<string, MyAttempt>();
+  if (quizIds.length === 0) return map;
+  const rows = await mongoose.connection
+    .db!.collection("attempts")
+    .find({ studentId: new Types.ObjectId(studentId), quizId: { $in: quizIds } }, { projection: { quizId: 1, status: 1 } })
+    .toArray();
+  for (const r of rows) map.set(String(r.quizId), { id: String(r._id), status: String(r.status) });
+  return map;
+}
+
+function toStudentQuiz(q: LeanQuiz, attempt: MyAttempt): QuizForStudent {
+  return {
+    id: q._id.toString(),
+    title: q.title,
+    startsAt: q.startsAt.toISOString(),
+    endsAt: q.endsAt.toISOString(),
+    durationMinutes: q.durationMinutes,
+    questionCount: q.questions.length,
+    availability: availabilityOf(q),
+    myAttempt: attempt,
+  };
+}
+
+/** Every published quiz is visible to every student (D-016). Projection leaves out the questions entirely. */
+export async function listQuizzesForStudent(studentId: string): Promise<QuizForStudent[]> {
+  await connectDB();
+  const quizzes = await Quiz.aggregate<LeanQuiz>([
+    { $match: { status: "published" } },
+    { $sort: { startsAt: 1 } },
+    { $limit: 500 },
+    // keep only what students may see; question count without shipping question contents
+    { $project: { title: 1, startsAt: 1, endsAt: 1, durationMinutes: 1, questions: { $map: { input: "$questions", in: { _id: "$$this._id" } } } } },
+  ]);
+  const attempts = await myAttempts(studentId, quizzes.map((q) => q._id));
+  return quizzes.map((q) => toStudentQuiz(q, attempts.get(q._id.toString()) ?? null));
+}
+
+/** Pre-start screen data. Unpublished/archived/missing → 404 (students can't tell them apart). */
+export async function getQuizForStudent(studentId: string, quizId: string): Promise<QuizDetailForStudent> {
+  await connectDB();
+  const quiz = await Quiz.findOne({ _id: quizId, status: "published" }).lean<LeanQuiz>();
+  if (!quiz) throw new AppError("NOT_FOUND", "Quiz not found", 404);
+  const attempts = await myAttempts(studentId, [quiz._id]);
+  return {
+    ...toStudentQuiz(quiz, attempts.get(quizId) ?? null),
+    instructions: quiz.instructions ?? "",
+    marking: { correct: quiz.marking.correct, incorrect: quiz.marking.incorrect, unanswered: quiz.marking.unanswered },
+  };
+}

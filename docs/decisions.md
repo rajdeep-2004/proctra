@@ -52,6 +52,7 @@ Rules:
 | D-037 | 2026-10-19 | 03 | Quiz validation in two layers; times are UTC with explicit offsets | Active |
 | D-038 | 2026-10-19 | 03 | Quiz service: validate in memory, write with one conditional update | Active |
 | D-039 | 2026-10-19 | 03 | Quiz editor: browser-only render, whole-quiz save, local-time display | Active |
+| D-040 | 2026-10-19 | 03 | Student quiz views: projection-only reads; streamed 404 pages | Active |
 
 ---
 
@@ -1486,3 +1487,49 @@ reload; publish → badge + message; dashboard lists the quiz with local times (
 
 **Revisit if**
 Teachers need autosave of drafts or collaborative editing.
+
+---
+
+### D-040 — Student quiz views: projection-only reads; streamed 404 pages
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management
+- **Status:** Active
+- **Type:** api
+
+**Context**
+Students must see published quizzes (D-016) and their timing, but never the questions or answers before
+an attempt, and must not be able to tell a draft from a missing quiz.
+
+**Decision**
+- `listQuizzesForStudent()` uses an aggregation `$project` that keeps title/timing and maps questions to
+  `{_id}` only (to count them), so question text and `correctIndex` never leave the database for this view.
+- `getQuizForStudent()` filters `{ status: "published" }`; draft/archived/missing all → `404`.
+- `availability` (`upcoming` / `open` / `closed`) is computed on the server from UTC instants at request time.
+- Dashboard groups: Open now → Upcoming → Closed (closed group hidden when empty).
+- `myAttempt` reads the `attempts` collection directly until phase 04 adds the model (same trick as D-038).
+
+**Streamed 404 status**
+`notFound()` inside a `<Suspense>` boundary runs after the page shell (status 200) has already been
+sent, so the browser gets the not-found screen and a `noindex` tag, but HTTP status 200. Verified the draft's
+title is not in the HTML. The **API** returns a real 404. Accepted: the page is only used inside the app; the
+alternative (blocking the whole page until the DB answers) gives up streaming for no user-visible gain.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `find()` then strip fields in JS | Question text would still be read from DB and sit in server memory/logs; projection is safer by construction |
+| 403 for drafts | Reveals that a quiz with that id exists |
+
+**Files touched**
+- `src/services/quiz-service.ts` (student section), `src/app/api/v1/quizzes/**`, `src/app/student/page.tsx`,
+  `src/app/student/quizzes/[quizId]/page.tsx`, `src/components/quiz/availability-badge.tsx`
+
+Verified by `.scratch/student-quiz.check.mts` (15 API/page checks: grouping, draft hidden, archived 404,
+no `SECRET` question text or `correctIndex` in list/detail/HTML, teacher 403, signed-out 401) and screenshots.
+
+**Concepts worth learning**
+- **Projection:** asking the database for only the fields you need — less data moved, less to leak.
+- **Information disclosure:** different errors for "exists but hidden" vs "doesn't exist" leak information.
+
+**Revisit if**
+Search engines or external links ever need correct 404 status codes for these pages.
