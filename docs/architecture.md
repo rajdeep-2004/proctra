@@ -58,14 +58,15 @@ proctra/
 ├── src/
 │   ├── app/                # Next.js App Router
 │   │   ├── (auth)/         # sign-in, sign-up pages
-│   │   ├── student/        # dashboard, quiz detail (Start/Resume), attempts/[id] result page, profile (06)
-│   │   ├── teacher/        # teacher dashboard, quiz editor, submissions, leaderboard
+│   │   ├── student/        # dashboard, quiz detail (Start/Resume), attempts/[id] result, profile, quizzes/[id]/leaderboard
+│   │   ├── teacher/        # dashboard, quiz editor, quizzes/[id]/results + /leaderboard, attempts/[id] detail
 │   │   ├── exam/[attemptId]/ # bare exam page (timer, palette, autosave); kiosk window in phase 05
 │   │   └── api/v1/         # route handlers (thin: auth → validate → service → respond)
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
 │   │   ├── auth/, layout/  # sign-in/up forms, app header
 │   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
+│   │   ├── results/        # leaderboard view (live polling) + shared page, event timeline
 │   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue/useAutosave, useExamCamera, useSnapshots, useProctorEvents
 │   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
@@ -95,7 +96,7 @@ proctra/
 | Quiz service | Quiz CRUD, publish/unpublish/archive, edit lock, student list/detail (`src/services/quiz-service.ts`) | Quiz model, `attempts` collection | Return question text or `correctIndex` to students |
 | Attempt service | Start/resume, save answer, submit, lazy finalization (`src/services/attempt-service.ts`, D-042) | Quiz, Attempt models, grading | Trust client time, score or role |
 | Grading service | Score computation (pure function, `src/services/grading.ts`) | none | Touch the DB |
-| Leaderboard service | Competition ranking per quiz | Attempt model | Expose snapshots/events |
+| Results service | Teacher submissions, attempt detail, leaderboard (`results-service.ts`; ranking in pure `ranking.ts`) | Attempt, Quiz, ProctorEvent models; snapshot/event counts | Expose snapshots/events to students; rank unfinished attempts |
 | Snapshot service | Upload to Cloudinary, record metadata, signed URLs (`snapshot-service.ts`, `lib/cloudinary.ts`) | Cloudinary SDK, Snapshot model | Store image bytes in MongoDB |
 | Proctor events | Record and list window/camera events (`proctor-service.ts`) | ProctorEvent model | Label events as cheating |
 

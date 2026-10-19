@@ -55,7 +55,7 @@ From phase 05 (Kiosk window & camera, merged 2026-10-19), building on phase 04's
 - [x] 06.3 — Leaderboard service (competition ranking) + route + teacher/student pages → `feat(results): add quiz leaderboard`
 - [x] 06.4 — Result-release enforcement across result/profile/leaderboard → enforcement was built into each view (04.2, 06.1, 06.3);
   this task verified it end to end (11/11) → `docs: verify result release across result, profile and leaderboard`
-- [ ] 06.5 — Update docs → `docs: update docs for phase 06`
+- [x] 06.5 — Update docs → `docs: update docs for phase 06`
 
 ## Done criteria
 - [ ] With 3 students (two tied), leaderboard shows 1, 1, 3
