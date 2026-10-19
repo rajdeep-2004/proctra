@@ -34,6 +34,15 @@ function errorJson(code: ErrorCode, message: string, status: number, details?: u
   return Response.json({ error: { code, message, details: details ?? {} } }, { status });
 }
 
+/** Parses a JSON request body; malformed JSON becomes a 400 instead of a 500. */
+export async function readJson(req: Request): Promise<unknown> {
+  try {
+    return await req.json();
+  } catch {
+    throw new AppError("VALIDATION_ERROR", "Request body must be valid JSON", 400);
+  }
+}
+
 /** Success response in the standard `{ data }` shape. */
 export function ok(data: unknown, status = 200) {
   return Response.json({ data }, { status });

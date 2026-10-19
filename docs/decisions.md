@@ -44,6 +44,7 @@ Rules:
 | D-029 | 2026-10-19 | 01 | Mongo connection settings and the standard API wrapper | Active |
 | D-030 | 2026-10-19 | 01 | Electron shell details: single instance, offline page, dev env loading | Active |
 | D-031 | 2026-10-19 | 01 | Deploy with the Vercel CLI; env vars set from .env without echoing | Active |
+| D-032 | 2026-10-19 | 02 | Registration and password handling rules | Active |
 
 ---
 
@@ -1082,3 +1083,45 @@ appear on screen or in shell history. A `.vercelignore` excludes `.env*`, `.scra
 
 **Revisit if**
 The course allows CI, or a stable custom domain is needed for the packaged app.
+
+---
+
+### D-032 — Registration and password handling rules
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** edge-case
+
+**Context**
+Student self-registration and password sign-in have several quiet failure modes: role injection,
+duplicate emails differing only by case, bcrypt's 72-byte limit, and revealing which emails exist.
+
+**Decision**
+- `registerStudent()` hardcodes `role: "student"`; the Zod schema doesn't even include `role`, so `{"role":"teacher"}` is dropped.
+- Emails are trimmed + lower-cased in Zod **and** in the Mongoose schema; the unique index on `email` is the real
+  guard (a duplicate-key error `11000` becomes `409 CONFLICT`, which also covers two sign-ups racing).
+- Passwords: 8+ characters, max **72 bytes** (bcrypt ignores anything after 72 bytes, so longer passwords are rejected instead of silently truncated).
+- `verifyCredentials()` always runs one `bcrypt.compare` — against a dummy hash when the email doesn't exist — and returns `null` for any failure.
+- `passwordHash` has `select: false`; only `verifyCredentials` asks for it.
+- `readJson()` turns malformed JSON into `400 VALIDATION_ERROR` instead of a 500.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Check "email exists" before inserting | Race-prone (two requests both see "not exists"); the unique index is atomic |
+| Return early when the email isn't found | Faster response for unknown emails → attacker can enumerate accounts by timing |
+
+**How it works**
+bcrypt is deliberately slow (cost 10 ≈ 50–100 ms per hash). Without the dummy compare, "no such user"
+would answer in ~1 ms and "wrong password" in ~70 ms, leaking which emails are registered.
+
+**Files touched**
+- `src/models/user.ts`, `src/schemas/auth.ts`, `src/services/user-service.ts`,
+  `src/app/api/v1/auth/register/route.ts`, `src/lib/api-response.ts` (`readJson`)
+
+**Concepts worth learning**
+- **Timing attack / user enumeration:** learning secrets from how long a server takes to answer.
+- **Mass assignment:** a client setting fields it shouldn't (here `role`) by adding them to the request body.
+
+**Revisit if**
+Email verification or password reset is added.

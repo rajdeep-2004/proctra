@@ -66,7 +66,7 @@ Response `200` `{ "data": { "ok": true, "db": "up" } }` · `503` `{ "data": { "o
 
 Request
 ```json
-{ "name": "Asha Rao", "email": "asha@uni.edu", "password": "min 8 chars" }
+{ "name": "Asha Rao", "email": "asha@uni.edu", "password": "8+ chars, max 72 bytes" }
 ```
 Response `201` `{ "data": { "id": "…", "name": "Asha Rao", "email": "asha@uni.edu", "role": "student" } }`
 Errors: `400 VALIDATION_ERROR`, `409 CONFLICT` (email taken)
@@ -280,7 +280,7 @@ Not HTTP, but a contract between the web app and the Electron shell.
 | Method | Path | Auth | Phase | Status |
 |---|---|---|---|---|
 | GET | /api/v1/health | public | 01 | built |
-| POST | /api/v1/auth/register | public | 02 | planned |
+| POST | /api/v1/auth/register | public | 02 | built |
 | * | /api/auth/* (Auth.js) | public | 02 | planned |
 | GET | /api/v1/me | any | 02 | planned |
 | GET | /api/v1/teacher/quizzes | teacher | 03 | planned |

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/02-auth` |
 | Depends on | Phase 01 |
 | PRD features | F-01 |
@@ -50,7 +50,7 @@ From phase 01 (Foundation, merged 2026-10-19):
 - `decisions.md` → D-005, D-023
 
 ## Tasks
-- [ ] 02.1 — User model, register Zod schema, user service, `POST /api/v1/auth/register` → `feat(auth): add user model and student registration`
+- [x] 02.1 — User model, register Zod schema, user service, `POST /api/v1/auth/register` → `feat(auth): add user model and student registration`
 - [ ] 02.2 — Auth.js config (Credentials, JWT callbacks), `requireUser`, `GET /api/v1/me`, Electron persistent session partition → `feat(auth): add credentials sign-in and role helpers`
 - [ ] 02.3 — Sign-in / sign-up pages (shadcn forms), sign-out → `feat(auth): add sign-in and sign-up pages`
 - [ ] 02.4 — Route guard (middleware/proxy) + student/teacher dashboard shells → `feat(auth): add role routing and dashboard shells`

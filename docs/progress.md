@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 02 — Auth & roles (`not-started`)
-**Branch:** —
+**Current phase:** 02 — Auth & roles (`in-progress`)
+**Branch:** `phase/02-auth`
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -9,7 +9,7 @@
 | # | Phase | Status | Branch | Target | Started | Closed |
 |---|---|---|---|---|---|---|
 | 01 | Foundation | done | phase/01-foundation | 10-19 | 2026-10-19 | 2026-10-19 |
-| 02 | Auth & roles | not-started | phase/02-auth | 10-20 | | |
+| 02 | Auth & roles | in-progress | phase/02-auth | 10-20 | 2026-10-19 | |
 | 03 | Quiz management | not-started | phase/03-quiz-management | 10-20 → 10-21 | | |
 | 04 | Taking the exam | not-started | phase/04-exam | 10-21 → 10-22 | | |
 | 05 | Kiosk window & camera | not-started | phase/05-kiosk-camera | 10-23 | | |
