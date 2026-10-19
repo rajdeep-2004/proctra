@@ -13,7 +13,20 @@ Students see their attempt history and marks; teachers see submissions, per-atte
 event log, and a leaderboard with competition ranking, all respecting result release.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+From phase 05 (Kiosk window & camera, merged 2026-10-19), building on phase 04's attempts:
+- **Exists for results:** finished attempts store `score` ({ total, correct, incorrect, unanswered, maxPossible }), `status`
+  (`submitted` / `auto_submitted`), `submittedAt`, `studentName` (D-021). Student result page `/student/attempts/[id]` already
+  respects `resultsReleaseAt` (`getAttemptForStudent` → `released`). Grading: `src/services/grading.ts` (`resultFor` per question).
+- **Ready-made helpers:** `finalizeExpiredForQuiz(quizId)` and `finalizeExpiredForStudent(studentId)` (attempt-service) — call before
+  any list; `snapshotCounts(attemptIds)` (snapshot-service), `eventCounts(attemptIds)` (proctor-service); events timeline
+  `ProctorEvent.find({ attemptId }).sort({ occurredAt: 1 })`; `signedImageUrl(publicId)` for S-01 (phase 07).
+- **Indexes in place:** `attempts {studentId, startedAt}` (profile), `{quizId, status, score.total}` (submissions/leaderboard).
+- **Rules:** teacher sees only quizzes they own (reuse `loadOwned` pattern in quiz-service); student never sees another student's
+  attempt (404) and only released results; leaderboard = competition ranking (1, 1, 3, D-025), name + score only, never events or
+  snapshots; event wording neutral ("window lost focus at …").
+- **Testing:** `.scratch/http.mts` (+ `newStudent`), `.scratch/mk-exam.mts`, `.scratch/attempt-api.check.mts`; re-seed
+  `t2@scratch.test` after cleanup; local prod server needs `AUTH_TRUST_HOST=true`; the user's `next dev` runs on :3000.
+- Decisions: D-045 – D-048.
 
 ## In scope — exact features
 1. **Student profile**

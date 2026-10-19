@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/05-kiosk-camera` |
 | Depends on | Phase 04 |
 | PRD features | F-04, F-05, F-07, F-08, F-09 (capture side) |

@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 05 — Kiosk window & camera (`review`)
-**Branch:** `phase/05-kiosk-camera`
+**Current phase:** 06 — Results, profile & leaderboard (`not-started`)
+**Branch:** —
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -12,7 +12,7 @@
 | 02 | Auth & roles | done | phase/02-auth | 10-20 | 2026-10-19 | 2026-10-19 |
 | 03 | Quiz management | done | phase/03-quiz-management | 10-20 → 10-21 | 2026-10-19 | 2026-10-19 |
 | 04 | Taking the exam | done | phase/04-exam | 10-21 → 10-22 | 2026-10-19 | 2026-10-19 |
-| 05 | Kiosk window & camera | review | phase/05-kiosk-camera | 10-23 | 2026-10-19 | |
+| 05 | Kiosk window & camera | done | phase/05-kiosk-camera | 10-23 | 2026-10-19 | 2026-10-19 |
 | 06 | Results, profile & leaderboard | not-started | phase/06-results | 10-24 | | |
 | 07 | Ship: packaging, README, polish | not-started | phase/07-ship | 10-25 | | |
 
@@ -24,7 +24,7 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 - Fixed: kiosk exit left the result window off-screen (macOS Spaces, D-047) — found in the user's real run, confirmed fixed by the user.
 - Fixed: Cmd+Q did nothing in the kiosk exam (macOS kiosk disables the app menu) → scoped Cmd+Q shortcut quits; resume works (D-048, user-confirmed).
 - Cloudinary setup issues resolved with the user: empty secret, disabled key, key role without "create".
-- Next: approve phase 05 → merge + deploy; then `/phase-start 06` (results, profile, leaderboard).
+- Next: phase 05 approved, merged to `main` (df73bb4) and deployed; `/phase-start 06` (results, profile, leaderboard).
 - Blockers: none. Schedule: ahead.
 
 ### 2026-10-19 (phase 04)
