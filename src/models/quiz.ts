@@ -12,8 +12,8 @@ export const LIMITS = {
   minOptions: 2,
   maxOptions: 6,
   maxQuestions: 200,
-  minDuration: 1,
-  maxDuration: 300,
+  minSlotMinutes: 1, // exam slot = endsAt − startsAt (D-041)
+  maxSlotMinutes: 300,
   markAbs: 100,
 } as const;
 
@@ -48,8 +48,17 @@ const quizSchema = new Schema(
     title: { type: String, required: true, trim: true, maxlength: LIMITS.title },
     instructions: { type: String, default: "", trim: true, maxlength: LIMITS.instructions },
     startsAt: { type: Date, required: true },
-    endsAt: { type: Date, required: true },
-    durationMinutes: { type: Number, required: true, min: LIMITS.minDuration, max: LIMITS.maxDuration },
+    endsAt: {
+      type: Date,
+      required: true,
+      validate: {
+        validator(this: { startsAt: Date }, v: Date) {
+          const minutes = (v.getTime() - this.startsAt.getTime()) / 60_000;
+          return minutes >= LIMITS.minSlotMinutes && minutes <= LIMITS.maxSlotMinutes;
+        },
+        message: "The exam must last between 1 minute and 5 hours",
+      },
+    },
     marking: {
       correct: { ...markSchema, default: 1 },
       incorrect: { ...markSchema, default: 0 },
@@ -80,7 +89,6 @@ export type QuizDoc = {
   instructions: string;
   startsAt: Date;
   endsAt: Date;
-  durationMinutes: number;
   marking: { correct: number; incorrect: number; unanswered: number };
   resultsReleaseAt: Date | null;
   status: QuizStatus;
@@ -89,5 +97,10 @@ export type QuizDoc = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+/** Exam length in whole minutes, derived from the slot (never stored). */
+export function slotMinutes(q: { startsAt: Date; endsAt: Date }): number {
+  return Math.round((q.endsAt.getTime() - q.startsAt.getTime()) / 60_000);
+}
 
 export const Quiz: Model<QuizDoc> = (models.Quiz as Model<QuizDoc>) ?? model<QuizDoc>("Quiz", quizSchema);

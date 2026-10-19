@@ -2,7 +2,7 @@ import "server-only";
 import mongoose, { Types } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { AppError } from "@/lib/api-response";
-import { Quiz, type QuizDoc, type QuizStatus } from "@/models/quiz";
+import { Quiz, slotMinutes, type QuizDoc, type QuizStatus } from "@/models/quiz";
 import type { QuizInput } from "@/schemas/quiz";
 
 // ---------- shapes returned to the API ----------
@@ -38,7 +38,7 @@ function toTeacherQuiz(q: LeanQuiz, attemptCount: number): QuizForTeacher {
     instructions: q.instructions ?? "",
     startsAt: q.startsAt.toISOString(),
     endsAt: q.endsAt.toISOString(),
-    durationMinutes: q.durationMinutes,
+    durationMinutes: slotMinutes(q),
     marking: { correct: q.marking.correct, incorrect: q.marking.incorrect, unanswered: q.marking.unanswered },
     resultsReleaseAt: q.resultsReleaseAt ? q.resultsReleaseAt.toISOString() : null,
     status: q.status,
@@ -96,6 +96,17 @@ function buildQuestions(input: QuizInput["questions"], existing: LeanQuiz["quest
     }
     return { _id: q.id ? new Types.ObjectId(q.id) : new Types.ObjectId(), text: q.text, options: q.options, correctIndex: q.correctIndex };
   });
+}
+
+/**
+ * Every attempt's deadline is the quiz end time (D-041). When a locked quiz's end time moves later,
+ * move the deadline of all still-active attempts too, so nobody is cut short by the old time.
+ * (Raw collection until phase 04 adds the Attempt model.)
+ */
+async function extendActiveAttempts(quizId: string, newEndsAt: Date) {
+  await mongoose.connection
+    .db!.collection("attempts")
+    .updateMany({ quizId: new Types.ObjectId(quizId), status: "active", deadline: { $lt: newEndsAt } }, { $set: { deadline: newEndsAt } });
 }
 
 /** Full-document validation in memory (runs the Mongoose validators with correct `this`). */
@@ -160,12 +171,11 @@ export async function updateQuiz(teacherId: string, quizId: string, input: QuizI
   const always = {
     title: input.title,
     instructions: input.instructions,
-    endsAt: input.endsAt,
+    endsAt: input.endsAt, // while locked: may only move later (checked below)
     resultsReleaseAt: input.resultsReleaseAt,
   };
   const lockable = {
     startsAt: input.startsAt,
-    durationMinutes: input.durationMinutes,
     marking: input.marking,
     questions,
   };
@@ -173,7 +183,6 @@ export async function updateQuiz(teacherId: string, quizId: string, input: QuizI
 
   const changesLockedFields = () =>
     current.startsAt.getTime() !== input.startsAt.getTime() ||
-    current.durationMinutes !== input.durationMinutes ||
     !sameJson(
       { c: current.marking.correct, i: current.marking.incorrect, u: current.marking.unanswered },
       { c: input.marking.correct, i: input.marking.incorrect, u: input.marking.unanswered },
@@ -184,16 +193,23 @@ export async function updateQuiz(teacherId: string, quizId: string, input: QuizI
     );
 
   const lockedError = () =>
-    new AppError("QUIZ_LOCKED", "Students have started this quiz, so its questions, marking and timing can't change", 409);
+    new AppError("QUIZ_LOCKED", "Students have started this quiz, so its questions, marking and start time can't change", 409);
 
   if (current.locked) {
     if (changesLockedFields()) throw lockedError();
+    if (input.endsAt < current.endsAt) {
+      throw new AppError("QUIZ_LOCKED", "Students have started this quiz, so the end time can only be moved later", 409, {
+        issues: [{ path: "endsAt", message: "Can only be moved later once students have started" }],
+      });
+    }
+    // Condition on the end time we compared against, so two extensions can't interleave and shorten it.
     const updated = await Quiz.findOneAndUpdate(
-      { _id: quizId, teacherId, status: { $ne: "archived" } },
+      { _id: quizId, teacherId, status: { $ne: "archived" }, endsAt: { $lte: input.endsAt } },
       { $set: always },
       { returnDocument: "after" },
     ).lean<LeanQuiz>();
     if (!updated) throw new AppError("INVALID_STATE", "Quiz changed while saving; reload and try again", 409);
+    if (input.endsAt.getTime() !== current.endsAt.getTime()) await extendActiveAttempts(quizId, input.endsAt);
     return getTeacherQuiz(teacherId, quizId);
   }
 
@@ -265,6 +281,7 @@ export type QuizForStudent = {
 };
 
 export type QuizDetailForStudent = QuizForStudent & {
+  serverNow: string; // for the client countdown (D-041)
   instructions: string;
   marking: { correct: number; incorrect: number; unanswered: number };
 };
@@ -293,7 +310,7 @@ function toStudentQuiz(q: LeanQuiz, attempt: MyAttempt): QuizForStudent {
     title: q.title,
     startsAt: q.startsAt.toISOString(),
     endsAt: q.endsAt.toISOString(),
-    durationMinutes: q.durationMinutes,
+    durationMinutes: slotMinutes(q),
     questionCount: q.questions.length,
     availability: availabilityOf(q),
     myAttempt: attempt,
@@ -301,17 +318,17 @@ function toStudentQuiz(q: LeanQuiz, attempt: MyAttempt): QuizForStudent {
 }
 
 /** Every published quiz is visible to every student (D-016). Projection leaves out the questions entirely. */
-export async function listQuizzesForStudent(studentId: string): Promise<QuizForStudent[]> {
+export async function listQuizzesForStudent(studentId: string): Promise<{ serverNow: string; quizzes: QuizForStudent[] }> {
   await connectDB();
   const quizzes = await Quiz.aggregate<LeanQuiz>([
     { $match: { status: "published" } },
     { $sort: { startsAt: 1 } },
     { $limit: 500 },
     // keep only what students may see; question count without shipping question contents
-    { $project: { title: 1, startsAt: 1, endsAt: 1, durationMinutes: 1, questions: { $map: { input: "$questions", in: { _id: "$$this._id" } } } } },
+    { $project: { title: 1, startsAt: 1, endsAt: 1, questions: { $map: { input: "$questions", in: { _id: "$$this._id" } } } } },
   ]);
   const attempts = await myAttempts(studentId, quizzes.map((q) => q._id));
-  return quizzes.map((q) => toStudentQuiz(q, attempts.get(q._id.toString()) ?? null));
+  return { serverNow: new Date().toISOString(), quizzes: quizzes.map((q) => toStudentQuiz(q, attempts.get(q._id.toString()) ?? null)) };
 }
 
 /** Pre-start screen data. Unpublished/archived/missing → 404 (students can't tell them apart). */
@@ -322,6 +339,7 @@ export async function getQuizForStudent(studentId: string, quizId: string): Prom
   const attempts = await myAttempts(studentId, [quiz._id]);
   return {
     ...toStudentQuiz(quiz, attempts.get(quizId) ?? null),
+    serverNow: new Date().toISOString(),
     instructions: quiz.instructions ?? "",
     marking: { correct: quiz.marking.correct, incorrect: quiz.marking.incorrect, unanswered: quiz.marking.unanswered },
   };

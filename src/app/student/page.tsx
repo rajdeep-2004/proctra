@@ -28,7 +28,7 @@ const GROUPS: { key: Availability; title: string; empty: string }[] = [
 
 async function QuizGroups() {
   const user = await requirePageUser("student");
-  const quizzes = await listQuizzesForStudent(user.id);
+  const { quizzes } = await listQuizzesForStudent(user.id);
   if (quizzes.length === 0) return <p className="text-muted-foreground">No quizzes have been published yet.</p>;
   return (
     <div className="grid gap-8">

@@ -1571,6 +1571,17 @@ then shows `target − (Date.now() + offset)` every second, so a wrong laptop cl
 crosses zero the page refreshes so the Start button / status update. The countdown is display only — the
 server still decides whether an attempt may start.
 
+**Bug found while implementing**
+Zod runs object-level `.refine()` checks even when a field inside already failed. A date without a time
+zone stayed a string, so the new slot-length check called `.getTime()` on a string → a 500 instead of a 400.
+Both date refinements now run only when both dates parsed (`bothDates()` guard). Verified: no-zone dates → `400`
+with one issue per field.
+
+**Verified**
+API (29/29): derived duration (4 h → 240) with `durationMinutes` input ignored; locked → start change 409, end
+earlier 409 on `endsAt`, later end 200 and a fake **active** attempt's deadline moved while a **submitted** one
+didn't. Schema tests: 30 s and 5 h + 1 s rejected, exactly 1 min and 5 h accepted.
+
 **Files touched**
 - Docs: `prd.md` (F-02, F-03, flows), `database-schema.md`, `api-contracts.md`, `system-design.md`, phase 03/04 files
 - Code (03.7–03.8): `src/models/quiz.ts`, `src/schemas/quiz.ts`, `src/services/quiz-service.ts`, editor, student pages, countdown component

@@ -4,13 +4,16 @@ import { z } from "zod";
 // this file can't import the model because it also runs in the browser).
 const L = {
   title: 200, instructions: 5000, questionText: 2000, optionText: 500,
-  minOptions: 2, maxOptions: 6, maxQuestions: 200, minDuration: 1, maxDuration: 300, markAbs: 100,
+  minOptions: 2, maxOptions: 6, maxQuestions: 200, minSlotMinutes: 1, maxSlotMinutes: 300, markAbs: 100,
 } as const;
 
 export const ObjectIdString = z.string().regex(/^[a-f0-9]{24}$/i, "Invalid id");
 
 const mark = z.number().finite().min(-L.markAbs).max(L.markAbs);
 const isoDate = z.iso.datetime({ offset: true }).transform((s) => new Date(s));
+
+const bothDates = (q: { startsAt: unknown; endsAt: unknown }): q is { startsAt: Date; endsAt: Date } =>
+  q.startsAt instanceof Date && q.endsAt instanceof Date;
 
 export const QuestionInput = z
   .object({
@@ -30,12 +33,21 @@ export const QuizInput = z
     instructions: z.string().trim().max(L.instructions).default(""),
     startsAt: isoDate,
     endsAt: isoDate,
-    durationMinutes: z.number().int().min(L.minDuration).max(L.maxDuration),
     marking: z.object({ correct: mark, incorrect: mark, unanswered: mark }),
     resultsReleaseAt: isoDate.nullable().default(null),
     questions: z.array(QuestionInput).max(L.maxQuestions).default([]),
   })
-  .refine((q) => q.endsAt > q.startsAt, { path: ["endsAt"], message: "End must be after start" })
+  // Zod still runs these object-level checks when a field already failed (e.g. a date without a time
+  // zone stays a string), so each check only judges dates that actually parsed.
+  .refine((q) => !bothDates(q) || q.endsAt > q.startsAt, { path: ["endsAt"], message: "End must be after start" })
+  .refine(
+    (q) => {
+      if (!bothDates(q)) return true;
+      const minutes = (q.endsAt.getTime() - q.startsAt.getTime()) / 60_000;
+      return minutes <= 0 || (minutes >= L.minSlotMinutes && minutes <= L.maxSlotMinutes);
+    },
+    { path: ["endsAt"], message: "The exam must last between 1 minute and 5 hours" },
+  )
   .refine(
     (q) => new Set(q.questions.map((x) => x.id).filter(Boolean)).size === q.questions.filter((x) => x.id).length,
     { path: ["questions"], message: "Duplicate question ids" },

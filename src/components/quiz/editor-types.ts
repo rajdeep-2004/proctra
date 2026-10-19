@@ -8,7 +8,6 @@ export type EditorState = {
   instructions: string;
   startsAt: string; // datetime-local value, viewer's local time
   endsAt: string;
-  durationMinutes: string;
   marking: { correct: string; incorrect: string; unanswered: string };
   resultsReleaseAt: string; // "" = show results right after submission
   questions: QuestionState[];
@@ -24,29 +23,38 @@ export function stateFromQuiz(q: QuizForTeacher): EditorState {
     instructions: q.instructions,
     startsAt: toLocalInput(q.startsAt),
     endsAt: toLocalInput(q.endsAt),
-    durationMinutes: String(q.durationMinutes),
     marking: { correct: String(q.marking.correct), incorrect: String(q.marking.incorrect), unanswered: String(q.marking.unanswered) },
     resultsReleaseAt: toLocalInput(q.resultsReleaseAt),
     questions: q.questions.map((x) => ({ key: x.id, id: x.id, text: x.text, options: [...x.options], correctIndex: x.correctIndex })),
   };
 }
 
-/** Defaults for a new quiz: starts at the next full hour, open for 2 hours, 30 minutes long. */
+/** Defaults for a new quiz: a 1-hour exam starting at the next full hour. */
 export function newQuizState(): EditorState {
   const start = new Date();
   start.setMinutes(0, 0, 0);
   start.setHours(start.getHours() + 1);
-  const end = new Date(start.getTime() + 2 * 3600e3);
+  const end = new Date(start.getTime() + 3600e3);
   return {
     title: "",
     instructions: "",
     startsAt: toLocalInput(start.toISOString()),
     endsAt: toLocalInput(end.toISOString()),
-    durationMinutes: "30",
     marking: { correct: "1", incorrect: "0", unanswered: "0" },
     resultsReleaseAt: "",
     questions: [blankQuestion()],
   };
+}
+
+/** Exam length shown in the editor, e.g. "1 h 30 min"; null if the times are missing or invalid. */
+export function describeSlot(startsAtLocal: string, endsAtLocal: string): { text: string; valid: boolean } | null {
+  if (!startsAtLocal || !endsAtLocal) return null;
+  const minutes = Math.round((new Date(endsAtLocal).getTime() - new Date(startsAtLocal).getTime()) / 60_000);
+  if (!Number.isFinite(minutes)) return null;
+  if (minutes <= 0) return { text: "ends before it starts", valid: false };
+  const h = Math.floor(minutes / 60), m = minutes % 60;
+  const text = [h ? `${h} h` : "", m ? `${m} min` : ""].filter(Boolean).join(" ");
+  return { text, valid: minutes >= 1 && minutes <= 300 };
 }
 
 const num = (s: string) => (s.trim() === "" ? Number.NaN : Number(s));
@@ -59,7 +67,6 @@ export function toPayload(s: EditorState) {
     instructions: s.instructions,
     startsAt: fromLocalInput(s.startsAt),
     endsAt: fromLocalInput(s.endsAt),
-    durationMinutes: n(s.durationMinutes),
     marking: { correct: n(s.marking.correct), incorrect: n(s.marking.incorrect), unanswered: n(s.marking.unanswered) },
     resultsReleaseAt: fromLocalInput(s.resultsReleaseAt),
     questions: s.questions.map((q) => ({ id: q.id, text: q.text, options: q.options, correctIndex: q.correctIndex ?? -1 })),

@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, issuesByPath } from "@/lib/api-client";
 import { useIsClient } from "@/lib/use-is-client";
 import type { QuizForTeacher } from "@/services/quiz-service";
-import { blankQuestion, newQuizState, stateFromQuiz, toPayload, type EditorState, type QuestionState } from "@/components/quiz/editor-types";
+import { blankQuestion, describeSlot, newQuizState, stateFromQuiz, toPayload, type EditorState, type QuestionState } from "@/components/quiz/editor-types";
 import { QuestionCard } from "@/components/quiz/question-card";
 import { StatusBadge } from "@/components/quiz/status-badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -42,8 +42,10 @@ function Editor({ initial }: { initial: QuizForTeacher | null }) {
   const [busy, setBusy] = useState(false);
 
   const dirty = useMemo(() => JSON.stringify(form) !== savedJson, [form, savedJson]);
+  const slot = describeSlot(form.startsAt, form.endsAt);
+  const savedEndsAt = useMemo(() => (savedJson ? (JSON.parse(savedJson) as EditorState).endsAt : undefined), [savedJson]);
   const archived = meta.status === "archived";
-  const lockedFields = archived || meta.locked; // questions, marking, start, duration
+  const lockedFields = archived || meta.locked; // questions, marking, start time
   const allFields = archived;
 
   // Warn before leaving with unsaved changes.
@@ -187,19 +189,23 @@ function Editor({ initial }: { initial: QuizForTeacher | null }) {
         <CardHeader><CardTitle>Schedule</CardTitle></CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
-            <Label htmlFor="startsAt">Opens at</Label>
+            <Label htmlFor="startsAt">Exam starts</Label>
             <Input id="startsAt" type="datetime-local" value={form.startsAt} disabled={lockedFields} aria-invalid={Boolean(errors.startsAt)} onChange={(e) => set("startsAt", e.target.value)} />
             {fieldError("startsAt")}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="endsAt">Closes at</Label>
-            <Input id="endsAt" type="datetime-local" value={form.endsAt} disabled={allFields} aria-invalid={Boolean(errors.endsAt)} onChange={(e) => set("endsAt", e.target.value)} />
+            <Label htmlFor="endsAt">Exam ends</Label>
+            <Input id="endsAt" type="datetime-local" value={form.endsAt} disabled={allFields}
+              min={meta.locked ? savedEndsAt : undefined} aria-invalid={Boolean(errors.endsAt)} onChange={(e) => set("endsAt", e.target.value)} />
+            {meta.locked && !archived && <p className="text-sm text-muted-foreground">Students have started — the end time can only be moved later.</p>}
             {fieldError("endsAt")}
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="duration">Duration (minutes)</Label>
-            <Input id="duration" type="number" inputMode="numeric" min={1} max={300} value={form.durationMinutes} disabled={lockedFields} aria-invalid={Boolean(errors.durationMinutes)} onChange={(e) => set("durationMinutes", e.target.value)} />
-            {fieldError("durationMinutes")}
+            <span className="text-sm font-medium">Duration</span>
+            <p className={slot && !slot.valid ? "text-sm text-destructive" : "text-sm"} aria-live="polite">
+              {slot ? `${slot.text}${slot.valid ? "" : " — must be between 1 minute and 5 hours"}` : "Set a start and end time"}
+            </p>
+            <p className="text-sm text-muted-foreground">Calculated from the start and end time.</p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="release">Show results to students at (optional)</Label>
@@ -215,7 +221,7 @@ function Editor({ initial }: { initial: QuizForTeacher | null }) {
             {fieldError("resultsReleaseAt")}
           </div>
           <p className="text-sm text-muted-foreground sm:col-span-2">
-            Times are in your local time zone. A student who starts late gets less time: their attempt always ends at the closing time.
+            Times are in your local time zone. Every student&apos;s exam ends at the end time, so a student who starts late gets less time.
           </p>
         </CardContent>
       </Card>
