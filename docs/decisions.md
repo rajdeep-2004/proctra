@@ -64,6 +64,7 @@ Rules:
 | D-049 | 2026-10-20 | 06 | Live leaderboard for students who finished; profile lists active attempts | Active |
 | D-050 | 2026-10-20 | 06 | Teacher results: separate service, sorted submissions, paired event timeline | Active |
 | D-051 | 2026-10-20 | 07 | Packaging: shell-only bundle, baked production URL, ad-hoc signature, generated icon | Active |
+| D-052 | 2026-10-20 | 07 | Snapshot gallery: on-demand, signed 10-minute download links | Active |
 
 ---
 
@@ -2066,3 +2067,38 @@ contains only the 4 shell files, baked URL = production; launching the packaged 
 
 **Revisit if**
 The course requires a signed/notarized app (Developer ID + notarytool), or the download size matters (build per-arch .dmgs instead).
+
+---
+
+### D-052 — Snapshot gallery: on-demand, signed 10-minute download links
+- **Date:** 2026-10-20
+- **Phase:** 07 — Ship (S-01)
+- **Status:** Active
+- **Type:** api
+
+**Decision**
+`GET /api/v1/teacher/attempts/:id/snapshots` (owner only) returns each snapshot with a URL from Cloudinary's
+`private_download_url(publicId, "jpg", { type: "authenticated", expires_at: now + 600 })`. The teacher's attempt page loads nothing
+until "Show snapshots" is clicked, then shows 60 lazy-loaded thumbnails at a time, a full-size dialog, and "Refresh links"; a timer
+marks the links expired at `expiresAt`.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Signed *delivery* URLs (`res.cloudinary.com/…/authenticated/s--sig--/…`) | Fast CDN delivery but they never expire; true expiry needs Cloudinary's paid token auth |
+| Proxy images through our API | Every image would pass through a Vercel function (bandwidth + latency) |
+| Load the gallery automatically | Up to ~360 images per hour-long attempt — wasteful when the teacher only wants the answers |
+
+**How it works**
+The signature covers the public id, format and expiry time using our API secret, so a link can't be altered or extended (verified:
+a tampered signature is rejected) and stops working after 10 minutes. Links are generated locally — no Cloudinary API call per image.
+
+**Verified:** `.scratch/gallery.check.mts` 8/8 (owner gets 3 in time order, ~600 s expiry, URL returns `image/jpeg`, tampered
+signature rejected, other teacher/student 403, missing 404); headless Chrome: 3/3 thumbnails loaded.
+
+**Files touched**
+- `src/services/results-service.ts` (`getSnapshotGallery`), `src/app/api/v1/teacher/attempts/[attemptId]/snapshots/route.ts`,
+  `src/components/results/snapshot-gallery.tsx`, `src/app/teacher/attempts/[attemptId]/page.tsx`, shadcn `dialog`, `docs/api-contracts.md`
+
+**Revisit if**
+Teachers review many long attempts (download-endpoint latency) — then consider token-authenticated CDN URLs.

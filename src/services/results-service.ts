@@ -2,9 +2,11 @@ import "server-only";
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { AppError } from "@/lib/api-response";
+import { signedImageUrl } from "@/lib/cloudinary";
 import { Attempt, type AttemptDoc, type AttemptStatus, type ScoreDoc } from "@/models/attempt";
 import { ProctorEvent, type EventType, type ProctorEventDoc } from "@/models/proctor-event";
 import { Quiz, type QuizDoc } from "@/models/quiz";
+import { Snapshot, type SnapshotDoc } from "@/models/snapshot";
 import { finalizeExpiredForQuiz, finalizeIfExpired } from "@/services/attempt-service";
 import { resultFor, type QuestionResult } from "@/services/grading";
 import { eventCounts } from "@/services/proctor-service";
@@ -172,6 +174,32 @@ export async function getLeaderboard(user: { id: string; role: "student" | "teac
       studentName: r.name,
       score: r.score,
       isMe: user.role === "student" && r.studentId === user.id,
+    })),
+  };
+}
+
+// ---------- snapshot gallery (S-01) ----------
+
+export const SNAPSHOT_LINK_SECONDS = 600; // signed links expire after 10 minutes
+
+export type SnapshotGallery = { expiresAt: string; snapshots: { id: string; capturedAt: string; url: string }[] };
+
+/** Owner-only list of an attempt's snapshots with short-lived signed URLs (images are private, D-008). */
+export async function getSnapshotGallery(teacherId: string, attemptId: string): Promise<SnapshotGallery> {
+  await connectDB();
+  const attempt = await Attempt.findById(attemptId, { quizId: 1 }).lean<Pick<AttemptDoc, "_id" | "quizId">>();
+  if (!attempt) throw new AppError("NOT_FOUND", "Attempt not found", 404);
+  await loadOwnedQuiz(teacherId, attempt.quizId);
+  const snaps = await Snapshot.find({ attemptId: attempt._id }, { publicId: 1, capturedAt: 1 })
+    .sort({ capturedAt: 1 })
+    .limit(2000)
+    .lean<Pick<SnapshotDoc, "_id" | "publicId" | "capturedAt">[]>();
+  return {
+    expiresAt: new Date(Date.now() + SNAPSHOT_LINK_SECONDS * 1000).toISOString(),
+    snapshots: snaps.map((s) => ({
+      id: s._id.toString(),
+      capturedAt: s.capturedAt.toISOString(),
+      url: signedImageUrl(s.publicId, SNAPSHOT_LINK_SECONDS),
     })),
   };
 }

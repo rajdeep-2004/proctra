@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { AttemptStatusBadge } from "@/components/quiz/attempt-status-badge";
 import { EventTimeline } from "@/components/results/event-timeline";
+import { SnapshotGallery } from "@/components/results/snapshot-gallery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppError } from "@/lib/api-response";
 import { requirePageUser } from "@/lib/session";
@@ -93,7 +94,7 @@ async function Detail({ params }: { params: Params }) {
           })}
         </section>
 
-        <aside className="grid content-start gap-4">
+        <aside className="grid content-start gap-4 lg:w-[20rem]">
           <Card>
             <CardHeader><CardTitle className="text-base">Session events</CardTitle></CardHeader>
             <CardContent className="grid gap-3">
@@ -103,7 +104,7 @@ async function Detail({ params }: { params: Params }) {
           </Card>
           <Card>
             <CardHeader><CardTitle className="text-base">Snapshots</CardTitle></CardHeader>
-            <CardContent className="text-sm text-muted-foreground">{a.snapshotCount} stored privately.</CardContent>
+            <CardContent><SnapshotGallery attemptId={a.id} count={a.snapshotCount} /></CardContent>
           </Card>
         </aside>
       </div>

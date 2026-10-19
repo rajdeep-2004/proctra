@@ -50,7 +50,7 @@ result page, live leaderboard → teacher results, attempt detail with event tim
 - [x] 07.1 — electron-builder config, entitlements, icon, `npm run dist` → `chore(desktop): add macOS dmg packaging`
 - [ ] 07.2 — Production deploy + verify `.dmg` end to end → `chore(deploy): ship production build`
 - [ ] 07.3 — README → `docs: add project README`
-- [ ] 07.4 — (should) Snapshot gallery route + UI → `feat(results): add teacher snapshot gallery`
+- [x] 07.4 — (should) Snapshot gallery route + UI → `feat(results): add teacher snapshot gallery`
 - [ ] 07.5 — (should) DevClub UI + GSAP polish → `feat(ui): integrate devclub components and motion`
 - [ ] 07.6 — Final docs pass → `docs: update docs for phase 07`
 
