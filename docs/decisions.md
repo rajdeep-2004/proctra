@@ -1930,7 +1930,7 @@ Nothing is lost: every answer is saved on click (D-007). The attempt stays `acti
 **Resume exam** (camera check again, a `resumed` event is logged), or the server auto-submits at the deadline (D-006).
 
 **Verified:** windowed run — `exam Cmd+Q shortcut registered: true` when the exam opens, removed after submit; quitting runs
-`before-quit` with the exam window torn down. The physical keypress in real kiosk mode was confirmed by the user (see phase 05 summary).
+`before-quit` with the exam window torn down. The physical keypress in real kiosk mode can't be simulated without macOS Accessibility permission — **pending the user's manual test**.
 
 **Files touched**
 - `electron/main.ts`, `docs/system-design.md`, D-045 limitation text corrected
