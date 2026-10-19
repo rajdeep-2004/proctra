@@ -143,11 +143,12 @@ sequenceDiagram
   them to `POST /api/v1/attempts/:id/events` every 5 s (or immediately on submit).
 - Events shown to teachers with neutral wording ("window lost focus at 10:14:03 for 12 s").
 
-### Flow: Leaderboard
-1. `finalizeIfExpired` for all active attempts of the quiz.
-2. Load finalized attempts `{studentName, score}` sorted by score desc.
-3. Competition ranking: rank = 1 + number of attempts with a strictly higher score (→ 1, 1, 3).
-4. Students get it only if results are released; response contains name, rank, score only.
+### Flow: Leaderboard (live, D-049)
+1. Access: owner teacher always; a student only after finishing their own attempt **and** once results are released.
+2. `finalizeExpiredForQuiz` → load finished attempts `{studentName, score}` + count of still-active ones.
+3. Competition ranking (`ranking.ts`): equal scores share a rank, the next rank skips (→ 1, 1, 3); ties listed by name.
+4. Response: name, rank, score only, plus `live` (exam not over or someone still writing) and `stillWriting`.
+5. While `live`, the page re-fetches every 10 s; when everyone is final it stops. No push channel (D-014).
 
 ## 3. State and data ownership
 | Data | Source of truth | Copies |
@@ -171,6 +172,7 @@ and shows `deadline − (Date.now() + offset)`. The client countdown is cosmetic
 | Two saves for the same question out of order | Older value overwrites newer | Client queue: one in-flight request, coalesce to newest value |
 | Manual submit + auto-submit + lazy finalize at once | Double grading / status flip-flop | `findOneAndUpdate({status:'active'})` — only one caller wins; others read the final result (idempotent) |
 | Teacher edits questions while a student starts | Student sees questions that then change | Starting sets `quiz.locked = true` **before** creating the attempt; question edits update with condition `locked:false` |
+| Leaderboard viewed while others are still writing | Provisional ranks | Labelled "Live — ranks may change"; only finished attempts ranked; refreshes every 10 s (D-049) |
 | Teacher extends end time during active attempts | Some attempts keep the old deadline | Quiz update and `updateMany` on active attempts' `deadline`; end time can only move later, so no attempt is ever cut short (D-041) |
 | Teacher unpublishes during active attempts | Students mid-exam lose quiz | Unpublish only hides it from listings/new starts; active attempts continue to deadline |
 

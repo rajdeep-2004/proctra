@@ -54,6 +54,7 @@ function ResultView({ a }: { a: FinishedAttemptView }) {
         <h1 className="text-2xl font-semibold tracking-tight">{a.quizTitle}</h1>
         <p className="text-sm text-muted-foreground">
           {a.status === "auto_submitted" ? "Submitted automatically when time ran out" : "Submitted"} · <LocalTime iso={a.submittedAt} />
+          {a.released && <> · <Link href={`/student/quizzes/${a.quizId}/leaderboard`} className="font-medium text-foreground underline underline-offset-4">Leaderboard</Link></>}
         </p>
       </div>
 

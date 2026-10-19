@@ -61,6 +61,8 @@ Rules:
 | D-046 | 2026-10-19 | 05 | Proctor events and the hidden exam camera | Active |
 | D-047 | 2026-10-19 | 05 | Leave kiosk before revealing the result window (macOS Spaces bug) | Active |
 | D-048 | 2026-10-19 | 05 | Cmd+Q quits during the kiosk exam (scoped global shortcut) | Active |
+| D-049 | 2026-10-20 | 06 | Live leaderboard for students who finished; profile lists active attempts | Active |
+| D-050 | 2026-10-20 | 06 | Teacher results: separate service, sorted submissions, paired event timeline | Active |
 
 ---
 
@@ -1938,3 +1940,81 @@ test**: Cmd+Q quit the app during the exam, and relaunching showed Resume with t
 
 **Concepts worth learning**
 - **Global shortcut:** an OS-level hotkey registered by the app; must be removed when no longer needed so it doesn't hijack keys elsewhere.
+
+---
+
+### D-049 — Live leaderboard for students who finished; profile lists active attempts
+- **Date:** 2026-10-20
+- **Phase:** 06 — Results, profile & leaderboard
+- **Status:** Active
+- **Type:** api
+
+**Context**
+The plan said students see a leaderboard "once results are released". Asked when exactly; the user wants it **live**: a
+student who finishes can see the leaderboard right away, and their position updates as classmates finish.
+
+**Decision**
+- Teacher (owner): always. Student: only after **finishing their own attempt** of that quiz (so it never leaks to someone who
+  hasn't taken it yet) **and** once results are released — the teacher's "show results at" time still hides it, consistent with marks.
+- Only finished attempts are ranked; `stillWriting` counts active ones. While `live` (exam not over or someone still writing) the page
+  re-fetches every 10 s and labels ranks as provisional; it stops polling once everything is final.
+- No WebSockets/SSE: polling one small GET is enough for a class (D-014).
+- Profile (`GET /me/attempts`) includes **active** attempts too, with a Resume link, so the profile is a complete history.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Show only after the exam ends | User explicitly wants live positions |
+| Visible to every student once released | Students who haven't taken it could see who scored what before their own attempt |
+| Server-sent events for updates | New realtime infrastructure for a list that changes a few times per minute |
+
+**How it works**
+Each request: finalize expired attempts → load finished attempts → `competitionRank()` (`src/services/ranking.ts`, pure: sort by
+score desc then name; a new score gets rank = 1-based position, an equal score keeps the previous rank) → mark the caller's row
+`isMe`. `LeaderboardView` re-fetches every 10 s while `live` and keeps the last good board if a refresh fails.
+
+**Verified:** `.scratch/ranking.test.ts` (1,1,3 · 1,1,1,4 · negatives/fractions · no input mutation);
+`.scratch/leaderboard.check.mts` 15/15 (tie ranks, `isMe`, still-writing/never-started 403, owner vs other teacher, release gate,
+draft 404, `live` false after the exam); headless Chrome: student A's open page showed student B appear at rank 2 within one
+refresh, without reloading.
+
+**Files touched**
+- `docs/api-contracts.md` (leaderboard + profile contracts), `src/services/attempt-service.ts` (`listMyAttempts`),
+  `src/app/api/v1/me/attempts/route.ts`, `src/app/student/profile/page.tsx`, `src/components/layout/app-header.tsx` (nav),
+  leaderboard files in 06.3
+
+**Result release, end to end (06.4):** with a future `resultsReleaseAt`, the submit response, result page, profile and leaderboard
+all hide marks/answers (leaderboard → `RESULTS_NOT_RELEASED`) while the teacher still sees scores; the teacher can move the release
+time even on a locked quiz, after which all three views show the score immediately (`.scratch/release.check.mts`, 11/11).
+
+**Revisit if**
+Classes grow large enough that 10 s polling per viewer matters, or the course wants leaderboards hidden until the exam ends.
+
+---
+
+### D-050 — Teacher results: separate service, sorted submissions, paired event timeline
+- **Date:** 2026-10-20
+- **Phase:** 06 — Results, profile & leaderboard
+- **Status:** Active
+- **Type:** architecture
+
+**Decision**
+- Teacher-facing reads live in `src/services/results-service.ts` (owner check → lazy finalization → one query + two `$group`
+  count aggregations), keeping `attempt-service.ts` about the student's exam lifecycle.
+- Submissions are sorted by `score.total` descending then name; in-progress attempts (score `null`) sort last.
+- The event timeline pairs "lost/hidden/disconnected" with the next matching "regained/visible/reconnected" event and shows
+  the gap ("— back after 12 s"). Wording is factual everywhere and the page states events are not evidence of misconduct.
+- Links: editor top bar "Results (n)" and the dashboard's attempt count open `/teacher/quizzes/[id]/results`; each student name
+  opens `/teacher/attempts/[id]`. Missing or other teachers' quizzes/attempts render the 404 screen.
+
+**Verified:** `.scratch/teacher-results.check.mts` 16/16 — order, marks (8, −1), counts (2 events, 1 snapshot), active row, owner-only
+access (other teacher/student 403, missing 404), lazy finalization on view, both pages render.
+
+**Files touched**
+- `src/services/results-service.ts`, `src/app/api/v1/teacher/quizzes/[quizId]/attempts/route.ts`,
+  `src/app/api/v1/teacher/attempts/[attemptId]/route.ts`, `src/app/teacher/quizzes/[quizId]/results/page.tsx`,
+  `src/app/teacher/attempts/[attemptId]/page.tsx`, `src/components/results/event-timeline.tsx`,
+  `src/components/quiz/quiz-editor.tsx`, `src/app/teacher/page.tsx`
+
+**Revisit if**
+Quizzes get thousands of attempts (then paginate the table).

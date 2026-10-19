@@ -24,7 +24,12 @@ export function StartButton({ quizId, availability, myAttempt }: Props) {
   const [problem, setProblem] = useState<{ title: string; message: string } | null>(null);
 
   if (myAttempt && myAttempt.status !== "active") {
-    return <Button size="lg" variant="outline" asChild><Link href={`/student/attempts/${myAttempt.id}`}>View result</Link></Button>;
+    return (
+      <div className="flex flex-wrap gap-3">
+        <Button size="lg" variant="outline" asChild><Link href={`/student/attempts/${myAttempt.id}`}>View result</Link></Button>
+        <Button size="lg" variant="ghost" asChild><Link href={`/student/quizzes/${quizId}/leaderboard`}>Leaderboard</Link></Button>
+      </div>
+    );
   }
 
   const resuming = myAttempt?.status === "active";

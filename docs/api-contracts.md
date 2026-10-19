@@ -145,9 +145,10 @@ Errors: `403`, `404`, `409 INVALID_STATE`
 - Runs lazy finalization for the quiz first.
 Response `200`
 ```json
-{ "data": [ { "id": "…", "studentName": "Asha Rao", "status": "submitted",
+{ "data": { "quiz": { "id": "…", "title": "…", "startsAt": "…", "endsAt": "…", "questionCount": 10, "maxPossible": 40 },
+  "rows": [ { "id": "…", "studentName": "Asha Rao", "status": "submitted",
   "startedAt": "…", "submittedAt": "…", "score": { "total": 36, "correct": 9, "incorrect": 0, "unanswered": 1, "maxPossible": 40 },
-  "eventCount": 3, "snapshotCount": 172 } ] }
+  "eventCount": 3, "snapshotCount": 172 } ] } }
 ```
 
 #### `GET /api/v1/teacher/attempts/:attemptId`
@@ -157,7 +158,7 @@ Response `200`
 { "data": {
   "id": "…", "studentName": "…", "status": "submitted", "startedAt": "…", "deadline": "…", "submittedAt": "…",
   "score": { "total": 36, "correct": 9, "incorrect": 0, "unanswered": 1, "maxPossible": 40 },
-  "questions": [ { "id": "…", "text": "…", "options": ["…"], "correctIndex": 2, "selectedIndex": 2, "result": "correct" } ],
+  "questions": [ { "id": "…", "text": "…", "options": ["…"], "correctIndex": 2, "selectedIndex": 2, "markedForReview": false, "result": "correct" } ],
   "events": [ { "type": "window_blur", "occurredAt": "…" } ],
   "snapshotCount": 172 } }
 ```
@@ -170,16 +171,19 @@ Notes: URLs are signed and expire after 10 minutes.
 ### Leaderboard
 
 #### `GET /api/v1/quizzes/:quizId/leaderboard`
-- Auth: teacher (owner) or student · Phase: 06
-- Students: only when results are released (`resultsReleaseAt` null or past) and the quiz is published/archived.
+- Auth: teacher (owner) or student · Phase: 06 · Live leaderboard (D-049)
+- Teacher (owner): always. Student: only after **finishing their own attempt** for this quiz, and only once results are
+  released (`resultsReleaseAt` null or past). Students who haven't taken it get `403 FORBIDDEN`.
+- Runs lazy finalization for the quiz first; ranks **finished** attempts only (in-progress ones are counted in `stillWriting`).
 Response `200`
 ```json
-{ "data": { "quizTitle": "DBMS Quiz 1", "released": true,
+{ "data": { "quizTitle": "DBMS Quiz 1", "maxPossible": 40, "live": true, "stillWriting": 3, "serverNow": "…",
   "entries": [ { "rank": 1, "studentName": "Asha", "score": 36, "isMe": false },
                { "rank": 1, "studentName": "Ravi", "score": 36, "isMe": true },
                { "rank": 3, "studentName": "Meera", "score": 32, "isMe": false } ] } }
 ```
-Errors: `403 RESULTS_NOT_RELEASED`, `404`
+`live` = the exam hasn't ended yet or someone is still writing → the page re-fetches every 10 s and labels ranks provisional.
+Errors: `403 FORBIDDEN` (student hasn't finished this quiz / not the owner), `403 RESULTS_NOT_RELEASED`, `404`
 Notes: competition ranking (1, 1, 3). Never includes events, snapshots or answers. Ties ordered by name.
 
 ### Student — quizzes and attempts
@@ -276,10 +280,11 @@ Errors: `400`, `403` (teacher), `404` (not mine), `409 ATTEMPT_CLOSED` (more tha
 - Auth: student · Phase: 06 · Purpose: profile history
 Response `200`
 ```json
-{ "data": [ { "id": "…", "quizId": "…", "quizTitle": "…", "startedAt": "…", "submittedAt": "…",
-  "status": "submitted", "released": true, "score": { "total": 36, "maxPossible": 40 } } ] }
+{ "data": [ { "id": "…", "quizId": "…", "quizTitle": "…", "startedAt": "…", "submittedAt": "…", "deadline": "…",
+  "status": "submitted", "released": true, "resultsReleaseAt": null, "score": { "total": 36, "maxPossible": 40 } } ] }
 ```
-Notes: only the caller's attempts; `score` is `null` if not released.
+Notes: only the caller's attempts, newest first, expired ones finalized first. Active attempts are included (`status: "active"`,
+`submittedAt: null`) so the profile can offer Resume. `score` is `null` while active or not yet released.
 
 ## 3. Desktop bridge (Electron preload → main IPC)
 Not HTTP, but a contract between the web app and the Electron shell.
@@ -315,8 +320,8 @@ Permissions: the session grants only `media` with **video only** to the app orig
 | POST | /api/v1/attempts/:attemptId/submit | student | 04 | built |
 | POST | /api/v1/attempts/:attemptId/snapshots | student | 05 | built |
 | POST | /api/v1/attempts/:attemptId/events | student | 05 | built |
-| GET | /api/v1/me/attempts | student | 06 | planned |
-| GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | planned |
-| GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | planned |
-| GET | /api/v1/quizzes/:quizId/leaderboard | teacher, student | 06 | planned |
+| GET | /api/v1/me/attempts | student | 06 | built |
+| GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | built |
+| GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | built |
+| GET | /api/v1/quizzes/:quizId/leaderboard | teacher, student | 06 | built |
 | GET | /api/v1/teacher/attempts/:attemptId/snapshots | teacher | 07 | planned (S-01) |
