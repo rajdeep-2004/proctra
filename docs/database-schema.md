@@ -68,8 +68,7 @@ Purpose: a quiz with its embedded questions and marking scheme.
 | title | string | yes | | 1–200 chars |
 | instructions | string | no | `""` | ≤ 5000 chars, plain text |
 | startsAt | Date | yes | | availability window start |
-| endsAt | Date | yes | | must be > `startsAt` |
-| durationMinutes | number | yes | | integer 1–300 |
+| endsAt | Date | yes | | 1 min – 5 h after `startsAt`; the exam slot. Duration is derived (`endsAt − startsAt`), not stored (D-041) |
 | marking.correct | number | yes | `1` | −100…100, may be fractional (e.g. 0.25) |
 | marking.incorrect | number | yes | `0` | −100…100 (negative marking allowed) |
 | marking.unanswered | number | yes | `0` | −100…100 |
@@ -101,7 +100,7 @@ Quizzes are never hard-deleted once they have attempts — they are archived.
 {
   "_id": "6710…q1", "teacherId": "6710…t1", "title": "DBMS Quiz 1",
   "instructions": "Answer all questions.", "startsAt": "2026-10-22T10:00:00Z",
-  "endsAt": "2026-10-22T12:00:00Z", "durationMinutes": 30,
+  "endsAt": "2026-10-22T10:30:00Z",
   "marking": { "correct": 4, "incorrect": -1, "unanswered": 0 },
   "resultsReleaseAt": null, "status": "published", "locked": true,
   "questions": [
@@ -122,7 +121,7 @@ Purpose: one student's single attempt at one quiz, including answers and final s
 | studentName | string | yes | | copied from user at start (for leaderboard/submissions without a join) |
 | status | `"active" \| "submitted" \| "auto_submitted"` | yes | `"active"` | only `active → submitted/auto_submitted`, never back |
 | startedAt | Date | yes | now | server time |
-| deadline | Date | yes | | `min(startedAt + durationMinutes, quiz.endsAt)`; set once |
+| deadline | Date | yes | | copy of `quiz.endsAt` at start; when the teacher extends the quiz, active attempts' deadlines are moved with it (D-041) |
 | submittedAt | Date \| null | no | `null` | server time; for auto-submit = `deadline` |
 | answers | Map<questionId, Answer> | yes | `{}` | key = question `_id` as hex string; missing key = unanswered |
 | score | Score \| null | no | `null` | set at finalization |
@@ -200,7 +199,7 @@ Purpose: neutral log of window/camera/upload events during an attempt.
 | Query | Used by | Index used | Frequency |
 |---|---|---|---|
 | User by email | sign-in, register | `users.email` | per sign-in |
-| Teacher's quizzes | teacher dashboard | `quizzes.teacherId_updatedAt` | per page view |
+| Teacher's quizzes (+ attempt counts via `$group` on `attempts.quizId`) | teacher dashboard | `quizzes.teacherId_updatedAt` | per page view |
 | Published quizzes (+ my attempt per quiz) | student dashboard | `quizzes.status_startsAt` + `attempts.studentId_startedAt` | per page view |
 | Attempt by `{quizId, studentId}` | start/resume | `attempts.quizId_studentId` (unique) | per start |
 | Attempt by `_id` + `studentId` | exam load, save answer, submit, snapshot | `_id` | ~every few seconds per student during an exam |
@@ -213,10 +212,10 @@ Purpose: neutral log of window/camera/upload events during an attempt.
 |---|---|
 | Email unique | unique index + `409 CONFLICT` in register service |
 | Only students can self-register | register service hardcodes `role: "student"` |
-| `endsAt > startsAt`, duration 1–300, 2–6 options, valid `correctIndex` | Zod schema (`src/schemas/quiz.ts`) + Mongoose validators |
+| slot length 1–300 min (`endsAt − startsAt`), 2–6 options, valid `correctIndex` | Zod schema (`src/schemas/quiz.ts`) + Mongoose validators |
 | Publish needs ≥ 1 question | quiz service `publish()` |
 | Quiz state machine: `draft ⇄ published → archived` (archived is final; unpublish returns to draft) | quiz service, conditional updates |
-| Questions/marking read-only once `locked` | quiz service update uses `{ locked: false }` condition for those fields; title/instructions/endsAt/resultsReleaseAt stay editable |
+| Questions/marking/startsAt read-only once `locked`; `endsAt` may only increase | quiz service update uses `{ locked: false }` condition for those fields; extending `endsAt` also moves active attempts' `deadline` |
 | One attempt per student per quiz | unique index |
 | Attempt status only moves forward | `findOneAndUpdate({ status: "active" })` |
 | Answers only change while `active` and before `deadline + 5 s` | conditional `updateOne` in attempt service |

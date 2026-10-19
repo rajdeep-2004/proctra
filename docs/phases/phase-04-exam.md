@@ -19,7 +19,7 @@ server deadline, and see their graded result — in a normal window (kiosk + cam
 1. **Attempt model + grading**
    - Acceptance: Attempt schema + indexes per schema doc; `grade()` pure function matches hand calculation incl. negative marks (scratch test).
 2. **Attempt service + API**
-   - Acceptance: start/resume (idempotent, sets `quiz.locked`, deadline capped at `endsAt`), `GET /attempts/:id` (no `correctIndex` while active), save answer (conditional atomic update), submit (idempotent), lazy `finalizeIfExpired`.
+   - Acceptance: start/resume (idempotent, sets `quiz.locked`, only inside the slot, `deadline = quiz.endsAt`), `GET /attempts/:id` (no `correctIndex` while active), save answer (conditional atomic update), submit (idempotent), lazy `finalizeIfExpired`.
 3. **Exam UI**
    - Acceptance: countdown from server deadline with clock offset; question + options; Next/Previous; palette with answered / unanswered / marked states; Mark for Review.
 4. **Autosave queue**

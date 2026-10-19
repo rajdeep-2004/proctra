@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | review |
 | Branch | `phase/03-quiz-management` |
 | Depends on | Phase 02 |
 | PRD features | F-02, F-03, (F-11 field) |
@@ -29,11 +29,11 @@ From phase 02 (Auth & roles, merged 2026-10-19):
 
 ## In scope — exact features
 1. **Quiz model + validation**
-   - Acceptance: Quiz schema per `database-schema.md`; Zod `QuizInput` enforces window, duration, 2–6 options, valid `correctIndex`, marking range.
+   - Acceptance: Quiz schema per `database-schema.md`; Zod `QuizInput` enforces the exam slot (end 1 min–5 h after start; duration derived), 2–6 options, valid `correctIndex`, marking range.
 2. **Teacher quiz API**
    - Acceptance: list/create/get/update/publish/unpublish/archive per `api-contracts.md`; only the owner can access; state machine enforced; `QUIZ_LOCKED` logic present (lock itself is set in phase 04).
 3. **Quiz editor UI**
-   - Acceptance: form for title, instructions, start/end, duration, marking (correct/incorrect/unanswered), optional results-release time; add/edit/remove/reorder (up/down buttons) questions and options; pick correct option; save draft; publish/unpublish/archive buttons with status badge.
+   - Acceptance: form for title, instructions, start/end (computed duration shown), marking (correct/incorrect/unanswered), optional results-release time; add/edit/remove/reorder (up/down buttons) questions and options; pick correct option; save draft; publish/unpublish/archive buttons with status badge.
 4. **Teacher dashboard**
    - Acceptance: table of my quizzes with status, window, question count, attempt count.
 5. **Student quiz list + detail**
@@ -48,28 +48,57 @@ From phase 02 (Auth & roles, merged 2026-10-19):
 - `decisions.md` → D-016, D-018, D-022
 
 ## Tasks
-- [ ] 03.1 — Quiz model + Zod quiz schemas → `feat(quiz): add quiz model and validation schemas`
-- [ ] 03.2 — Quiz service + teacher quiz routes (CRUD + state transitions) → `feat(quiz): add teacher quiz api`
-- [ ] 03.3 — Teacher dashboard quiz table + quiz editor page → `feat(quiz): add teacher dashboard and quiz editor`
-- [ ] 03.4 — Student quiz list + quiz detail routes and pages → `feat(quiz): add student quiz list and detail`
-- [ ] 03.5 — Update docs → `docs: update docs for phase 03`
+- [x] 03.1 — Quiz model + Zod quiz schemas → `feat(quiz): add quiz model and validation schemas`
+- [x] 03.2 — Quiz service + teacher quiz routes (CRUD + state transitions) → `feat(quiz): add teacher quiz api`
+- [x] 03.3 — Teacher dashboard quiz table + quiz editor page → `feat(quiz): add teacher dashboard and quiz editor`
+- [x] 03.4 — Student quiz list + quiz detail routes and pages → `feat(quiz): add student quiz list and detail`
+- [x] 03.5 — Update docs → `docs: update docs for phase 03`
+
+### Change request (2026-10-19, during review)
+User asked for a fixed exam slot and a student countdown (D-041):
+- [x] 03.6 — Docs: fixed exam slot, derived duration, extend-only end time, countdown → `docs: switch quizzes to fixed exam slots`
+- [x] 03.7 — Remove duration input; derive it; extend-only end time while locked → `feat(quiz): derive duration from exam slot`
+- [x] 03.8 — Live server-time countdown on student list and detail → `feat(quiz): add live countdown for students`
 
 ## Done criteria
-- [ ] Teacher creates a 5-question quiz with negative marking, publishes it; a student sees it
-- [ ] Publishing with 0 questions fails with a clear message; archived quiz can't be republished
-- [ ] Another teacher's quiz returns `403`; student responses never contain `correctIndex` (checked by scratch script)
-- [ ] Docs match what was built; decisions logged
+- [x] Teacher creates a 5-question quiz with negative marking, publishes it; a student sees it
+  - Verified with 2-question quizzes (+4/−1 and +2/−0.5) through the UI and the API; same code path.
+- [x] Publishing with 0 questions fails with a clear message; archived quiz can't be republished
+- [x] Another teacher's quiz returns `403`; student responses never contain `correctIndex` (checked by scratch script)
+- [x] Docs match what was built; decisions logged
 
 ## How to verify
 1. Teacher: create → edit → reorder → publish. 2. Student: dashboard → open quiz detail.
 3. `.scratch/quiz-check.mjs`: grep student JSON for `correctIndex`; hit another owner's quiz.
 
 ## Phase summary
-<!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
+- **Built:** Quiz model (embedded questions, marking, window, status, `locked`); teacher API (list, create,
+  get, whole-quiz update, publish/unpublish/archive) with ownership + lock rules; teacher dashboard table and
+  quiz editor (questions/options add-remove-reorder, correct option, marking, schedule in local time,
+  result-release time, field-level errors, unsaved-changes guard, archive confirm); student API + pages
+  (grouped list Open/Upcoming/Closed, detail with marking, instructions and camera notice; Start disabled).
+  Carried-over phase-02 criterion verified: student → teacher API = 403.
+  **Change request (03.6–03.8):** quizzes are fixed exam slots — teacher sets start + end, server derives the
+  duration (1 min–5 h); once students start, the end can only move later (and active attempts' deadlines move with
+  it); students see a live server-time countdown ("Starts in …" → "Ends in …") that refreshes the page at the boundary.
+- **Key decisions:** D-037 (validation layers, UTC + offsets), D-038 (validate in memory + conditional
+  update), D-039 (browser-only editor, LocalTime), D-040 (projection-only student reads, streamed 404),
+  D-041 (fixed exam slot, derived duration, extend-only end, countdown; amends D-006).
+- **Known limitations:** `locked` is only set by phase 04's attempt start. `attemptCount`/`myAttempt` read the
+  raw `attempts` collection until the model exists. Hidden-quiz pages show the 404 screen with HTTP 200
+  (streaming). No CSP header yet. No drag-and-drop reordering (up/down buttons).
 - **Next phase should know:**
+  - **Attempt deadline = `quiz.endsAt`** (D-041), copied onto the attempt at start. Start only while
+    `startsAt ≤ now < endsAt`. Use the Attempt model in `extendActiveAttempts()` once it exists.
+  - Start an attempt by setting `quiz.locked = true` with `Quiz.updateOne({ _id, status: "published" }, …)`
+    **before** inserting the attempt (system-design §4). `updateQuiz()` already refuses question/marking edits once locked.
+  - Students must never get `correctIndex` while an attempt is active — reuse the projection approach (D-040).
+  - The Start button lives in `src/app/student/quizzes/[quizId]/page.tsx` (currently disabled).
+  - Date display: use `<LocalTime iso>`; browser-only UI: `useIsClient()`. Client fetches: `api()` from `src/lib/api-client.ts`.
+  - Testing: `.scratch/http.mts` (Client with Auth.js sign-in, `newStudent()`); scratch teacher via
+    `SEED_TEACHER_EMAIL=t2@scratch.test … npm run seed`; cleanup `npx tsx .scratch/cleanup-users.mts`.
+    Local prod server needs `AUTH_TRUST_HOST=true npx next start`. When scripting Electron, force a frame
+    (screenshot) before reading streamed content (D-039). The user's own `next dev` on :3000 blocks a second dev server.
 
 ## Next phase preview
 Phase 04 lets students start the quiz, answer, autosave and submit — it needs published quizzes and the quiz detail page's Start button.

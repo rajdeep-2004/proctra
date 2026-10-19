@@ -1,21 +1,63 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
+import { LocalTime } from "@/components/local-time";
+import { StatusBadge } from "@/components/quiz/status-badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requirePageUser } from "@/lib/session";
+import { listTeacherQuizzes } from "@/services/quiz-service";
 
 export const metadata: Metadata = { title: "Dashboard · Proctra" };
 
 export default function TeacherDashboard() {
   return (
-    <section className="grid gap-2">
-      <h1 className="text-2xl font-semibold tracking-tight">Your quizzes</h1>
-      <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
-        <Content />
+    <section className="grid gap-6">
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">Your quizzes</h1>
+        <Button asChild>
+          <Link href="/teacher/quizzes/new">New quiz</Link>
+        </Button>
+      </div>
+      <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted" />}>
+        <QuizTable />
       </Suspense>
     </section>
   );
 }
 
-async function Content() {
-  await requirePageUser("teacher");
-  return <p className="text-muted-foreground">You haven&apos;t created any quizzes yet.</p>;
+async function QuizTable() {
+  const user = await requirePageUser("teacher");
+  const quizzes = await listTeacherQuizzes(user.id);
+  if (quizzes.length === 0) {
+    return <p className="text-muted-foreground">You haven&apos;t created any quizzes yet.</p>;
+  }
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Title</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Opens</TableHead>
+          <TableHead>Closes</TableHead>
+          <TableHead className="text-right">Questions</TableHead>
+          <TableHead className="text-right">Attempts</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {quizzes.map((q) => (
+          <TableRow key={q.id}>
+            <TableCell className="font-medium">
+              <Link href={`/teacher/quizzes/${q.id}`} className="hover:underline">{q.title}</Link>
+            </TableCell>
+            <TableCell><StatusBadge status={q.status} /></TableCell>
+            <TableCell><LocalTime iso={q.startsAt} /></TableCell>
+            <TableCell><LocalTime iso={q.endsAt} /></TableCell>
+            <TableCell className="text-right">{q.questionCount}</TableCell>
+            <TableCell className="text-right">{q.attemptCount}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 }

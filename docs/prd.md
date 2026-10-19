@@ -1,6 +1,6 @@
 # Product Requirements — Proctra
 
-> Status: approved — Last updated: 2026-10-19
+> Status: approved — Last updated: 2026-10-19 (fixed exam slot + countdown, approved by user; D-041)
 > Source: `idea.md` (Technical PRD v2.0, 18 Oct 2026) + kickoff interview.
 
 ## 1. Problem
@@ -40,8 +40,8 @@ exam window and periodic still snapshots, with no claims of full OS lockdown or 
 | ID | Feature | Acceptance criteria |
 |---|---|---|
 | F-01 | Auth & roles | Students self-register (name, email, password). Teacher accounts come from a seed script. Sign-in routes to the student or teacher dashboard. Every teacher-only server action rejects students (403). |
-| F-02 | Quiz management | Teacher can create/edit a draft with title, instructions, availability window (start/end), duration, single-correct MCQ questions (add/edit/reorder/remove questions and options), and marks for correct / incorrect / unanswered (any number, incl. negative). Teacher can publish, unpublish, archive. Questions become read-only once any attempt exists. |
-| F-03 | Quiz availability | Every published, non-archived quiz is visible to all students. A new attempt can only start inside the availability window. |
+| F-02 | Quiz management | Teacher can create/edit a draft with title, instructions, an exam slot (start and end time — the server derives the duration, 1 min–5 h), single-correct MCQ questions (add/edit/reorder/remove questions and options), and marks for correct / incorrect / unanswered (any number, incl. negative). Teacher can publish, unpublish, archive. Questions, marking and start time become read-only once any attempt exists; the end time can then only be moved later (extends every student's deadline). |
+| F-03 | Quiz availability | Every published, non-archived quiz is visible to all students. A new attempt can only start between the start and end time; every attempt ends at the quiz end time (late starters get less time). Students see a live countdown: "Starts in …" before the slot and "Ends in …" during it, based on server time. |
 | F-04 | Camera gate | Before starting, the student sees a notice (camera required, a still image every 10 s). The app requests camera permission via the OS flow. Without a working camera, the attempt cannot start and the reason is shown. |
 | F-05 | Kiosk exam window | The attempt opens in a dedicated Electron kiosk/fullscreen window with no in-app navigation. On submit/expiry the window closes and the student lands on the result/confirmation screen. Limitations are documented. |
 | F-06 | Exam UI | Countdown (server deadline), question + options, Next/Previous, question palette, Mark for Review, visual states (answered / unanswered / marked). Answers autosave on change with a visible "saved / saving / retrying" status. Manual submit has a confirmation dialog. Auto-submit when the server deadline passes. If the app closes mid-attempt, reopening resumes the same attempt with the original deadline. |
@@ -70,15 +70,15 @@ exam window and periodic still snapshots, with no claims of full OS lockdown or 
 ## 6. Core user flows
 ### Flow 1: Teacher creates and publishes a quiz
 1. Teacher signs in → teacher dashboard → "New quiz".
-2. Enters title, instructions, availability start/end, duration (minutes), marking values.
+2. Enters title, instructions, start and end time (duration shown, computed), marking values.
 3. Adds MCQ questions with options and one correct option; reorders as needed.
 4. Saves as draft, reviews, publishes. Quiz is now visible to all students.
 
 ### Flow 2: Student takes a quiz
 1. Student signs in → dashboard lists available quizzes.
-2. Opens one → sees instructions, window, duration, camera notice.
+2. Opens one → sees instructions, start/end time, a live "Starts in …" countdown, camera notice.
 3. Grants camera permission (blocked if denied/unavailable).
-4. Clicks Start → server creates the attempt and fixes the deadline → kiosk exam window opens.
+4. Clicks Start (enabled once the slot opens) → server creates the attempt with deadline = quiz end time → kiosk exam window opens.
 5. Answers questions; each change autosaves. Snapshots upload every 10 s.
 6. Submits with confirmation, or is auto-submitted at the deadline.
 7. Kiosk window closes → result screen (marks if released) → profile history.

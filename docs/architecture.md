@@ -64,9 +64,11 @@ proctra/
 │   │   └── api/v1/         # route handlers (thin: auth → validate → service → respond)
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
-│   │   └── <feature>/      # quiz-editor/, exam/, results/ ...
+│   │   ├── auth/, layout/  # sign-in/up forms, app header
+│   │   ├── quiz/           # quiz editor, question card, status/availability badges
+│   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
-│   ├── lib/                # db.ts, env.ts, api-response.ts, session.ts (requireUser), utils.ts (cn) · later: cloudinary.ts (05), desktop.ts (05)
+│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client · utils (cn) · later: cloudinary (05), desktop (05)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
@@ -89,7 +91,7 @@ proctra/
 | Electron main | Windows, kiosk mode, camera permission, navigation allow-list, IPC | APP_URL config | Hold DB/Cloudinary secrets; trust renderer input without validation |
 | Preload bridge | `window.proctra` API (start/end exam, window events) | Electron `contextBridge`, `ipcRenderer` | Expose `ipcRenderer`, Node, or fs to the page |
 | Auth (`src/auth.ts`, `lib/session.ts`) | Sign-in, session cookie, `requireUser(role?)` helper | User model, bcryptjs | Be bypassed by any `/api/v1` handler |
-| Quiz service | Quiz CRUD, publish/unpublish/archive, edit lock | Quiz, Attempt models | Return `correctOption` to students |
+| Quiz service | Quiz CRUD, publish/unpublish/archive, edit lock, student list/detail (`src/services/quiz-service.ts`) | Quiz model, `attempts` collection | Return question text or `correctIndex` to students |
 | Attempt service | Start/resume, save answer, submit, lazy finalization | Quiz, Attempt, grading | Trust client time, score or role |
 | Grading service | Score computation (pure function) | none | Touch the DB |
 | Leaderboard service | Competition ranking per quiz | Attempt model | Expose snapshots/events |

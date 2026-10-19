@@ -18,7 +18,7 @@ Rules:
 | D-003 | 2026-10-19 | 00 | One Next.js codebase: route handlers + service layer | Active |
 | D-004 | 2026-10-19 | 00 | MongoDB Atlas + Mongoose | Active |
 | D-005 | 2026-10-19 | 00 | Auth.js Credentials with JWT session cookies | Active |
-| D-006 | 2026-10-19 | 00 | Server-authoritative deadline with lazy finalization | Active |
+| D-006 | 2026-10-19 | 00 | Server-authoritative deadline with lazy finalization | Active (formula amended by D-041) |
 | D-007 | 2026-10-19 | 00 | Per-answer autosave with a local pending queue | Active |
 | D-008 | 2026-10-19 | 00 | Snapshots uploaded through the server to private Cloudinary | Active |
 | D-009 | 2026-10-19 | 00 | Electron security model and narrow preload bridge | Active |
@@ -49,6 +49,11 @@ Rules:
 | D-034 | 2026-10-19 | 02 | Auth forms use Server Actions (exception to D-003) | Active |
 | D-035 | 2026-10-19 | 02 | Route guarding: proxy redirects + page re-checks; cookie flush in Electron | Active |
 | D-036 | 2026-10-19 | 02 | Teacher seed script with tsx; never silently promote a student | Active |
+| D-037 | 2026-10-19 | 03 | Quiz validation in two layers; times are UTC with explicit offsets | Active |
+| D-038 | 2026-10-19 | 03 | Quiz service: validate in memory, write with one conditional update | Active |
+| D-039 | 2026-10-19 | 03 | Quiz editor: browser-only render, whole-quiz save, local-time display | Active |
+| D-040 | 2026-10-19 | 03 | Student quiz views: projection-only reads; streamed 404 pages | Active |
+| D-041 | 2026-10-19 | 03 | Fixed exam slot: duration derived from start/end; extend-only end time | Active |
 
 ---
 
@@ -280,7 +285,7 @@ We need instant session revocation (JWTs stay valid until expiry), or Auth.js v5
 ### D-006 — Server-authoritative deadline with lazy finalization
 - **Date:** 2026-10-19
 - **Phase:** 00 — Planning
-- **Status:** Active
+- **Status:** Active — deadline formula amended by D-041 (lazy finalization unchanged)
 - **Type:** algorithm
 
 **Context**
@@ -1327,3 +1332,267 @@ Note: local dev and production share one Atlas database, so a seeded teacher wor
 
 **Revisit if**
 Multiple teachers need seeding (switch to a CSV/JSON list).
+
+---
+
+### D-037 — Quiz validation in two layers; times are UTC with explicit offsets
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management
+- **Status:** Active
+- **Type:** data
+
+**Context**
+Quizzes have many rules (2–6 options, a valid correct option, window order, mark ranges) and a
+schedule entered by a teacher in local time but enforced by a server running in UTC.
+
+**Decision**
+- **Zod `QuizInput`** (`src/schemas/quiz.ts`) validates every request and drives the editor's error
+  messages; **Mongoose validators** (`src/models/quiz.ts`) repeat the critical rules as a last line of defence.
+- Times travel as ISO-8601 strings **with an offset** (`2026-10-22T15:30:00+05:30` or `…Z`). A string
+  without an offset (`2026-10-22T10:00`) is rejected, because the server can't know whose 10:00 it is.
+  The editor converts the browser's `datetime-local` value with `new Date(local).toISOString()`; MongoDB
+  stores UTC; every screen formats in the viewer's own time zone.
+- Drafts may have zero questions, but every question present must be complete. Publishing needs ≥ 1 question.
+- Marks: any number in −100…100, fractions allowed (e.g. 0.25 for "¼ negative marking").
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Store local time + a time-zone name | More complex; every viewer here shares one time zone anyway, and UTC + local display covers it |
+| Allow incomplete questions in drafts | Needs a second, looser schema and "is it publishable?" checks everywhere |
+| Validate only in Mongoose | Errors arrive late (on save) and in a shape that's awkward to map to form fields |
+
+**How it works**
+Zod `refine` rules attach errors to exact paths (`questions.0.correctIndex`, `endsAt`) so the editor can
+show each message next to its field. Verified by `.scratch/quiz-schema.test.ts` (10 cases incl. IST offset
+→ UTC, out-of-range correct option, 1 and 7 options, duplicate ids, whitespace-only text).
+
+**Files touched**
+- `src/models/quiz.ts`, `src/schemas/quiz.ts`
+
+**Concepts worth learning**
+- **UTC storage, local display:** store one unambiguous instant, convert only at the edges (input and display).
+- **Defence in depth for data:** request validation for good UX, DB validation so bad data can't slip in from other code paths.
+
+**Revisit if**
+Students in different time zones need a single "official" display zone.
+
+---
+
+### D-038 — Quiz service: validate in memory, write with one conditional update
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management
+- **Status:** Active
+- **Type:** algorithm
+
+**Context**
+Saving the editor replaces the whole quiz (D-022) and must (a) run the Mongoose validators, (b) keep
+existing question ids, and (c) never overwrite questions after a student has started (`locked`), even if
+the teacher saves at the same instant a student starts.
+
+**Decision**
+`updateQuiz()` does: load + ownership check → map questions (keep known ids, new id for `null`, 400 for
+an id from another quiz) → `new Quiz(fields).validate()` in memory → one `findOneAndUpdate` whose filter
+includes `locked: false`. If it matches nothing, reload to report the exact reason (`QUIZ_LOCKED` vs archived).
+State changes (`publish`/`unpublish`/`archive`) are each one conditional update on the current status
+(plus "has a question" and "window not over" for publish).
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `findOneAndUpdate(..., { runValidators: true })` | Update validators run with `this` = the query, so the "correctIndex < options.length" check can't see the options |
+| Load the document, change it, `save()` | Not atomic against a concurrent "lock" from a starting student unless we add version checks |
+| Check status in JS, then update unconditionally | Two requests can both pass the check (time-of-check vs time-of-use race) |
+
+**How it works**
+```ts
+await new Quiz({ ...current, ...changes }).validate();          // all rules, correct `this`
+const updated = await Quiz.findOneAndUpdate(
+  { _id: quizId, teacherId, locked: false, status: { $ne: "archived" } }, // the guard IS the filter
+  { $set: changes }, { returnDocument: "after" });
+if (!updated) /* reload → QUIZ_LOCKED or INVALID_STATE */;
+```
+`attemptCount` is read from the raw `attempts` collection with one `$group` aggregation, so the dashboard
+works now (always 0) and becomes correct in phase 04 without code changes.
+
+Verified by `.scratch/quiz-api.check.mts` against the running app (24/24): roles (403/401), create, reorder
+with id preservation, foreign id → 400, other teacher → 403, every state transition, locked rules, archive is final.
+
+**Files touched**
+- `src/services/quiz-service.ts`, `src/app/api/v1/teacher/quizzes/**/route.ts`, `src/models/quiz.ts` (explicit TS types)
+
+**Concepts worth learning**
+- **TOCTOU race (time-of-check to time-of-use):** checking a condition and acting on it in two steps lets another request slip in between.
+- **Compare-and-set:** put the condition in the update's filter so check and write are one atomic step.
+
+**Revisit if**
+Teachers need collaborative editing (then add version numbers / optimistic concurrency).
+
+---
+
+### D-039 — Quiz editor: browser-only render, whole-quiz save, local-time display
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+The editor shows date-times in the teacher's time zone, but pages are first rendered on a server running
+in UTC (Vercel). Rendering a date on the server and again in the browser produces two different strings
+(a hydration mismatch) and, worse, a wrong time if the server's version sticks.
+
+**Decision**
+- `QuizEditor` renders a skeleton on the server and the real editor only in the browser, using a
+  `useIsClient()` hook built on `useSyncExternalStore` (server snapshot `false`, client snapshot `true`).
+- Read-only dates elsewhere use `<LocalTime iso>` with the same technique: placeholder on the server,
+  `Intl.DateTimeFormat` in the browser right after hydration.
+- Form state keeps numbers as **strings** (so typing `-` or `0.` isn't mangled) and converts on save
+  (`toPayload`). Saving sends the whole quiz (D-022); the response replaces the form so new questions get their ids.
+- Errors come from the server's Zod issues, mapped by path (`questions.1.options.0`) next to each field —
+  no second copy of the rules in the browser.
+- Publish/unpublish are disabled while there are unsaved changes ("save first"); a `beforeunload` prompt
+  warns about leaving with unsaved changes; archive asks for confirmation.
+- Locked quizzes disable question/marking/start/duration fields and explain why; archived is fully read-only.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `useEffect(() => setState(...))` after mount | Flagged by React's lint rule (extra render cascade); `useSyncExternalStore` is the idiomatic way |
+| `suppressHydrationWarning` | Silences the warning but keeps the server's (UTC) text |
+| `next/dynamic(..., { ssr: false })` | Works too; the hook keeps it explicit and reusable for other browser-only UI |
+| react-hook-form / form library | Another dependency; one form with a simple shape doesn't need it |
+
+**How it works**
+`stateFromQuiz()` turns API data into form state (ISO → `datetime-local` string in local time);
+`toPayload()` does the reverse (`new Date("2026-10-19T10:00")` is parsed as local time → `.toISOString()`).
+Verified in Electron against a production build: empty submit → 5 field errors; create → URL switches to
+`/teacher/quizzes/<id>`; add option, pick correct, add second question, move it up, save → order persists after
+reload; publish → badge + message; dashboard lists the quiz with local times (10:00 IST shown for 04:30Z).
+
+**Gotchas found while testing (not app bugs)**
+- `next start` on localhost needs `AUTH_TRUST_HOST=true` (Auth.js only auto-trusts the host on Vercel or in dev).
+- A long-running `next dev` stopped running `proxy.ts` (all routes 200); restarting it fixes it.
+- Scripted checks against a hidden/covered Electron window see streamed sections "stuck": Chromium doesn't
+  paint hidden windows, and React 19 reveals streamed Suspense content on the next animation frame. Forcing a
+  frame (a screenshot) reveals it. Real, visible windows are unaffected.
+
+**Files touched**
+- `src/components/quiz/*`, `src/components/local-time.tsx`, `src/lib/use-is-client.ts`, `src/lib/datetime.ts`,
+  `src/lib/api-client.ts`, `src/app/teacher/page.tsx`, `src/app/teacher/quizzes/new/page.tsx`,
+  `src/app/teacher/quizzes/[quizId]/page.tsx`, shadcn `table/badge/textarea/radio-group/alert-dialog`
+
+**Concepts worth learning**
+- **Hydration:** React attaching to server-rendered HTML; both renders must produce the same markup.
+- **`useSyncExternalStore`:** subscribes to values outside React and lets server and client snapshots differ safely.
+- **Controlled inputs:** React state is the source of truth for each input's value.
+
+**Revisit if**
+Teachers need autosave of drafts or collaborative editing.
+
+---
+
+### D-040 — Student quiz views: projection-only reads; streamed 404 pages
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management
+- **Status:** Active
+- **Type:** api
+
+**Context**
+Students must see published quizzes (D-016) and their timing, but never the questions or answers before
+an attempt, and must not be able to tell a draft from a missing quiz.
+
+**Decision**
+- `listQuizzesForStudent()` uses an aggregation `$project` that keeps title/timing and maps questions to
+  `{_id}` only (to count them), so question text and `correctIndex` never leave the database for this view.
+- `getQuizForStudent()` filters `{ status: "published" }`; draft/archived/missing all → `404`.
+- `availability` (`upcoming` / `open` / `closed`) is computed on the server from UTC instants at request time.
+- Dashboard groups: Open now → Upcoming → Closed (closed group hidden when empty).
+- `myAttempt` reads the `attempts` collection directly until phase 04 adds the model (same trick as D-038).
+
+**Streamed 404 status**
+`notFound()` inside a `<Suspense>` boundary runs after the page shell (status 200) has already been
+sent, so the browser gets the not-found screen and a `noindex` tag, but HTTP status 200. Verified the draft's
+title is not in the HTML. The **API** returns a real 404. Accepted: the page is only used inside the app; the
+alternative (blocking the whole page until the DB answers) gives up streaming for no user-visible gain.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `find()` then strip fields in JS | Question text would still be read from DB and sit in server memory/logs; projection is safer by construction |
+| 403 for drafts | Reveals that a quiz with that id exists |
+
+**Files touched**
+- `src/services/quiz-service.ts` (student section), `src/app/api/v1/quizzes/**`, `src/app/student/page.tsx`,
+  `src/app/student/quizzes/[quizId]/page.tsx`, `src/components/quiz/availability-badge.tsx`
+
+Verified by `.scratch/student-quiz.check.mts` (15 API/page checks: grouping, draft hidden, archived 404,
+no `SECRET` question text or `correctIndex` in list/detail/HTML, teacher 403, signed-out 401) and screenshots.
+
+**Concepts worth learning**
+- **Projection:** asking the database for only the fields you need — less data moved, less to leak.
+- **Information disclosure:** different errors for "exists but hidden" vs "doesn't exist" leak information.
+
+**Revisit if**
+Search engines or external links ever need correct 404 status codes for these pages.
+
+---
+
+### D-041 — Fixed exam slot: duration derived from start/end; extend-only end time
+- **Date:** 2026-10-19
+- **Phase:** 03 — Quiz management (change request during review)
+- **Status:** Active
+- **Type:** data
+
+**Context**
+The original model had an *availability window* (start/end) plus a separate *duration*, with
+`deadline = min(startedAt + duration, endsAt)` (D-006). The user pointed out that two independent inputs can
+conflict (e.g. a 90-minute duration inside a 60-minute window) and asked for one source of truth: the teacher
+picks start and end, the server computes the duration. Students should also see a live "starts in" countdown.
+
+**Decision**
+- A quiz is a **fixed exam slot**: `startsAt` → `endsAt`, 1 minute to 5 hours long. `durationMinutes` is no longer
+  stored or accepted; responses include it computed as `round((endsAt − startsAt) / 60 000)`.
+- Every attempt's `deadline = quiz.endsAt` (replaces D-006's formula). A student who starts 10 minutes late has 10 minutes less.
+- Once `locked` (first attempt started): start time, questions and marking are frozen; the end time may only
+  move **later**. Extending also runs `updateMany({ quizId, status: "active" }, { $set: { deadline: newEndsAt } })`
+  so everyone gets the extra time; it can never shorten a running exam.
+- Students see a live countdown driven by **server time**: "Starts in 1h 23m 10s" → "Ends in 42m 05s" → "Closed".
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Keep window + duration, validate duration ≤ window | Still two inputs to keep consistent; user wants a single exam slot |
+| Compute deadline live from `quiz.endsAt` instead of storing it on the attempt | Every answer save would need a second read; the stored copy keeps saves a single atomic, conditional update |
+| Allow shortening the end time | Could end running exams early without warning |
+
+**How it works**
+Countdown: the server sends `serverNow`; the browser computes `offset = serverNow − Date.now()` once and
+then shows `target − (Date.now() + offset)` every second, so a wrong laptop clock doesn't matter. When it
+crosses zero the page refreshes so the Start button / status update. The countdown is display only — the
+server still decides whether an attempt may start.
+
+**Bug found while implementing**
+Zod runs object-level `.refine()` checks even when a field inside already failed. A date without a time
+zone stayed a string, so the new slot-length check called `.getTime()` on a string → a 500 instead of a 400.
+Both date refinements now run only when both dates parsed (`bothDates()` guard). Verified: no-zone dates → `400`
+with one issue per field.
+
+**Verified**
+API (29/29): derived duration (4 h → 240) with `durationMinutes` input ignored; locked → start change 409, end
+earlier 409 on `endsAt`, later end 200 and a fake **active** attempt's deadline moved while a **submitted** one
+didn't. Schema tests: 30 s and 5 h + 1 s rejected, exactly 1 min and 5 h accepted.
+
+Countdown verified live in Electron: a quiz starting in 70 s showed "Starts in 0m 56s" ticking down; at the start
+it switched to "Ends in 19m 45s" and the page refreshed itself (badge Upcoming → Open now). One shared 1-second
+ticker (`useSyncExternalStore`) drives all countdowns; `role="timer"` + `aria-live="off"` so screen readers aren't spammed.
+
+**Files touched**
+- Docs: `prd.md` (F-02, F-03, flows), `database-schema.md`, `api-contracts.md`, `system-design.md`, phase 03/04 files
+- Code (03.7–03.8): `src/models/quiz.ts`, `src/schemas/quiz.ts`, `src/services/quiz-service.ts`, editor, student pages, countdown component
+
+**Concepts worth learning**
+- **Single source of truth / derived data:** store the minimal facts (start, end) and compute the rest, so they can't disagree.
+- **Clock skew:** client clocks can be wrong; use the server's time and an offset for anything time-critical.
+
+**Revisit if**
+The course wants per-student timers (e.g. "60 minutes from whenever you start within a day-long window").
