@@ -6,6 +6,8 @@ import { useCallback, useState } from "react";
 import type { ActiveAttemptView } from "@/services/attempt-service";
 import { ExamTimer } from "@/components/exam/exam-timer";
 import { SaveIndicator } from "@/components/exam/save-indicator";
+import { SubmitDialog } from "@/components/exam/submit-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { readPending, useAutosave } from "@/components/exam/use-autosave";
 import { useIsClient } from "@/lib/use-is-client";
 import { QuestionPalette } from "@/components/exam/question-palette";
@@ -39,14 +41,63 @@ function Exam({ attempt }: { attempt: ActiveAttemptView }) {
     autosave.enqueue(questionId, next); // saved immediately; retried until the server confirms
   };
 
+  const [submitState, setSubmitState] = useState<"idle" | "submitting" | "timeup" | "error">("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  /** POST submit until it works (the server's lazy finalization is the backstop if it never does). */
+  const sendSubmit = useCallback(async (attempts: number) => {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await fetch(`/api/v1/attempts/${attempt.id}/submit`, { method: "POST", cache: "no-store" });
+        if (res.ok) return true;
+      } catch {
+        // network error — try again
+      }
+      await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
+    return false;
+  }, [attempt.id]);
+
+  const submit = async () => {
+    setSubmitState("submitting");
+    setSubmitError(null);
+    // Don't submit while answers are still only on this device — they'd be left out.
+    const allSaved = await autosave.flush(8000);
+    if (!allSaved) {
+      setSubmitState("error");
+      setSubmitError("Some answers haven't reached the server yet. Check your connection, then submit again — nothing is lost.");
+      return;
+    }
+    if (await sendSubmit(3)) goToResult();
+    else {
+      setSubmitState("error");
+      setSubmitError("Couldn't reach the server to submit. Your answers are saved; try again in a moment.");
+    }
+  };
+
+  // Timer hit zero: save what we can, submit, go to the result. The server stamps it at the deadline.
   const onExpire = useCallback(() => {
-    // 04.5: auto-submit.
-  }, []);
+    setSubmitState("timeup");
+    void (async () => {
+      await autosave.flush(4000); // saves are still accepted for 5 s after the deadline
+      await sendSubmit(5);
+      goToResult(); // even if submit failed, the server auto-submits on the next read
+    })();
+  }, [autosave, sendSubmit, goToResult]);
 
   const go = (i: number) => setCurrent(Math.min(total - 1, Math.max(0, i)));
 
   return (
     <div className="flex min-h-screen flex-col">
+      {submitState === "timeup" && (
+        <div role="alertdialog" aria-modal="true" aria-labelledby="timeup-title"
+          className="fixed inset-0 z-50 grid place-items-center bg-background/95 p-6 text-center">
+          <div className="grid gap-2">
+            <h2 id="timeup-title" className="text-2xl font-semibold">Time&apos;s up</h2>
+            <p className="text-muted-foreground">Submitting your saved answers…</p>
+          </div>
+        </div>
+      )}
       <header className="sticky top-0 z-10 border-b bg-background">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4">
           <h1 className="truncate font-semibold">{attempt.quizTitle}</h1>
@@ -105,6 +156,12 @@ function Exam({ attempt }: { attempt: ActiveAttemptView }) {
         </main>
 
         <aside className="grid content-start gap-6">
+          <SubmitDialog total={total} busy={submitState === "submitting" || submitState === "timeup"} onConfirm={submit}
+            answered={attempt.questions.filter((x) => answers[x.id]?.selectedIndex != null).length}
+            marked={attempt.questions.filter((x) => answers[x.id]?.markedForReview).length} />
+          {submitError && (
+            <Alert variant="destructive" role="alert"><AlertDescription>{submitError}</AlertDescription></Alert>
+          )}
           <QuestionPalette current={current} onJump={go}
             items={attempt.questions.map((x) => ({
               id: x.id,

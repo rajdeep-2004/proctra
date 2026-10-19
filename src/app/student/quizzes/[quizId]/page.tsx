@@ -5,9 +5,9 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { AvailabilityBadge } from "@/components/quiz/availability-badge";
+import { StartButton } from "@/components/quiz/start-button";
 import { Countdown } from "@/components/quiz/countdown";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppError } from "@/lib/api-response";
 import { requirePageUser } from "@/lib/session";
@@ -88,13 +88,7 @@ async function Detail({ params }: { params: Params }) {
         </AlertDescription>
       </Alert>
 
-      <div className="flex items-center gap-3">
-        {/* Wired up in phase 04 (start/resume attempt) and phase 05 (camera check + kiosk window). */}
-        <Button size="lg" disabled>Start quiz</Button>
-        <span className="text-sm text-muted-foreground">
-          {q.availability === "upcoming" ? "Not open yet." : q.availability === "closed" ? "This quiz has closed." : "Starting quizzes is coming soon."}
-        </span>
-      </div>
+      <StartButton quizId={q.id} availability={q.availability} myAttempt={q.myAttempt} />
     </section>
   );
 }

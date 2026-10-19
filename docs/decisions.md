@@ -56,6 +56,7 @@ Rules:
 | D-041 | 2026-10-19 | 03 | Fixed exam slot: duration derived from start/end; extend-only end time | Active |
 | D-042 | 2026-10-19 | 04 | Attempt lifecycle: insert-or-read start, atomic grade-and-close with optimistic retry | Active |
 | D-043 | 2026-10-19 | 04 | Exam UI: one question at a time, native radios, shared server clock | Active |
+| D-044 | 2026-10-19 | 04 | Submit only after saves are confirmed; auto-submit with server backstop | Active |
 
 ---
 
@@ -1695,3 +1696,46 @@ Writes per attempt grow enough that retries become frequent (then use a per-atte
 
 **Revisit if**
 Exams need sections or very long questions with images.
+
+---
+
+### D-044 — Submit only after saves are confirmed; auto-submit with server backstop
+- **Date:** 2026-10-19
+- **Phase:** 04 — Taking the exam
+- **Status:** Active
+- **Type:** edge-case
+
+**Context**
+Submitting while some answers exist only in the browser's queue would grade the attempt without them. At the
+deadline the student can't wait, and the network may be down.
+
+**Decision**
+- **Manual submit:** confirmation dialog (answered / not answered / marked counts) → `autosave.flush(8 s)` → only if every
+  answer is confirmed, `POST /submit` (3 tries) → result page. If saves aren't confirmed, nothing is submitted and the student is told
+  their answers are safe and to retry.
+- **Timer at zero:** full-screen "Time's up — submitting…" overlay (blocks further clicks) → `flush(4 s)` (the server accepts saves for
+  5 s after the deadline) → `POST /submit` (5 tries) → result page. If the network is down, the server's lazy finalization
+  (D-006) closes and grades the attempt on its next read, so the result is the same.
+- **Start / Resume / View result** on the quiz page (`StartButton`): one attempt per quiz; resuming shows the same attempt with saved
+  answers and a reminder that time keeps running. A finished attempt's `/exam/:id` redirects to `/student/attempts/:id`, and an
+  active attempt's result URL redirects back to the exam.
+- **Result page:** score `total / maxPossible`, correct/wrong/unanswered counts, per-question review (your answer vs correct) — only when
+  released; otherwise "Marks will be shown from <time>".
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Submit immediately and let pending saves race | Pending answers could arrive after grading and be rejected (`ATTEMPT_CLOSED`) |
+| Send all answers in the submit request | Duplicates the save path and lets the client overwrite saved answers at the last moment |
+
+**How it works / verified**
+Electron run: start from the quiz page → answer 2 → leave → "Resume exam" restored both → confirmation dialog showed 2 of 5 →
+result page 3 / 20 (4 − 1 + 0×3). Timeout run with 1-minute quiz: timer 0m 02s at 10:23:22, overlay at the deadline, result page
+"Submitted automatically when time ran out" ~3 s later; stored `submittedAt` = deadline exactly.
+
+**Files touched**
+- `src/components/exam/{exam-client,submit-dialog}.tsx`, `src/components/quiz/start-button.tsx`,
+  `src/app/student/quizzes/[quizId]/page.tsx`, `src/app/student/attempts/[attemptId]/page.tsx`
+
+**Revisit if**
+Kiosk mode (phase 05) needs to close the window before navigating to the result.
