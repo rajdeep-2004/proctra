@@ -60,6 +60,7 @@ Rules:
 | D-045 | 2026-10-19 | 05 | Kiosk exam window lifecycle, camera-only permission, dev test switches | Active |
 | D-046 | 2026-10-19 | 05 | Proctor events and the hidden exam camera | Active |
 | D-047 | 2026-10-19 | 05 | Leave kiosk before revealing the result window (macOS Spaces bug) | Active |
+| D-048 | 2026-10-19 | 05 | Cmd+Q quits during the kiosk exam (scoped global shortcut) | Active |
 
 ---
 
@@ -1802,7 +1803,8 @@ more power than it needs (D-009) — and it must be testable by scripts without 
 | `use-fake-ui-for-media-stream` in tests | It auto-accepts every request (even microphone) and bypasses our handler — found when the mic test wrongly passed |
 
 **Limitations (documented, not hidden)**
-Kiosk is not a lockdown: Cmd+Q, Force Quit, other devices, and macOS-level shortcuts still work. Quitting simply leaves the
+Kiosk is not a lockdown: Cmd+Q (kept on purpose, D-048), other devices, the power button and a second screen still work.
+(Correction: macOS kiosk mode *does* disable the Force Quit dialog and app switching — see D-048.) Quitting simply leaves the
 attempt active; on relaunch the student can resume (time keeps running) or it auto-submits at the deadline.
 
 **Verified (Electron, fake camera, windowed):** Start → exam window opened, main window hidden; `startExam("../../etc")` and
@@ -1896,3 +1898,42 @@ Test the real mode at least once: the windowed test switch (D-045) hid exactly t
 **Concepts worth learning**
 - **macOS Spaces:** full-screen windows get their own virtual desktop; windows shown during a Space transition can land off-screen.
 - **Verify from the OS's point of view:** the app's own state ("visible: true") can disagree with what the user actually sees.
+
+---
+
+### D-048 — Cmd+Q quits during the kiosk exam (scoped global shortcut)
+- **Date:** 2026-10-19
+- **Phase:** 05 — Kiosk window & camera
+- **Status:** Active
+- **Type:** edge-case
+
+**Context**
+In the user's real test, Cmd+Q did nothing inside the exam window. Electron's macOS kiosk mode sets presentation options that
+hide the Dock and menu bar and **disable the app menu**, app switching and the Force Quit dialog — so the menu's Cmd+Q never
+fires. Our docs had wrongly said Cmd+Q and Force Quit still work. Asked the user: they want Cmd+Q to quit during the exam.
+
+**Decision**
+While (and only while) the exam window exists, register an OS-level shortcut `globalShortcut.register("CommandOrControl+Q")` →
+`app.quit()`. It's unregistered when the exam window closes (submit, time's up, unexpected close) and on `will-quit`, so normal
+windows use the regular menu shortcut. `before-quit` takes the exam window out of kiosk and destroys it first, because a
+`closable: false` kiosk window would otherwise block quitting and leave the Dock/menu bar hidden.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| `webContents.on("before-input-event")` in the exam window | Tried first; couldn't be verified (DevTools-injected keys bypass it), and it depends on the page having focus |
+| Keep Cmd+Q blocked | User wants students to be able to quit; the attempt is safe either way (resume / auto-submit) |
+| An IPC "quit" button in the exam page | Adds a desktop capability to the page (D-009); a keyboard shortcut needs no new bridge |
+
+**What quitting means for the attempt**
+Nothing is lost: every answer is saved on click (D-007). The attempt stays `active` with the same deadline; relaunching shows
+**Resume exam** (camera check again, a `resumed` event is logged), or the server auto-submits at the deadline (D-006).
+
+**Verified:** windowed run — `exam Cmd+Q shortcut registered: true` when the exam opens, removed after submit; quitting runs
+`before-quit` with the exam window torn down. The physical keypress in real kiosk mode was confirmed by the user (see phase 05 summary).
+
+**Files touched**
+- `electron/main.ts`, `docs/system-design.md`, D-045 limitation text corrected
+
+**Concepts worth learning**
+- **Global shortcut:** an OS-level hotkey registered by the app; must be removed when no longer needed so it doesn't hijack keys elsewhere.

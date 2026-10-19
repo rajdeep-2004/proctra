@@ -237,6 +237,8 @@ What breaks first beyond a single class:
 Does: full-screen exam window with no window controls, app switching (Cmd+Tab) disabled by macOS kiosk presentation, can't be closed or minimised by the student, kept above other
 windows, main window hidden during the exam, only the app's own pages can load, camera only (no microphone), focus loss /
 tab hiding / camera loss are logged neutrally.
-Does **not**: block Cmd+Q, Force Quit (⌥⌘⎋), the power button, Mission Control/Spotlight in every case, a second display, a
-phone or another computer, or a student opening the exam URL in a normal browser (blocked by the page, not by the server — D-013).
+macOS kiosk presentation also hides the Dock and menu bar and disables the app menu and the Force Quit dialog (⌥⌘⎋).
+Cmd+Q is deliberately kept working through a shortcut that exists only while the exam window is open (D-048).
+Does **not**: stop Cmd+Q (kept on purpose), the power button, a second display, a phone or another computer, or a student
+opening the exam URL in a normal browser (blocked by the page, not by the server — D-013).
 Quitting leaves the attempt active: the student can resume with the remaining time, or it is auto-submitted at the deadline.

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, session, systemPreferences, type IpcMainInvokeEvent } from "electron";
+import { app, BrowserWindow, globalShortcut, ipcMain, session, systemPreferences, type IpcMainInvokeEvent } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -141,11 +141,20 @@ function openExamWindow(attemptId: string) {
     examWindow?.focus();
   });
   showOfflinePageOnFailure(examWindow, () => examUrl);
+  // macOS kiosk mode disables the app menu, so the menu's Cmd+Q never fires. An OS-level shortcut, active
+  // only while the exam window exists, lets a student always quit. The attempt stays active: resume later,
+  // or it auto-submits at the deadline (D-048).
+  const quitRegistered = globalShortcut.register("CommandOrControl+Q", () => {
+    trace("Cmd+Q during exam → quit");
+    app.quit();
+  });
+  trace("exam Cmd+Q shortcut registered:", quitRegistered);
   const thisWindow = examWindow;
   thisWindow.on("closed", () => {
     trace("exam window closed", { expected: examWindow !== thisWindow });
     if (examWindow !== thisWindow) return; // closed by closeExamWindow(), which reveals the main window itself
     // Closed some other way (crash, OS): forget it and bring the main window back.
+    globalShortcut.unregister("CommandOrControl+Q");
     examWindow = null;
     examAttemptId = null;
     mainWindow?.show();
@@ -166,6 +175,7 @@ function closeExamWindow(showUrl: string) {
   const win = examWindow;
   examWindow = null;
   examAttemptId = null;
+  globalShortcut.unregister("CommandOrControl+Q"); // back to the normal menu shortcut
   if (!mainWindow) mainWindow = createMainWindow();
   const main = mainWindow;
   void main.loadURL(showUrl); // result page loads while the exam window is leaving
@@ -280,5 +290,17 @@ if (!app.requestSingleInstanceLock()) {
     trace("window-all-closed → quit");
     app.quit();
   });
-  app.on("before-quit", () => trace("before-quit"));
+  // The exam window is closable:false and in kiosk mode; take it down first so quitting isn't blocked
+  // and macOS restores the Dock/menu bar.
+  app.on("will-quit", () => globalShortcut.unregisterAll());
+  app.on("before-quit", () => {
+    trace("before-quit", { examOpen: !!examWindow });
+    const win = examWindow;
+    examWindow = null;
+    examAttemptId = null;
+    if (win && !win.isDestroyed()) {
+      win.setKiosk(false);
+      win.destroy();
+    }
+  });
 }
