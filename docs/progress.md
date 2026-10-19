@@ -1,6 +1,6 @@
 # Progress
 
-**Current phase:** 05 — Kiosk window & camera (`in-progress`)
+**Current phase:** 05 — Kiosk window & camera (`review`)
 **Branch:** `phase/05-kiosk-camera`
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
@@ -12,13 +12,20 @@
 | 02 | Auth & roles | done | phase/02-auth | 10-20 | 2026-10-19 | 2026-10-19 |
 | 03 | Quiz management | done | phase/03-quiz-management | 10-20 → 10-21 | 2026-10-19 | 2026-10-19 |
 | 04 | Taking the exam | done | phase/04-exam | 10-21 → 10-22 | 2026-10-19 | 2026-10-19 |
-| 05 | Kiosk window & camera | in-progress | phase/05-kiosk-camera | 10-23 | 2026-10-19 | |
+| 05 | Kiosk window & camera | review | phase/05-kiosk-camera | 10-23 | 2026-10-19 | |
 | 06 | Results, profile & leaderboard | not-started | phase/06-results | 10-24 | | |
 | 07 | Ship: packaging, README, polish | not-started | phase/07-ship | 10-25 | | |
 
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-19 (phase 05)
+- Done: tasks 05.1–05.5 — desktop bridge + kiosk window, camera gate + desktop-only, event log + camera-loss overlay (11/11 API), snapshots to private Cloudinary (8/8 API + live privacy check).
+- Fixed: kiosk exit left the result window off-screen (macOS Spaces, D-047) — found in the user's real run, confirmed fixed by the user.
+- Cloudinary setup issues resolved with the user: empty secret, disabled key, key role without "create".
+- Next: approve phase 05 → merge + deploy; then `/phase-start 06` (results, profile, leaderboard).
+- Blockers: none. Schedule: ahead.
+
 ### 2026-10-19 (phase 04)
 - Done: tasks 04.1–04.6 — attempt model + grading, attempt API (32/32 checks), exam UI, autosave queue (8 unit + offline/reload e2e), submit/auto-submit/result/resume.
 - Note: during one timed test, answers appeared that the script didn't click (likely manual clicks in the visible test window); a clean timestamped re-run confirmed correct timing and grading.
@@ -54,6 +61,7 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 - Auth.js is a pinned **beta** (`5.0.0-beta.32`); fallback plan is `jose` + own cookie (D-033).
 - Sign-in has no rate limiting / lockout (brute-force possible; bcrypt cost slows it).
 - No Content-Security-Policy header yet (Electron warns in dev). Add a CSP in phase 07 hardening.
+- Snapshots have no automatic retention/deletion yet (PRD open question 1).
 
 ## Parked ideas
 - Drag-and-drop question reordering (up/down buttons for now).

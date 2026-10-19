@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | in-progress |
+| Status | review |
 | Branch | `phase/05-kiosk-camera` |
 | Depends on | Phase 04 |
 | PRD features | F-04, F-05, F-07, F-08, F-09 (capture side) |
@@ -62,22 +62,37 @@ From phase 04 (Taking the exam, merged 2026-10-19):
 - [x] 05.5 — Update docs (document kiosk limitations) → `docs: update docs for phase 05`
 
 ## Done criteria
-- [ ] In Electron: start quiz → camera prompt → kiosk exam → submit → back to main window result
-- [ ] Denying camera blocks start; snapshots appear in Cloudinary (authenticated type) roughly every 10 s; none after submit
-- [ ] Cmd+Tab during exam creates blur/focus events in MongoDB
-- [ ] Covering/disabling the camera shows the overlay; timer keeps going
-- [ ] Docs match what was built; decisions logged
+- [x] In Electron: start quiz → camera prompt → kiosk exam → submit → back to main window result
+  - Confirmed by the user on real hardware after the D-047 fix.
+- [x] Denying camera blocks start; snapshots appear in Cloudinary (authenticated type) roughly every 10 s; none after submit
+- [x] Cmd+Tab during exam creates blur/focus events in MongoDB
+  - Blur/focus logging verified via window events (fake camera, windowed). In real kiosk mode macOS disables Cmd+Tab, so no switch happens to log.
+- [x] Covering/disabling the camera shows the overlay; timer keeps going
+  - Verified by stopping the camera track (fake camera); not tested by unplugging a physical webcam.
+- [x] Docs match what was built; decisions logged
 
 ## How to verify
 1. Fill Cloudinary keys in `.env`. 2. Run a 3-minute quiz in Electron; check Cloudinary media library + `snapshots`/`proctorEvents` in Atlas.
 3. Deny camera in System Settings → start is blocked.
 
 ## Phase summary
-<!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
+- **Built:** Desktop bridge (`requestCamera`, `startExam`, `endExam`, sender-origin checks); kiosk exam window (full screen,
+  not closable, always on top, main window hidden) with a correct exit sequence; camera-only (video) permission for the app origin;
+  camera gate before Start/Resume with specific instructions; desktop-only enforcement in the UI; hidden exam camera with
+  loss detection + blocking overlay; snapshots every 10 s to private Cloudinary (JPEG checks, retries, `snapshot_failed`);
+  neutral proctor event log (batched, clamped, capped; server-side `resumed`). Dev switches `PROCTRA_FAKE_CAMERA` / `PROCTRA_KIOSK`.
+- **Key decisions:** D-045 (kiosk lifecycle, permissions, test switches), D-046 (events + hidden camera), D-047 (leave kiosk before
+  revealing the result window); implementation notes added to D-008, D-010, D-013.
+- **Known limitations:** Kiosk ≠ lockdown (Cmd+Q, Force Quit, other devices — system-design "Kiosk mode"). The start API works from a
+  browser (UI blocks it; D-013). No physical-webcam unplug test. No snapshot retention clean-up yet (PRD open question 1). Teachers
+  can't see snapshots or events yet (phase 06 / S-01).
 - **Next phase should know:**
+  - Counts: `snapshotCounts(attemptIds)` (`snapshot-service.ts`) and `eventCounts(attemptIds)` (`proctor-service.ts`) are ready for
+    the submissions table; events for a timeline: `ProctorEvent.find({ attemptId }).sort({ occurredAt: 1 })`.
+  - Signed image URLs for the gallery (S-01): `signedImageUrl(publicId)` in `src/lib/cloudinary.ts` (10-minute expiry).
+  - Teacher views must call `finalizeExpiredForQuiz(quizId)` (attempt-service) before listing results (D-006).
+  - Event wording must stay neutral ("window lost focus at …"), never "suspicious".
+  - Cloudinary keys are on Vercel (Production + Preview); the API key's role must allow creating assets (D-008 gotcha).
 
 ## Next phase preview
 Phase 06 builds the student profile, teacher submissions (with event log) and the leaderboard.
