@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/02-auth` |
 | Depends on | Phase 01 |
 | PRD features | F-01 |

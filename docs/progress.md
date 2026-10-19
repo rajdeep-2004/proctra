@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 02 — Auth & roles (`review`)
-**Branch:** `phase/02-auth`
+**Current phase:** 03 — Quiz management (`not-started`)
+**Branch:** —
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -9,7 +9,7 @@
 | # | Phase | Status | Branch | Target | Started | Closed |
 |---|---|---|---|---|---|---|
 | 01 | Foundation | done | phase/01-foundation | 10-19 | 2026-10-19 | 2026-10-19 |
-| 02 | Auth & roles | review | phase/02-auth | 10-20 | 2026-10-19 | |
+| 02 | Auth & roles | done | phase/02-auth | 10-20 | 2026-10-19 | 2026-10-19 |
 | 03 | Quiz management | not-started | phase/03-quiz-management | 10-20 → 10-21 | | |
 | 04 | Taking the exam | not-started | phase/04-exam | 10-21 → 10-22 | | |
 | 05 | Kiosk window & camera | not-started | phase/05-kiosk-camera | 10-23 | | |
@@ -22,7 +22,7 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 ### 2026-10-19 (phase 02)
 - Done: tasks 02.1–02.6 — registration, Auth.js sign-in/out, requireUser/requirePageUser, proxy redirects, dashboard shells, teacher seed. Verified locally, in Electron and on a Vercel preview.
 - Fixed along the way: Next 16 proxy export shape, Cache Components "blocking route" from auth(), sign-out lost on Electron crash.
-- Next: approve phase 02 → merge + `npx vercel deploy --prod`; then `/phase-start 03`.
+- Next: phase 02 approved and merged to `main` (ed8565d) and deployed to production; `/phase-start 03`.
 - Blockers: none.
 
 ### 2026-10-19 (phase 01)
