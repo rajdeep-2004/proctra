@@ -46,6 +46,7 @@ Rules:
 | D-031 | 2026-10-19 | 01 | Deploy with the Vercel CLI; env vars set from .env without echoing | Active |
 | D-032 | 2026-10-19 | 02 | Registration and password handling rules | Active |
 | D-033 | 2026-10-19 | 02 | Auth.js v5 beta wiring: pinned version, split + lazy config | Active |
+| D-034 | 2026-10-19 | 02 | Auth forms use Server Actions (exception to D-003) | Active |
 
 ---
 
@@ -1179,3 +1180,48 @@ with 12.00 h expiry; sign-out → 401; sign-in without CSRF token → rejected.
 
 **Revisit if**
 A new beta is needed for a bug fix, or Auth.js breaks with a Next.js upgrade → switch to `jose` (Next's documented pattern).
+
+---
+
+### D-034 — Auth forms use Server Actions (exception to D-003)
+- **Date:** 2026-10-19
+- **Phase:** 02 — Auth & roles
+- **Status:** Active
+- **Type:** architecture
+
+**Context**
+D-003 says mutations go through `/api/v1` route handlers. But Auth.js's sign-in has to run on the server
+and set its cookie, and its recommended App Router pattern is calling `signIn()` inside a Server Action.
+
+**Decision**
+Sign-in, sign-up and sign-out pages submit to Server Actions in `src/app/(auth)/actions.ts`. Those actions
+call the same services as the API (`registerStudent`, Auth.js `signIn` → `verifyCredentials`), so rules
+still live in one place. `POST /api/v1/auth/register` stays for API clients/scripts. Every other feature keeps using `/api/v1`.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Client `fetch` to `/api/v1/auth/register` then `signIn()` from `next-auth/react` | Two round trips, and client-side Auth.js adds a SessionProvider + extra JS |
+
+**How it works**
+1. The form is a Client Component using React's `useActionState(action, {})`; `pending` disables the button.
+2. The action validates with the same Zod schema, then calls `signIn("credentials", { …, redirectTo: "/" })`.
+3. On success `signIn` **throws** Next's redirect signal — the action must re-throw anything that isn't an
+   `AuthError`, or the redirect would be swallowed.
+4. On failure the action returns `{ error | fieldErrors, values }`; the form re-renders with messages and
+   keeps name/email (never the password). Fields use `aria-invalid` + `aria-describedby` for screen readers.
+5. Server Actions are POST-only and Next checks the `Origin` header, which gives CSRF protection for sign-out.
+
+Verified in Electron via CDP: wrong password → generic alert, email kept; duplicate email → field error;
+empty/invalid fields → three field errors; new sign-up → signed in immediately (`/me` returns the student).
+
+**Files touched**
+- `src/app/(auth)/actions.ts`, `src/app/(auth)/layout.tsx`, `src/app/(auth)/sign-in/page.tsx`,
+  `src/app/(auth)/sign-up/page.tsx`, `src/components/auth/*`, `src/app/page.tsx`, shadcn `card/input/label/alert`
+
+**Concepts worth learning**
+- **Server Action:** a server function a form can call directly; Next.js creates the POST endpoint for you.
+- **Progressive enhancement:** `<form action={…}>` works even before JavaScript loads.
+
+**Revisit if**
+Auth moves off Auth.js.
