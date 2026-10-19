@@ -13,7 +13,25 @@ Exams run in an Electron kiosk window, can't start without a camera, upload a pr
 10 s, pause behind an overlay if the camera is lost, and log focus/fullscreen/camera events.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+From phase 04 (Taking the exam, merged 2026-10-19):
+- **Exists:** Attempt model + API (start/resume, GET, per-answer save, submit, lazy auto-submit); exam page
+  `/exam/[attemptId]` (bare layout: title, `SaveIndicator`, `ExamTimer`); `SaveQueue` autosave; submit dialog; time's-up
+  overlay; result page `/student/attempts/[attemptId]`; `StartButton` on the quiz page (currently `router.push("/exam/…")`).
+- **Hook points for this phase:**
+  - `src/components/quiz/start-button.tsx` `start()` → camera check (`window.proctra.requestCamera()` + `getUserMedia` test) →
+    `POST …/attempts` → `window.proctra.startExam(attemptId)` instead of `router.push`. Outside Electron: block with a
+    "use the desktop app" message (D-013).
+  - `src/components/exam/exam-client.tsx` `goToResult()` (called on submit, time's up and `ATTEMPT_CLOSED`) → in kiosk mode call
+    `window.proctra.endExam(attemptId)` so main closes the kiosk window and loads the result in the main window.
+  - Stop snapshot/event loops when `submitState` leaves `"idle"` or the attempt closes.
+  - `electron/preload.ts` exposes only `isDesktop` today; `electron/main.ts` denies all permissions (allow `media` for the app
+    origin only) and has the navigation allow-list + cookie flush.
+- **Rules:** snapshots/events endpoints must check the attempt is active and owned (reuse `loadOwnAttempt` pattern in
+  `attempt-service.ts`); events within the 5 s grace still accepted (final flush on submit).
+- **Needs from the user:** Cloudinary cloud name, API key and secret (add to `.env`, `.env.example`, Vercel).
+- **Watch out:** macOS camera permission is per-app (TCC); in dev it's granted to the Electron binary. Kiosk/hidden-window
+  testing: Chromium pauses painting for covered windows (D-039).
+- Decisions: D-042 – D-044.
 
 ## In scope — exact features
 1. **Desktop bridge + kiosk window**

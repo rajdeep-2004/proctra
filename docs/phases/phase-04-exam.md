@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/04-exam` |
 | Depends on | Phase 03 |
 | PRD features | F-06, F-10, F-11 (enforcement) |
