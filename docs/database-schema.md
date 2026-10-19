@@ -200,7 +200,7 @@ Purpose: neutral log of window/camera/upload events during an attempt.
 | Query | Used by | Index used | Frequency |
 |---|---|---|---|
 | User by email | sign-in, register | `users.email` | per sign-in |
-| Teacher's quizzes | teacher dashboard | `quizzes.teacherId_updatedAt` | per page view |
+| Teacher's quizzes (+ attempt counts via `$group` on `attempts.quizId`) | teacher dashboard | `quizzes.teacherId_updatedAt` | per page view |
 | Published quizzes (+ my attempt per quiz) | student dashboard | `quizzes.status_startsAt` + `attempts.studentId_startedAt` | per page view |
 | Attempt by `{quizId, studentId}` | start/resume | `attempts.quizId_studentId` (unique) | per start |
 | Attempt by `_id` + `studentId` | exam load, save answer, submit, snapshot | `_id` | ~every few seconds per student during an exam |

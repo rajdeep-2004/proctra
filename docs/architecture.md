@@ -91,7 +91,7 @@ proctra/
 | Electron main | Windows, kiosk mode, camera permission, navigation allow-list, IPC | APP_URL config | Hold DB/Cloudinary secrets; trust renderer input without validation |
 | Preload bridge | `window.proctra` API (start/end exam, window events) | Electron `contextBridge`, `ipcRenderer` | Expose `ipcRenderer`, Node, or fs to the page |
 | Auth (`src/auth.ts`, `lib/session.ts`) | Sign-in, session cookie, `requireUser(role?)` helper | User model, bcryptjs | Be bypassed by any `/api/v1` handler |
-| Quiz service | Quiz CRUD, publish/unpublish/archive, edit lock | Quiz, Attempt models | Return `correctOption` to students |
+| Quiz service | Quiz CRUD, publish/unpublish/archive, edit lock, student list/detail (`src/services/quiz-service.ts`) | Quiz model, `attempts` collection | Return question text or `correctIndex` to students |
 | Attempt service | Start/resume, save answer, submit, lazy finalization | Quiz, Attempt, grading | Trust client time, score or role |
 | Grading service | Score computation (pure function) | none | Touch the DB |
 | Leaderboard service | Competition ranking per quiz | Attempt model | Expose snapshots/events |
