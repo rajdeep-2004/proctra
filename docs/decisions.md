@@ -54,6 +54,9 @@ Rules:
 | D-039 | 2026-10-19 | 03 | Quiz editor: browser-only render, whole-quiz save, local-time display | Active |
 | D-040 | 2026-10-19 | 03 | Student quiz views: projection-only reads; streamed 404 pages | Active |
 | D-041 | 2026-10-19 | 03 | Fixed exam slot: duration derived from start/end; extend-only end time | Active |
+| D-042 | 2026-10-19 | 04 | Attempt lifecycle: insert-or-read start, atomic grade-and-close with optimistic retry | Active |
+| D-043 | 2026-10-19 | 04 | Exam UI: one question at a time, native radios, shared server clock | Active |
+| D-044 | 2026-10-19 | 04 | Submit only after saves are confirmed; auto-submit with server backstop | Active |
 
 ---
 
@@ -368,6 +371,17 @@ Smallest possible loss window (only an in-flight click), simple to reason about,
 4. On exam page load (including resume), leftover pending entries are replayed first.
 5. Server: `updateOne({ _id, studentId, status: "active", deadline: { $gt: now - grace } }, { $set: { "answers.<qid>": … } })`
    — a single atomic write that can't touch other answers or a closed attempt.
+
+**Implementation (phase 04)**
+`SaveQueue` (`src/components/exam/save-queue.ts`) is plain TypeScript, wrapped by `useAutosave()`. HTTP outcome →
+queue action: `200` ok, `409` closed (stop + go to result page), `400/404` drop (retrying can't fix it), anything else or a
+network error → retry with backoff 1/2/4/8/10 s (and immediately on the browser's `online` event). The exam renders
+browser-only so the first render can overlay unconfirmed `localStorage` answers on the server copy.
+Verified: `.scratch/save-queue.test.ts` (8 cases: coalescing, replay after "crash", retry sends the newest value,
+closed, drop, flush, no storage) and an Electron scenario that blocked `/answers/` requests via CDP: answer → "retrying"
++ local copy → **page reload while offline still shows it** → network back → saved, local copy cleared, server has it.
+Limitation: Chromium also writes `localStorage` to disk lazily, so a hard crash within ~1–2 s of a click can still lose
+that last unconfirmed answer — the window this design accepts.
 
 **Concepts worth learning**
 - **Optimistic UI:** show the change immediately, reconcile with the server after.
@@ -806,7 +820,9 @@ for (const q of questions) {
 total = correct * marking.correct + incorrect * marking.incorrect + unanswered * marking.unanswered;
 maxPossible = questions.length * marking.correct;
 ```
-Rounded to 2 decimals to avoid float noise (e.g. `0.1 + 0.2`). Storing the score means leaderboards and
+Rounded to 2 decimals to avoid float noise (e.g. `0.1 + 0.2`). Implemented in phase 04 as `src/services/grading.ts`
+(no `server-only`, so `.scratch/grading.test.ts` checks it by hand: 9 cases incl. negative and fractional marks).
+Storing the score means leaderboards and
 profiles never re-grade; questions are locked (D-022), so the stored score can't go stale.
 
 **Concepts worth learning**
@@ -1596,3 +1612,130 @@ ticker (`useSyncExternalStore`) drives all countdowns; `role="timer"` + `aria-li
 
 **Revisit if**
 The course wants per-student timers (e.g. "60 minutes from whenever you start within a day-long window").
+
+---
+
+### D-042 — Attempt lifecycle: insert-or-read start, atomic grade-and-close with optimistic retry
+- **Date:** 2026-10-19
+- **Phase:** 04 — Taking the exam
+- **Status:** Active
+- **Type:** algorithm
+
+**Context**
+Starting, saving and submitting race each other: double-clicked Start, two windows, a last-second answer
+save arriving together with the auto-submit, or a teacher saving while a student starts.
+
+**Decision**
+- **Start:** check for an existing attempt (resume/finished) → lock the quiz with a conditional update that also
+  enforces `published` and `startsAt ≤ now < endsAt` → read the quiz **after** locking → `Attempt.create(...)`. If the
+  unique index `{quizId, studentId}` rejects the insert (duplicate key `11000`), read the attempt the other request made.
+- **Close (submit / auto / lazy):** read the attempt, grade its answers, then one `findOneAndUpdate` filtered on
+  `{ status: "active", updatedAt: <what we graded> }` that sets status, `submittedAt` and `score` together. If an answer
+  save changed `updatedAt` in between, the write misses → re-read, re-grade (up to 5 tries). The close write uses
+  `timestamps: false` so `updatedAt` keeps meaning "last answer change".
+- Submitting at or after the deadline is recorded as `auto_submitted` with `submittedAt = deadline`.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Upsert with `includeResultMetadata` to learn "created vs existing" | Works, but awkward typing; insert + duplicate-key fallback is one clear path for both cases |
+| Flip status first, grade in a second write | A crash between the writes leaves a submitted attempt without a score |
+| Transactions | Needs a replica set session for every write; a conditional single-document update is enough here |
+
+**How it works**
+Every write that matters is a single-document update whose filter states the condition it depends on
+(`status: "active"`, `deadline > now − 5 s`, `updatedAt: x`). MongoDB applies single-document updates atomically, so the
+condition and the change can't be separated by another request.
+
+Verified by `.scratch/attempt-api.check.mts` (32/32): 5 parallel starts → 1 attempt; window enforced; quiz locked;
+no `correctIndex` while active; saves validated (range, foreign question, other student → 404); submit score = hand
+calculation (4 − 1 + 0 = 3); idempotent submit; save after submit → `ATTEMPT_CLOSED`; hidden results until release;
+expired attempt auto-submitted on read with `submittedAt = deadline`; 8 saves racing a submit → stored score equals
+the stored answers; teacher extension moves active deadlines.
+
+**Files touched**
+- `src/models/attempt.ts`, `src/schemas/attempt.ts`, `src/services/attempt-service.ts`, `src/services/grading.ts`,
+  `src/app/api/v1/quizzes/[quizId]/attempts/route.ts`, `src/app/api/v1/attempts/**`, `src/services/quiz-service.ts`
+  (attempt helpers now use the model and finalize expired attempts first)
+
+**Concepts worth learning**
+- **Optimistic concurrency control:** don't lock; instead write only if the data is still what you read, and retry if not.
+- **Idempotency:** repeating start/submit/save gives the same outcome, so retries and double-clicks are harmless.
+
+**Revisit if**
+Writes per attempt grow enough that retries become frequent (then use a per-attempt version counter).
+
+---
+
+### D-043 — Exam UI: one question at a time, native radios, shared server clock
+- **Date:** 2026-10-19
+- **Phase:** 04 — Taking the exam
+- **Status:** Active
+- **Type:** architecture
+
+**Decision**
+- `/exam/[attemptId]` has its own bare layout (title + timer only, no app navigation) so phase 05 can show it in a kiosk window as is.
+  A finished attempt redirects to `/student/attempts/[id]`.
+- One question per screen with Previous/Next, a palette (filled = answered, outline = not answered, flag = marked,
+  ring = current) and counts. "Clear answer" sets the selection back to none.
+- Options are **native `<input type="radio">`** inside large clickable `<label>` cards: keyboard arrows, focus and screen
+  readers work for free, no animation on exam controls (D-015).
+- Timers use one shared hook, `useServerNow(serverNow)` (`src/lib/server-clock.ts`): a single 1-second ticker, with the
+  device clock corrected by the server's time. The countdown (D-041) was refactored onto the same hook. `ExamTimer` turns red
+  under 5 minutes and calls `onExpire` exactly once at zero (used by auto-submit in 04.5).
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| All questions on one long page | Harder to see progress; palette navigation is the expected exam pattern (brief §6.3) |
+| Radix RadioGroup | Native radios already give the needed accessibility with less code |
+
+**Files touched**
+- `src/app/exam/[attemptId]/page.tsx`, `src/components/exam/{exam-client,exam-timer,question-palette}.tsx`,
+  `src/lib/server-clock.ts`, `src/components/quiz/countdown.tsx`
+
+**Revisit if**
+Exams need sections or very long questions with images.
+
+---
+
+### D-044 — Submit only after saves are confirmed; auto-submit with server backstop
+- **Date:** 2026-10-19
+- **Phase:** 04 — Taking the exam
+- **Status:** Active
+- **Type:** edge-case
+
+**Context**
+Submitting while some answers exist only in the browser's queue would grade the attempt without them. At the
+deadline the student can't wait, and the network may be down.
+
+**Decision**
+- **Manual submit:** confirmation dialog (answered / not answered / marked counts) → `autosave.flush(8 s)` → only if every
+  answer is confirmed, `POST /submit` (3 tries) → result page. If saves aren't confirmed, nothing is submitted and the student is told
+  their answers are safe and to retry.
+- **Timer at zero:** full-screen "Time's up — submitting…" overlay (blocks further clicks) → `flush(4 s)` (the server accepts saves for
+  5 s after the deadline) → `POST /submit` (5 tries) → result page. If the network is down, the server's lazy finalization
+  (D-006) closes and grades the attempt on its next read, so the result is the same.
+- **Start / Resume / View result** on the quiz page (`StartButton`): one attempt per quiz; resuming shows the same attempt with saved
+  answers and a reminder that time keeps running. A finished attempt's `/exam/:id` redirects to `/student/attempts/:id`, and an
+  active attempt's result URL redirects back to the exam.
+- **Result page:** score `total / maxPossible`, correct/wrong/unanswered counts, per-question review (your answer vs correct) — only when
+  released; otherwise "Marks will be shown from <time>".
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Submit immediately and let pending saves race | Pending answers could arrive after grading and be rejected (`ATTEMPT_CLOSED`) |
+| Send all answers in the submit request | Duplicates the save path and lets the client overwrite saved answers at the last moment |
+
+**How it works / verified**
+Electron run: start from the quiz page → answer 2 → leave → "Resume exam" restored both → confirmation dialog showed 2 of 5 →
+result page 3 / 20 (4 − 1 + 0×3). Timeout run with 1-minute quiz: timer 0m 02s at 10:23:22, overlay at the deadline, result page
+"Submitted automatically when time ran out" ~3 s later; stored `submittedAt` = deadline exactly.
+
+**Files touched**
+- `src/components/exam/{exam-client,submit-dialog}.tsx`, `src/components/quiz/start-button.tsx`,
+  `src/app/student/quizzes/[quizId]/page.tsx`, `src/app/student/attempts/[attemptId]/page.tsx`
+
+**Revisit if**
+Kiosk mode (phase 05) needs to close the window before navigating to the result.

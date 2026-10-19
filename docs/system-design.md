@@ -97,9 +97,9 @@ sequenceDiagram
   else timer hits 0
     E->>N: POST /api/v1/attempts/:id/submit
   end
-  N->>D: findOneAndUpdate({_id, status:'active'}, {status, submittedAt})
+  N->>D: read attempt (answers, updatedAt)
   N->>N: grade(quiz, answers) → score breakdown
-  N->>D: save score on attempt
+  N->>D: findOneAndUpdate({_id, status:'active', updatedAt}, {status, submittedAt, score}) — retry if a save slipped in
   N-->>E: { status, score? (if released) }
   E->>M: proctra.endExam(attemptId)
   M->>M: close exam window, show main window at /student/attempts/:id

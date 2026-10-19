@@ -1,7 +1,7 @@
 # Progress
 
-**Current phase:** 04 — Taking the exam (`not-started`)
-**Branch:** —
+**Current phase:** 04 — Taking the exam (`review`)
+**Branch:** `phase/04-exam`
 **Profile:** lean
 **Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
@@ -11,7 +11,7 @@
 | 01 | Foundation | done | phase/01-foundation | 10-19 | 2026-10-19 | 2026-10-19 |
 | 02 | Auth & roles | done | phase/02-auth | 10-20 | 2026-10-19 | 2026-10-19 |
 | 03 | Quiz management | done | phase/03-quiz-management | 10-20 → 10-21 | 2026-10-19 | 2026-10-19 |
-| 04 | Taking the exam | not-started | phase/04-exam | 10-21 → 10-22 | | |
+| 04 | Taking the exam | review | phase/04-exam | 10-21 → 10-22 | 2026-10-19 | |
 | 05 | Kiosk window & camera | not-started | phase/05-kiosk-camera | 10-23 | | |
 | 06 | Results, profile & leaderboard | not-started | phase/06-results | 10-24 | | |
 | 07 | Ship: packaging, README, polish | not-started | phase/07-ship | 10-25 | | |
@@ -19,6 +19,12 @@
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-19 (phase 04)
+- Done: tasks 04.1–04.6 — attempt model + grading, attempt API (32/32 checks), exam UI, autosave queue (8 unit + offline/reload e2e), submit/auto-submit/result/resume.
+- Note: during one timed test, answers appeared that the script didn't click (likely manual clicks in the visible test window); a clean timestamped re-run confirmed correct timing and grading.
+- Next: approve phase 04 → merge + deploy; then `/phase-start 05` (kiosk window + camera).
+- Blockers: Cloudinary account + keys needed for phase 05. Schedule: ahead (phases 01–04 done on day 1).
+
 ### 2026-10-19 (phase 03)
 - Done: tasks 03.1–03.5 — quiz model + validation, teacher API (24/24 checks), editor + dashboard, student list/detail (15 checks + screenshots).
 - Found: user's long-running `next dev` stopped running the proxy (restart fixes); `next start` locally needs `AUTH_TRUST_HOST=true`.
@@ -51,4 +57,5 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Parked ideas
 - Drag-and-drop question reordering (up/down buttons for now).
+- Resume at the last viewed question instead of question 1.
 - Retakes; cohort assignment; configurable snapshot interval; automated snapshot retention cleanup; Windows build; code signing (PRD §5 Later).

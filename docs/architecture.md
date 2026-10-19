@@ -58,17 +58,18 @@ proctra/
 ├── src/
 │   ├── app/                # Next.js App Router
 │   │   ├── (auth)/         # sign-in, sign-up pages
-│   │   ├── student/        # student dashboard, quiz detail, profile, results
+│   │   ├── student/        # dashboard, quiz detail (Start/Resume), attempts/[id] result page, profile (06)
 │   │   ├── teacher/        # teacher dashboard, quiz editor, submissions, leaderboard
-│   │   ├── exam/[attemptId]/ # exam page (loaded inside the kiosk window)
+│   │   ├── exam/[attemptId]/ # bare exam page (timer, palette, autosave); kiosk window in phase 05
 │   │   └── api/v1/         # route handlers (thin: auth → validate → service → respond)
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
 │   │   ├── auth/, layout/  # sign-in/up forms, app header
-│   │   ├── quiz/           # quiz editor, question card, status/availability badges
+│   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
+│   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue + useAutosave
 │   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
-│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client · utils (cn) · later: cloudinary (05), desktop (05)
+│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock · utils (cn) · later: cloudinary (05), desktop (05)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
@@ -92,8 +93,8 @@ proctra/
 | Preload bridge | `window.proctra` API (start/end exam, window events) | Electron `contextBridge`, `ipcRenderer` | Expose `ipcRenderer`, Node, or fs to the page |
 | Auth (`src/auth.ts`, `lib/session.ts`) | Sign-in, session cookie, `requireUser(role?)` helper | User model, bcryptjs | Be bypassed by any `/api/v1` handler |
 | Quiz service | Quiz CRUD, publish/unpublish/archive, edit lock, student list/detail (`src/services/quiz-service.ts`) | Quiz model, `attempts` collection | Return question text or `correctIndex` to students |
-| Attempt service | Start/resume, save answer, submit, lazy finalization | Quiz, Attempt, grading | Trust client time, score or role |
-| Grading service | Score computation (pure function) | none | Touch the DB |
+| Attempt service | Start/resume, save answer, submit, lazy finalization (`src/services/attempt-service.ts`, D-042) | Quiz, Attempt models, grading | Trust client time, score or role |
+| Grading service | Score computation (pure function, `src/services/grading.ts`) | none | Touch the DB |
 | Leaderboard service | Competition ranking per quiz | Attempt model | Expose snapshots/events |
 | Snapshot service | Upload to Cloudinary, record metadata, signed URLs | Cloudinary SDK, Snapshot model | Store image bytes in MongoDB |
 | Proctor events | Record and list window/camera events | ProctorEvent model | Label events as cheating |
