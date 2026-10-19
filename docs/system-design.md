@@ -194,6 +194,7 @@ No data cache: load is tiny and stale exam data would be dangerous.
 | App closed / battery dies mid-attempt | Attempt still `active` on next login | Dashboard shows **Resume**; re-runs camera gate and reopens kiosk window; time lost is not refunded. If deadline already passed → lazily auto-submitted |
 | Camera permission denied | `askForMediaAccess` false / getUserMedia throws | Start blocked with instructions to enable in System Settings → Privacy & Security → Camera |
 | Camera lost mid-attempt | Track `ended` | Blocking overlay, event logged, timer continues (§2) |
+| App force-quit/crash right after sign-out | Cookie change not yet on disk | Electron flushes the cookie store on every change, so sign-out sticks (D-035) |
 | Session cookie expired mid-exam | 401 from API | Session lifetime set to 12 h so it cannot expire during an exam; if it does, redirect to sign-in and resume |
 
 ## 8. Security

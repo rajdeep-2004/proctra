@@ -115,10 +115,12 @@ server component (reads) ──────────────────�
 | Vercel | Hosting the Next.js app | Electron app shows "cannot reach server" screen |
 
 ## 8. Auth and authorization
-- **Identity:** email + password. Students register via `/sign-up`; teachers are created by
-  `scripts/seed-teachers.ts`. Passwords hashed with bcryptjs (cost 10).
+- **Identity:** email + password. Students register via `/sign-up` (Server Action, D-034) or
+  `POST /api/v1/auth/register`; teachers are created by `npm run seed` (D-036). Passwords hashed with
+  bcryptjs (cost 10); rules in D-032. Auth.js `5.0.0-beta.32`, pinned (D-033).
 - **Session:** Auth.js JWT strategy in an httpOnly, secure, SameSite=Lax cookie. Token holds
-  `userId`, `role`, `name`. Electron uses a persistent session partition so the cookie survives restarts.
+  `userId`, `role`, `name`. Electron uses a persistent session partition so the cookie survives restarts,
+  and flushes the cookie store to disk on every change so a crash can't undo a sign-out (D-035).
 - **Roles:** `student`, `teacher`. (`admin` = a teacher created by seed; no separate powers in V1.)
 - **Enforcement:** every `/api/v1` handler calls `requireUser("teacher" | "student")`. Ownership is
   checked in services (teacher owns quiz; student owns attempt). `src/proxy.ts` (Next 16's name for

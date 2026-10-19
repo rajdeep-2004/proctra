@@ -32,6 +32,8 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 ## Known debt
 - No rate limiting on API routes (system-design §11).
 - Manual deploys only (`npx vercel deploy --prod` from `main` after each merge) (D-031).
+- Auth.js is a pinned **beta** (`5.0.0-beta.32`); fallback plan is `jose` + own cookie (D-033).
+- Sign-in has no rate limiting / lockout (brute-force possible; bcrypt cost slows it).
 
 ## Parked ideas
 - Retakes; cohort assignment; configurable snapshot interval; automated snapshot retention cleanup; Windows build; code signing (PRD §5 Later).
