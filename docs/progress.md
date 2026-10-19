@@ -22,6 +22,7 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 ### 2026-10-19 (phase 05)
 - Done: tasks 05.1–05.5 — desktop bridge + kiosk window, camera gate + desktop-only, event log + camera-loss overlay (11/11 API), snapshots to private Cloudinary (8/8 API + live privacy check).
 - Fixed: kiosk exit left the result window off-screen (macOS Spaces, D-047) — found in the user's real run, confirmed fixed by the user.
+- Fixed: Cmd+Q did nothing in the kiosk exam (macOS kiosk disables the app menu) → scoped Cmd+Q shortcut quits; resume works (D-048, user-confirmed).
 - Cloudinary setup issues resolved with the user: empty secret, disabled key, key role without "create".
 - Next: approve phase 05 → merge + deploy; then `/phase-start 06` (results, profile, leaderboard).
 - Blockers: none. Schedule: ahead.

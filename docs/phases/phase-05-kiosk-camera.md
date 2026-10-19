@@ -82,8 +82,9 @@ From phase 04 (Taking the exam, merged 2026-10-19):
   loss detection + blocking overlay; snapshots every 10 s to private Cloudinary (JPEG checks, retries, `snapshot_failed`);
   neutral proctor event log (batched, clamped, capped; server-side `resumed`). Dev switches `PROCTRA_FAKE_CAMERA` / `PROCTRA_KIOSK`.
 - **Key decisions:** D-045 (kiosk lifecycle, permissions, test switches), D-046 (events + hidden camera), D-047 (leave kiosk before
-  revealing the result window); implementation notes added to D-008, D-010, D-013.
-- **Known limitations:** Kiosk ≠ lockdown (Cmd+Q, Force Quit, other devices — system-design "Kiosk mode"). The start API works from a
+  revealing the result window), D-048 (Cmd+Q quits during the exam via a scoped global shortcut); implementation notes added to D-008, D-010, D-013.
+- **Known limitations:** Kiosk ≠ lockdown (Cmd+Q kept on purpose, other devices, power button — system-design "Kiosk mode";
+  macOS kiosk does disable app switching and the Force Quit dialog). The start API works from a
   browser (UI blocks it; D-013). No physical-webcam unplug test. No snapshot retention clean-up yet (PRD open question 1). Teachers
   can't see snapshots or events yet (phase 06 / S-01).
 - **Next phase should know:**
