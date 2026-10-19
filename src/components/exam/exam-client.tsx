@@ -1,12 +1,14 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Flag } from "lucide-react";
+import { CameraOff, ChevronLeft, ChevronRight, Flag } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import type { ActiveAttemptView } from "@/services/attempt-service";
 import { ExamTimer } from "@/components/exam/exam-timer";
 import { SaveIndicator } from "@/components/exam/save-indicator";
 import { SubmitDialog } from "@/components/exam/submit-dialog";
+import { useExamCamera } from "@/components/exam/use-exam-camera";
+import { useProctorEvents } from "@/components/exam/use-proctor-events";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { readPending, useAutosave } from "@/components/exam/use-autosave";
 import { useIsClient } from "@/lib/use-is-client";
@@ -55,6 +57,15 @@ function Exam({ attempt }: { attempt: ActiveAttemptView }) {
   };
 
   const [submitState, setSubmitState] = useState<"idle" | "submitting" | "timeup" | "error">("idle");
+  // Proctoring runs only while the student can still answer; it stops on submit / time's up (F-07, F-09).
+  const proctoring = submitState === "idle" || submitState === "error";
+  const events = useProctorEvents(attempt.id, proctoring);
+  const camera = useExamCamera(
+    proctoring,
+    useCallback(() => events.log("camera_lost"), [events]),
+    useCallback(() => events.log("camera_restored"), [events]),
+  );
+  const cameraBlocked = proctoring && camera.status === "lost";
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   /** POST submit until it works (the server's lazy finalization is the backstop if it never does). */
@@ -102,6 +113,19 @@ function Exam({ attempt }: { attempt: ActiveAttemptView }) {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {cameraBlocked && (
+        // Blocks answering until the camera is back; the header (with the timer) stays visible (D-010).
+        <div role="alertdialog" aria-modal="true" aria-labelledby="camera-lost-title"
+          className="fixed inset-x-0 top-14 bottom-0 z-40 grid place-items-center bg-background/95 p-6 text-center">
+          <div className="grid max-w-md justify-items-center gap-3">
+            <CameraOff className="size-10 text-destructive" aria-hidden />
+            <h2 id="camera-lost-title" className="text-2xl font-semibold">Camera disconnected</h2>
+            <p className="text-muted-foreground">
+              Reconnect or re-enable your camera to continue. We&apos;re checking every few seconds. The timer keeps running.
+            </p>
+          </div>
+        </div>
+      )}
       {submitState === "timeup" && (
         <div role="alertdialog" aria-modal="true" aria-labelledby="timeup-title"
           className="fixed inset-0 z-50 grid place-items-center bg-background/95 p-6 text-center">

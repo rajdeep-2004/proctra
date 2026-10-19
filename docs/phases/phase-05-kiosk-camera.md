@@ -58,7 +58,7 @@ From phase 04 (Taking the exam, merged 2026-10-19):
 - [x] 05.1 — Preload API + IPC handlers + kiosk exam window + permission handler → `feat(desktop): add kiosk exam window and camera bridge`
 - [x] 05.2 — Camera gate and desktop-only check on pre-start + exam page → `feat(proctor): add camera permission gate`
 - [ ] 05.3 — Snapshot model, Cloudinary lib, upload route, capture loop → `feat(proctor): add periodic snapshot capture`
-- [ ] 05.4 — ProctorEvent model + events route + client event batching + camera-loss overlay → `feat(proctor): add event log and camera-loss overlay`
+- [x] 05.4 — (done before 05.3 while waiting for Cloudinary keys) ProctorEvent model + events route + client event batching + camera-loss overlay → `feat(proctor): add event log and camera-loss overlay`
 - [ ] 05.5 — Update docs (document kiosk limitations) → `docs: update docs for phase 05`
 
 ## Done criteria

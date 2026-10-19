@@ -264,9 +264,11 @@ Request
 ```json
 { "events": [ { "type": "window_blur", "occurredAt": "…" }, { "type": "window_focus", "occurredAt": "…" } ] }
 ```
-1–50 events per request.
+1–50 events per request. Types: `window_blur`, `window_focus`, `tab_hidden`, `tab_visible`, `fullscreen_exit`, `camera_lost`,
+`camera_restored`, `snapshot_failed` (`resumed` is recorded by the server only). `occurredAt` is clamped to the attempt's span;
+at most 2 000 events are stored per attempt.
 Response `201` `{ "data": { "accepted": 2 } }`
-Errors: `400`, `404`, `409 ATTEMPT_CLOSED` (except within grace window, so the final flush on submit succeeds)
+Errors: `400`, `403` (teacher), `404` (not mine), `409 ATTEMPT_CLOSED` (more than 30 s after the attempt ended — the final flush on submit still succeeds)
 
 #### `GET /api/v1/me/attempts`
 - Auth: student · Phase: 06 · Purpose: profile history
@@ -310,7 +312,7 @@ Permissions: the session grants only `media` with **video only** to the app orig
 | PUT | /api/v1/attempts/:attemptId/answers/:questionId | student | 04 | built |
 | POST | /api/v1/attempts/:attemptId/submit | student | 04 | built |
 | POST | /api/v1/attempts/:attemptId/snapshots | student | 05 | planned |
-| POST | /api/v1/attempts/:attemptId/events | student | 05 | planned |
+| POST | /api/v1/attempts/:attemptId/events | student | 05 | built |
 | GET | /api/v1/me/attempts | student | 06 | planned |
 | GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | planned |
 | GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | planned |

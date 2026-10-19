@@ -58,6 +58,7 @@ Rules:
 | D-043 | 2026-10-19 | 04 | Exam UI: one question at a time, native radios, shared server clock | Active |
 | D-044 | 2026-10-19 | 04 | Submit only after saves are confirmed; auto-submit with server backstop | Active |
 | D-045 | 2026-10-19 | 05 | Kiosk exam window lifecycle, camera-only permission, dev test switches | Active |
+| D-046 | 2026-10-19 | 05 | Proctor events and the hidden exam camera | Active |
 
 ---
 
@@ -1805,3 +1806,41 @@ window gone, main window on the result page.
 
 **Revisit if**
 The course requires stronger lockdown (then a dedicated lockdown browser is needed — out of scope).
+
+---
+
+### D-046 — Proctor events and the hidden exam camera
+- **Date:** 2026-10-19
+- **Phase:** 05 — Kiosk window & camera
+- **Status:** Active
+- **Type:** architecture
+
+**Decision**
+- **Events** (`proctorEvents`, separate collection per D-020): the exam page logs `window_blur/focus`, `tab_hidden/visible`,
+  `fullscreen_exit`, `camera_lost/restored`, `snapshot_failed`; the server alone logs `resumed`. The client buffers them and
+  POSTs every 5 s plus a final `keepalive` flush when proctoring stops. Server: owner check, accepts until 30 s after the attempt
+  ends, clamps `occurredAt` into the attempt's span, caps 2 000 per attempt. Wording is neutral everywhere (PRD §9).
+- **Camera** (`useExamCamera`): `getUserMedia` (640×480, no audio) plays into a `<video>` element that is **never attached to the
+  page** (no preview, F-07). A 2 s health check + `ended`/`devicechange` listeners detect loss; while lost it retries every 2 s.
+  `grabFrame()` draws the current frame to a canvas → JPEG (q 0.7) for snapshots (05.3).
+- **Camera-loss overlay:** blocks the question area (header with timer stays visible) until the camera is back; the deadline is
+  unchanged (D-010). Proctoring (camera + events) stops when the student submits or time runs out.
+
+**Alternatives considered**
+| Option | Why not chosen |
+|---|---|
+| Hidden `<video>` with CSS | Still in the DOM/accessibility tree; an element never attached is simpler and can't be shown by accident |
+| Send each event immediately | Many tiny requests (every Cmd+Tab); a 5 s batch is enough for a teacher's timeline |
+
+**Verified:** Electron (fake camera) — camera live with 0 `<video>` elements in the DOM; stopping the track → overlay within 2 s,
+timer still counting; stays while the camera is unavailable; returns → overlay gone, new live stream; stored events include
+`camera_lost`, `camera_restored`, `window_blur`, `window_focus`. API (11/11): unknown type 400, client `resumed` 400, batch
+limits, other student 404, teacher 403, times clamped, server `resumed` on resume, final flush accepted, 60 s later 409.
+
+**Files touched**
+- `src/models/proctor-event.ts`, `src/schemas/proctor.ts`, `src/services/proctor-service.ts`,
+  `src/app/api/v1/attempts/[attemptId]/events/route.ts`, `src/services/attempt-service.ts` (resumed event),
+  `src/components/exam/{use-proctor-events,use-exam-camera}.ts`, `src/components/exam/exam-client.tsx`
+
+**Revisit if**
+Teachers need more signals (e.g. screen count) — Electron could report them from main, but only neutral facts.
