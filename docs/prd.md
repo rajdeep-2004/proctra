@@ -75,7 +75,7 @@ exam window and periodic still snapshots, with no claims of full OS lockdown or 
 4. Saves as draft, reviews, publishes. Quiz is now visible to all students.
 
 ### Flow 2: Student takes a quiz
-1. Student signs in → dashboard lists available quizzes.
+1. Student signs in → dashboard lists available quizzes (tabs: Open & upcoming · Closed).
 2. Opens one → sees instructions, start/end time, a live "Starts in …" countdown, camera notice.
 3. Grants camera permission (blocked if denied/unavailable).
 4. Clicks Start (enabled once the slot opens) → server creates the attempt with deadline = quiz end time → kiosk exam window opens.

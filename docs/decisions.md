@@ -70,6 +70,7 @@ Rules:
 | D-055 | 2026-10-22 | v1 plan | Phase files grouped by release version (`docs/phases/vN/`) | Active |
 | D-056 | 2026-10-22 | v1 plan | Next release is v1.0.0 (semver), folder number = major version | Active |
 | D-057 | 2026-10-22 | v1/01 | UI copy without em dashes; one shared back button; leaner header | Active |
+| D-058 | 2026-10-22 | v1/02 | Dashboard tabs as links (`?tab=`), classified on the server | Active |
 
 ---
 
@@ -2266,4 +2267,42 @@ in both server pages and the client-side quiz editor. The check `grep -rn "—" 
 
 **Revisit if**
 Pages get deeper than one level (then breadcrumbs make more sense than a single back button).
+
+### D-058 — Dashboard tabs as links (`?tab=`), classified on the server
+- **Date:** 2026-10-22
+- **Phase:** v1/02 — Quiz list tabs
+- **Status:** Active
+- **Type:** UI pattern
+
+**Context**
+Issues 1.1 / 2.1: both quiz lists grow without limit. The user chose tabs (teacher: All · Drafts · Live · Closed · Archived +
+title search; student: Open & upcoming · Closed), with the tab kept in the URL so it survives reload.
+
+**Decision**
+- Tabs are **plain links** (`/teacher?tab=closed`) rendered by `src/components/layout/link-tabs.tsx`, styled like shadcn tabs.
+  The phase file said "shadcn `tabs`"; that component is Radix client-side state, which would need extra code to mirror the URL.
+- Which tab a quiz belongs to is a pure function in `src/lib/quiz-tabs.ts`, run on the server with server time:
+  draft → Drafts, archived → Archived, published → Live until `endsAt`, then Closed (exactly at `endsAt` = Closed, same
+  rule as the student "closed" availability).
+- Unknown or repeated `?tab=` values fall back to the first tab (no error page for a bad link).
+
+**Alternatives rejected**
+- shadcn/Radix `Tabs` + `router.replace` on change: two sources of truth (component state + URL), more client JS, and the
+  server would still have to send every list.
+- Dropdown filter: the user preferred tabs.
+
+**How it works**
+The dashboard page reads `searchParams.tab`, `parseTab()` checks it against the allowed list, the server classifies every quiz with
+`teacherTabOf()` / `studentTabOf()`, shows counts on each tab and renders only the active tab's quizzes. Clicking a tab is a normal
+Next.js navigation (`scroll={false}` so the page doesn't jump). The active link has `aria-current="page"`; a `<nav>` of links (not
+`role="tablist"`) is the correct pattern because each tab is a different URL.
+
+**Files touched**
+- `src/lib/quiz-tabs.ts`, `src/components/layout/link-tabs.tsx`, `src/app/teacher/page.tsx`, `src/app/student/page.tsx`
+
+**Concepts worth learning**
+URL as state: anything a user might want to reload, bookmark or share (tab, filter, page) belongs in the URL, not in `useState`.
+
+**Revisit if**
+Lists get big enough that the server should filter in the database (add a `?tab` filter to the query + pagination).
 

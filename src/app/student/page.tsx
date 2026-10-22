@@ -4,51 +4,64 @@ import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { AvailabilityBadge } from "@/components/quiz/availability-badge";
 import { Countdown } from "@/components/quiz/countdown";
+import { LinkTabs } from "@/components/layout/link-tabs";
 import { StaggerIn } from "@/components/motion/stagger-in";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { parseTab, STUDENT_TABS, studentTabOf, type StudentTab } from "@/lib/quiz-tabs";
 import { requirePageUser } from "@/lib/session";
 import { listQuizzesForStudent, type Availability, type QuizForStudent } from "@/services/quiz-service";
 
 export const metadata: Metadata = { title: "Dashboard · Proctra" };
 
-export default function StudentDashboard() {
+type SearchParams = PageProps<"/student">["searchParams"];
+
+export default function StudentDashboard({ searchParams }: PageProps<"/student">) {
   return (
     <section className="grid gap-6">
       <h1 className="text-2xl font-semibold tracking-tight">Quizzes</h1>
       <Suspense fallback={<div className="h-40 animate-pulse rounded-xl bg-muted" />}>
-        <QuizGroups />
+        <QuizGroups searchParams={searchParams} />
       </Suspense>
     </section>
   );
 }
 
-const GROUPS: { key: Availability; title: string; empty: string }[] = [
-  { key: "open", title: "Open now", empty: "Nothing open right now." },
-  { key: "upcoming", title: "Upcoming", empty: "Nothing scheduled." },
-  { key: "closed", title: "Closed", empty: "" },
-];
+// Each tab shows its availability groups in this order (open first, then upcoming).
+const GROUPS: Record<StudentTab, { key: Availability; title: string; empty: string }[]> = {
+  current: [
+    { key: "open", title: "Open now", empty: "Nothing open right now." },
+    { key: "upcoming", title: "Upcoming", empty: "Nothing scheduled." },
+  ],
+  closed: [{ key: "closed", title: "Closed", empty: "No closed quizzes yet." }],
+};
+const TAB_LABEL: Record<StudentTab, string> = { current: "Open & upcoming", closed: "Closed" };
 
-async function QuizGroups() {
+async function QuizGroups({ searchParams }: { searchParams: SearchParams }) {
   const user = await requirePageUser("student");
+  const tab = parseTab((await searchParams).tab, STUDENT_TABS);
   const { quizzes, serverNow } = await listQuizzesForStudent(user.id);
   if (quizzes.length === 0) return <p className="text-muted-foreground">No quizzes have been published yet.</p>;
+  const count = (t: StudentTab) => quizzes.filter((q) => studentTabOf(q.availability) === t).length;
+  const tabs = STUDENT_TABS.map((t) => ({ value: t, label: TAB_LABEL[t], count: count(t), href: t === "current" ? "/student" : `/student?tab=${t}` }));
   return (
-    <StaggerIn className="grid gap-8">
-      {GROUPS.map((g) => {
-        const items = quizzes.filter((q) => q.availability === g.key);
-        if (items.length === 0 && !g.empty) return null;
-        return (
-          <section key={g.key} className="grid gap-3" aria-labelledby={`group-${g.key}`}>
-            <h2 id={`group-${g.key}`} className="text-lg font-medium">{g.title}</h2>
-            {items.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{g.empty}</p>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">{items.map((q) => <QuizCard key={q.id} quiz={q} serverNow={serverNow} />)}</div>
-            )}
-          </section>
-        );
-      })}
-    </StaggerIn>
+    <div className="grid gap-6">
+      <LinkTabs tabs={tabs} active={tab} label="Filter quizzes" />
+      <StaggerIn key={tab} className="grid gap-8">
+        {GROUPS[tab].map((g) => {
+          const items = quizzes.filter((q) => q.availability === g.key);
+          return (
+            <section key={g.key} className="grid gap-3" aria-labelledby={`group-${g.key}`}>
+              <h2 id={`group-${g.key}`} className={GROUPS[tab].length > 1 ? "text-lg font-medium" : "sr-only"}>{g.title}</h2>
+              {items.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{g.empty}</p>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">{items.map((q) => <QuizCard key={q.id} quiz={q} serverNow={serverNow} />)}</div>
+              )}
+            </section>
+          );
+        })}
+      </StaggerIn>
+    </div>
   );
 }
 
