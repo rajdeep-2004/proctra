@@ -58,20 +58,20 @@ proctra/
 ├── src/
 │   ├── app/                # Next.js App Router
 │   │   ├── (auth)/         # sign-in, sign-up pages
-│   │   ├── student/        # dashboard, quiz detail (Start/Resume), attempts/[id] result, profile, quizzes/[id]/leaderboard
-│   │   ├── teacher/        # dashboard, quiz editor, quizzes/[id]/results + /leaderboard, attempts/[id] detail
+│   │   ├── student/        # dashboard (?tab=current|closed), quiz detail (Start/Resume), attempts/[id] result, profile, quizzes/[id]/leaderboard
+│   │   ├── teacher/        # dashboard (?tab=all|drafts|live|closed|archived + title search), quiz editor, quizzes/[id]/results + /leaderboard, attempts/[id] detail
 │   │   ├── exam/[attemptId]/ # bare exam page (timer, palette, autosave); kiosk window in phase 05
 │   │   └── api/v1/         # route handlers (thin: auth → validate → service → respond)
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
-│   │   ├── auth/, layout/  # sign-in/up forms, app header, back button
+│   │   ├── auth/, layout/  # sign-in/up forms, app header, back button, link tabs (D-058)
 │   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
 │   │   ├── motion/         # StaggerIn (GSAP entrance for dashboard lists; never on exam screens)
 │   │   ├── results/        # leaderboard view (live polling) + shared page, event timeline
 │   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue/useAutosave, useExamCamera, useSnapshots, useProctorEvents
 │   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
-│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · utils (cn)
+│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · shared: utils (cn), quiz-tabs (tab classification, pure)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
