@@ -44,7 +44,7 @@ correct ÷ answered ("No answers" when nothing was answered, D-060). Reuse here:
 
 ## Tasks
 - [x] 04.1 — Stats helper → `feat(results): add stats helper`
-- [ ] 04.2 — Add shadcn chart + recharts → `chore(ui): add chart component`
+- [x] 04.2 — Add shadcn chart + recharts → `chore(ui): add chart component`
 - [ ] 04.3 — Teacher results analytics section → `feat(teacher): add quiz results analytics`
 - [ ] 04.4 — Student profile analytics + date-only Taken column → `feat(student): add profile analytics`
 - [ ] 04.5 — Docs pass → `docs: update docs for phase v1/04`
