@@ -1,10 +1,10 @@
-# Phase NN — <Name>
+# Phase vN/NN — <Name>
 
 | | |
 |---|---|
 | Status | not-started / in-progress / review / done |
-| Branch | `phase/NN-<slug>` |
-| Depends on | Phase NN-1 |
+| Branch | `phase/vN-NN-<slug>` |
+| Depends on | Phase vN/(NN-1) |
 | PRD features | F-01, F-02 |
 
 ## Goal

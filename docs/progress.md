@@ -1,11 +1,25 @@
 # Progress
 
-**Current phase:** — all planned phases done (project complete; see Parked ideas / Known debt for follow-ups)
+**Current release:** v1 (target tag `v1.0.0`, D-056)
+**Current phase:** v1/01 — Copy & navigation cleanup (`not-started`)
 **Branch:** —
 **Profile:** lean
-**Deadline:** 2026-10-25 (packaged `.dmg` + README)
 
 ## Phases
+Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
+
+### v1 — next release (from the user's v1 issues list, planned 2026-10-22)
+| # | Phase | Status | Branch | Issues | Started | Closed |
+|---|---|---|---|---|---|---|
+| 01 | Copy & navigation cleanup | not-started | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | | |
+| 02 | Quiz list tabs | not-started | phase/v1-02-quiz-tabs | 1.1, 2.1 | | |
+| 03 | Leaderboard & attempt details | not-started | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | | |
+| 04 | Analytics: results & profile | not-started | phase/v1-04-analytics | 1.6, 2.2 | | |
+| 05 | Teacher's student view | not-started | phase/v1-05-teacher-student-view | 1.4 | | |
+| 06 | Production performance | not-started | phase/v1-06-performance | 3.3 | | |
+| 07 | Release v1.0.0 | not-started | phase/v1-07-release | — | | |
+
+### v0 — shipped as v0.1.0 (deadline 2026-10-25 met)
 | # | Phase | Status | Branch | Target | Started | Closed |
 |---|---|---|---|---|---|---|
 | 01 | Foundation | done | phase/01-foundation | 10-19 | 2026-10-19 | 2026-10-19 |
@@ -19,6 +33,12 @@
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-22 (v1 planning)
+- Done: brainstormed the v1 issues list with the user; phases moved to `docs/phases/v0/`, v1 plan in `docs/phases/v1/` (7 phases); global phase rules/commands now take `vN/NN` ids (D-055); release tag v1.0.0 (D-056); issues file removed (content lives in the phase files).
+- User decisions: earlier finish wins leaderboard ties; stat cards + small charts (recharts); teacher's student page scoped to their own quizzes; tabs for quiz lists.
+- Next: `/phase-start v1/01`.
+- Open: Atlas cluster region (needed for v1/06).
+
 ### 2026-10-20 (post-release)
 - Done: GitHub Release v0.1.0 with both installers (https://github.com/rajdeep-2004/proctra/releases/tag/v0.1.0); README links to the latest release.
 

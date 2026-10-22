@@ -67,6 +67,8 @@ Rules:
 | D-052 | 2026-10-20 | 07 | Snapshot gallery: on-demand, signed 10-minute download links | Active |
 | D-053 | 2026-10-20 | 07 | Light DevClub UI + GSAP polish via the shadcn registry | Active |
 | D-054 | 2026-10-20 | 07 | Per-chip installers instead of universal; install steps for macOS 15+ | Active |
+| D-055 | 2026-10-22 | v1 plan | Phase files grouped by release version (`docs/phases/vN/`) | Active |
+| D-056 | 2026-10-22 | v1 plan | Next release is v1.0.0 (semver), folder number = major version | Active |
 
 ---
 
@@ -2176,3 +2178,59 @@ The user shared the universal `.dmg` with a friend: it showed as ~518 MB and "ca
 
 **Revisit if**
 The project gets an Apple Developer ID (sign + notarize, then a single universal build is fine again).
+
+### D-055 — Phase files grouped by release version (`docs/phases/vN/`)
+- **Date:** 2026-10-22
+- **Phase:** v1 planning
+- **Status:** Active
+- **Type:** process / folder layout
+
+**Context**
+v0 shipped as seven phases in a flat `docs/phases/`. A new release (the user's v1 issues list) needs its own phases. With one flat
+folder, a new "phase 01" would collide with the old one, and the release a phase belongs to wouldn't be visible.
+
+**Decision**
+- Phase files live in `docs/phases/vN/phase-NN-<slug>.md`; numbering restarts at 01 per version. Shipped phases moved to `v0/` with
+  `git mv` (history kept). The template stays at `docs/phases/_phase-template.md`.
+- A phase id is `vN/NN`: `/phase-start v1/01`, branch `phase/v1-01-copy-nav`, progress table per version.
+- The rule lives in the user's global setup (`~/.claude/CLAUDE.md`, `phase-start`/`phase-close`/`init-project` commands, project-kit
+  template), so every project uses it. Bare `NN` still works for older flat projects (user choice).
+
+**Alternatives rejected**
+- Keep a flat folder and continue numbering (08, 09…): hides which release a phase belongs to.
+- Branch names with a slash (`phase/v1/01-…`): valid in git, but `phase/v1` can then never be a branch itself, and it reads like a path.
+
+**How it works**
+`/phase-start v1/03` → reads `docs/phases/v1/phase-03-*.md`, takes the slug from the file name, and creates `phase/v1-03-<slug>`.
+The "previous phase" of `v1/01` is the last phase of `v0/`.
+
+**Files touched**
+- `docs/phases/v0/*` (moved), `docs/phases/v1/*` (new), `docs/phases/_phase-template.md`, `docs/README.md`, `docs/progress.md`
+- Outside the repo: `~/.claude/CLAUDE.md`, `~/.claude/commands/{phase-start,phase-close,init-project}.md`, `~/.claude/templates/project-kit/`
+
+**Revisit if**
+A release grows past ~15 phases (split it into two releases instead).
+
+### D-056 — Next release is v1.0.0 (semver), folder number = major version
+- **Date:** 2026-10-22
+- **Phase:** v1 planning
+- **Status:** Active
+- **Type:** release
+
+**Context**
+v0.1.0 is already on GitHub. The user asked for the version folders to follow standard versioning (v0 = shipped, v1 = new).
+
+**Decision**
+The v1 phases ship as **v1.0.0**. Semantic versioning (MAJOR.MINOR.PATCH) treats `0.x` as initial development and `1.0.0` as the first
+stable release, which fits a product that is now deployed and used. Folder `vN/` = major version N, so later fixes to this release are
+`v1.0.1` and smaller feature drops `v1.1.0` (planned in `v1/` or a new folder as the user decides); a breaking redesign would be `v2/`.
+
+**Alternatives rejected**
+- `v0.2.0`: valid semver, but the folder name (`v1/`) and tag wouldn't match.
+
+**Files touched**
+- `docs/progress.md`, `docs/phases/v1/phase-07-release.md` (the actual `package.json` bump happens in v1/07)
+
+**Revisit if**
+The user wants to stay pre-1.0 until signing/notarization is done.
+
