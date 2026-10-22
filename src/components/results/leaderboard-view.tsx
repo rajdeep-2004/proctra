@@ -2,6 +2,7 @@
 
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LocalTime } from "@/components/local-time";
 import { api } from "@/lib/api-client";
 import type { Leaderboard } from "@/services/results-service";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -38,6 +39,9 @@ export function LeaderboardView({ initial }: { initial: Leaderboard }) {
           {stale && " Couldn't refresh; showing the last update."}
         </p>
       )}
+      {board.entries.length > 1 && (
+        <p className="text-sm text-muted-foreground">Equal marks: whoever finished first ranks higher.</p>
+      )}
       {board.entries.length === 0 ? (
         <p className="text-muted-foreground">No one has finished yet.</p>
       ) : (
@@ -46,6 +50,7 @@ export function LeaderboardView({ initial }: { initial: Leaderboard }) {
             <TableRow>
               <TableHead className="w-16">Rank</TableHead>
               <TableHead>Student</TableHead>
+              <TableHead>Finished</TableHead>
               <TableHead className="text-right">Marks</TableHead>
             </TableRow>
           </TableHeader>
@@ -55,6 +60,7 @@ export function LeaderboardView({ initial }: { initial: Leaderboard }) {
                 aria-current={e.isMe ? "true" : undefined}>
                 <TableCell className="tabular-nums">{e.rank}</TableCell>
                 <TableCell>{e.studentName}{e.isMe && <span className="ml-2 text-xs text-muted-foreground">(you)</span>}</TableCell>
+                <TableCell className="tabular-nums text-muted-foreground"><LocalTime iso={e.submittedAt} format="time-seconds" /></TableCell>
                 <TableCell className="text-right tabular-nums">{fmt(e.score)} <span className="text-muted-foreground">/ {fmt(board.maxPossible)}</span></TableCell>
               </TableRow>
             ))}
