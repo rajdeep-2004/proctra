@@ -2249,7 +2249,8 @@ results table.
 **Decision**
 - **Copy rule:** no em dash (`—`) in any user-facing string, including Electron window titles. Each string was rewritten as a
   sentence (period, comma, colon, parentheses or `·`) rather than swapping the character. Empty table cells that showed `—`
-  now say what's going on: "Pending" (no marks yet) or "Not yet" (not submitted). En dashes in time ranges stay.
+  now say what's going on: "Pending" (no marks yet) or "Not yet" (not submitted). En dashes in time ranges
+  ("11:17 – 11:48") stay: a different character, and the user confirmed keeping them (2026-10-22).
 - **Back navigation:** `src/components/layout/back-button.tsx`, a small outlined button with an arrow icon, used on every
   detail page ("Back to quizzes", "Edit quiz", "Back to <quiz> results"). Long quiz titles truncate instead of wrapping.
 - **Header:** logo only (links to the role's dashboard) + "Profile" for students. The role label is gone; the signed-in name stays.

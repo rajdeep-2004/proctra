@@ -42,7 +42,7 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 - Done: brainstormed the v1 issues list with the user; phases moved to `docs/phases/v0/`, v1 plan in `docs/phases/v1/` (7 phases); global phase rules/commands now take `vN/NN` ids (D-055); release tag v1.0.0 (D-056); issues file removed (content lives in the phase files).
 - User decisions: earlier finish wins leaderboard ties; stat cards + small charts (recharts); teacher's student page scoped to their own quizzes; tabs for quiz lists.
 - Next: `/phase-start v1/01`.
-- Open: Atlas cluster region (needed for v1/06).
+- Answered: Atlas cluster is AWS ap-south-1 (Mumbai), used in v1/06; keep en dashes in time ranges.
 
 ### 2026-10-20 (post-release)
 - Done: GitHub Release v0.1.0 with both installers (https://github.com/rajdeep-2004/proctra/releases/tag/v0.1.0); README links to the latest release.

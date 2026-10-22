@@ -67,7 +67,7 @@ From v0/07 (Ship, released as v0.1.0 on 2026-10-20): the full product works end 
   em dash removed from UI copy (19 strings, incl. Electron titles), empty cells say "Pending"/"Not yet"; results-page events
   disclaimer removed.
 - **Key decisions:** D-057 (copy rule, back button, header). Process: D-055 (versioned phases), D-056 (v1.0.0).
-- **Known limitations:** en dashes in time ranges kept (different character; change on request). Keyboard focus relies on the
+- **Known limitations:** en dashes in time ranges kept (user-confirmed). Keyboard focus relies on the
   shadcn button focus ring (checked visually, not with a screen reader).
 - **Next phase should know:** `.scratch/http.mts` + `.scratch/v1-01-shots.mts` give a reusable signed-in screenshot harness
   (Node 20 needs `NODE_OPTIONS=--experimental-websocket`). Throwaway teacher `t2@scratch.test` was re-seeded; fixture quiz

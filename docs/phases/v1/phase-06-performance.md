@@ -16,7 +16,8 @@ Pages load noticeably faster in production (browser and `.dmg`), with before/aft
 ## In scope — exact features
 1. **Measure first** (user: slowness is in production / `.dmg`)
    - Time key pages and APIs on production (TTFB, total) with a signed-in cookie; repeat for warm vs cold.
-   - Record the Vercel function region and the Atlas cluster region (user to confirm Atlas region).
+   - Record the Vercel function region. Atlas cluster region: **AWS ap-south-1 (Mumbai)** (user, 2026-10-22).
+     Vercel's closest function region is `bom1` (Mumbai); the Vercel default is `iad1` (Washington, D.C.), so check this first.
 2. **Fix what the numbers show.** Candidates found during planning (not yet confirmed):
    - Vercel function region far from the Atlas region → set the function region next to the database.
    - Session read twice per page (header `UserMenu` + page body) → dedupe with React `cache()`.
