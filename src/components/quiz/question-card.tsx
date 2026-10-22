@@ -60,7 +60,7 @@ export function QuestionCard({ index, total, question: q, errors, disabled, onCh
         </div>
 
         <fieldset className="grid gap-2" disabled={disabled}>
-          <legend className="mb-2 text-sm font-medium">Options — select the correct one</legend>
+          <legend className="mb-2 text-sm font-medium">Options (select the correct one)</legend>
           <RadioGroup value={q.correctIndex === null ? "" : String(q.correctIndex)} onValueChange={(v) => onChange({ ...q, correctIndex: Number(v) })}
             className="grid gap-2" aria-label={`Correct option for question ${index + 1}`}>
             {q.options.map((opt, i) => (

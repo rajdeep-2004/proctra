@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, issuesByPath } from "@/lib/api-client";
 import { useIsClient } from "@/lib/use-is-client";
 import type { QuizForTeacher } from "@/services/quiz-service";
+import { BackButton } from "@/components/layout/back-button";
 import { blankQuestion, describeSlot, newQuizState, stateFromQuiz, toPayload, type EditorState, type QuestionState } from "@/components/quiz/editor-types";
 import { QuestionCard } from "@/components/quiz/question-card";
 import { StatusBadge } from "@/components/quiz/status-badge";
@@ -98,7 +99,7 @@ function Editor({ initial }: { initial: QuizForTeacher | null }) {
     setBusy(false);
     if (!res.ok) return setBanner({ kind: "error", text: res.error.message });
     setMeta((m) => ({ ...m, status: res.data.status }));
-    setBanner({ kind: "ok", text: { publish: "Published — students can now see this quiz.", unpublish: "Unpublished — hidden from students.", archive: "Archived." }[action] });
+    setBanner({ kind: "ok", text: { publish: "Published. Students can now see this quiz.", unpublish: "Unpublished. It's hidden from students.", archive: "Archived." }[action] });
     router.refresh();
   }
 
@@ -110,7 +111,7 @@ function Editor({ initial }: { initial: QuizForTeacher | null }) {
       {/* Top bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/teacher" className="text-sm text-muted-foreground hover:text-foreground">← All quizzes</Link>
+          <BackButton href="/teacher" label="Back to quizzes" />
           <StatusBadge status={meta.status} />
           {dirty && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
         </div>
@@ -202,13 +203,13 @@ function Editor({ initial }: { initial: QuizForTeacher | null }) {
             <Label htmlFor="endsAt">Exam ends</Label>
             <Input id="endsAt" type="datetime-local" value={form.endsAt} disabled={allFields}
               min={meta.locked ? savedEndsAt : undefined} aria-invalid={Boolean(errors.endsAt)} onChange={(e) => set("endsAt", e.target.value)} />
-            {meta.locked && !archived && <p className="text-sm text-muted-foreground">Students have started — the end time can only be moved later.</p>}
+            {meta.locked && !archived && <p className="text-sm text-muted-foreground">Students have started, so the end time can only be moved later.</p>}
             {fieldError("endsAt")}
           </div>
           <div className="grid gap-2">
             <span className="text-sm font-medium">Duration</span>
             <p className={slot && !slot.valid ? "text-sm text-destructive" : "text-sm"} aria-live="polite">
-              {slot ? `${slot.text}${slot.valid ? "" : " — must be between 1 minute and 5 hours"}` : "Set a start and end time"}
+              {slot ? `${slot.text}${slot.valid ? "" : " (must be between 1 minute and 5 hours)"}` : "Set a start and end time"}
             </p>
             <p className="text-sm text-muted-foreground">Calculated from the start and end time.</p>
           </div>

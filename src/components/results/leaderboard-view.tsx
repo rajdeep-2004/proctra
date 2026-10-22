@@ -34,7 +34,7 @@ export function LeaderboardView({ initial }: { initial: Leaderboard }) {
       {board.live && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
           <RefreshCw className="size-4" aria-hidden />
-          Live — ranks may change as others finish{board.stillWriting > 0 && <> ({board.stillWriting} still writing)</>}.
+          Live: ranks may change as others finish{board.stillWriting > 0 && <> ({board.stillWriting} still writing)</>}.
           {stale && " Couldn't refresh; showing the last update."}
         </p>
       )}

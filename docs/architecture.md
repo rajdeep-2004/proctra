@@ -64,7 +64,7 @@ proctra/
 │   │   └── api/v1/         # route handlers (thin: auth → validate → service → respond)
 │   ├── components/
 │   │   ├── ui/             # shadcn/ui generated components (not hand-edited much)
-│   │   ├── auth/, layout/  # sign-in/up forms, app header
+│   │   ├── auth/, layout/  # sign-in/up forms, app header, back button
 │   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
 │   │   ├── motion/         # StaggerIn (GSAP entrance for dashboard lists; never on exam screens)
 │   │   ├── results/        # leaderboard view (live polling) + shared page, event timeline

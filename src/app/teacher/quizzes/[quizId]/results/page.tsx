@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { BackButton } from "@/components/layout/back-button";
 import { LocalTime } from "@/components/local-time";
 import { AttemptStatusBadge } from "@/components/quiz/attempt-status-badge";
 import { Button } from "@/components/ui/button";
@@ -46,8 +47,8 @@ async function Results({ params }: { params: Params }) {
     <section className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="grid gap-1">
-          <Link href={`/teacher/quizzes/${quiz.id}`} className="text-sm text-muted-foreground hover:text-foreground">← Edit quiz</Link>
-          <h1 className="text-2xl font-semibold tracking-tight">{quiz.title} — results</h1>
+          <BackButton href={`/teacher/quizzes/${quiz.id}`} label="Edit quiz" />
+          <h1 className="text-2xl font-semibold tracking-tight">{quiz.title} results</h1>
           <p className="text-sm text-muted-foreground">
             {finished.length} submitted · {rows.length - finished.length} in progress
             {avg !== null && <> · average {fmt(avg)} / {fmt(quiz.maxPossible)}</>}
@@ -77,9 +78,9 @@ async function Results({ params }: { params: Params }) {
                   <Link href={`/teacher/attempts/${r.id}`} className="hover:underline">{r.studentName}</Link>
                 </TableCell>
                 <TableCell><AttemptStatusBadge status={r.status} /></TableCell>
-                <TableCell>{r.submittedAt ? <LocalTime iso={r.submittedAt} /> : <span className="text-muted-foreground">—</span>}</TableCell>
+                <TableCell>{r.submittedAt ? <LocalTime iso={r.submittedAt} /> : <span className="text-muted-foreground">Not yet</span>}</TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {r.score ? <>{fmt(r.score.total)} <span className="text-muted-foreground">/ {fmt(r.score.maxPossible)}</span></> : "—"}
+                  {r.score ? <>{fmt(r.score.total)} <span className="text-muted-foreground">/ {fmt(r.score.maxPossible)}</span></> : <span className="text-muted-foreground">Pending</span>}
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{r.eventCount}</TableCell>
                 <TableCell className="text-right tabular-nums">{r.snapshotCount}</TableCell>
@@ -88,9 +89,6 @@ async function Results({ params }: { params: Params }) {
           </TableBody>
         </Table>
       )}
-      <p className="text-sm text-muted-foreground">
-        Events are neutral facts (focus changes, camera reconnects, failed uploads). They are not evidence of misconduct.
-      </p>
     </section>
   );
 }

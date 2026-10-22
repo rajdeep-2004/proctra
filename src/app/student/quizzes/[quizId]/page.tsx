@@ -1,8 +1,8 @@
 import { Camera } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { BackButton } from "@/components/layout/back-button";
 import { LocalTime } from "@/components/local-time";
 import { AvailabilityBadge } from "@/components/quiz/availability-badge";
 import { StartButton } from "@/components/quiz/start-button";
@@ -21,7 +21,7 @@ type Params = PageProps<"/student/quizzes/[quizId]">["params"];
 export default function StudentQuizPage({ params }: PageProps<"/student/quizzes/[quizId]">) {
   return (
     <div className="grid gap-6">
-      <Link href="/student" className="text-sm text-muted-foreground hover:text-foreground">← All quizzes</Link>
+      <BackButton href="/student" label="Back to quizzes" />
       <Suspense fallback={<div className="h-80 animate-pulse rounded-xl bg-muted" />}>
         <Detail params={params} />
       </Suspense>
@@ -64,7 +64,7 @@ async function Detail({ params }: { params: Params }) {
           <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
             <dt className="text-muted-foreground">Starts</dt><dd><LocalTime iso={q.startsAt} /></dd>
             <dt className="text-muted-foreground">Ends</dt><dd><LocalTime iso={q.endsAt} /></dd>
-            <dt className="text-muted-foreground">Duration</dt><dd>{q.durationMinutes} minutes — everyone finishes at the end time, so starting late means less time</dd>
+            <dt className="text-muted-foreground">Duration</dt><dd>{q.durationMinutes} minutes. Everyone finishes at the end time, so starting late means less time.</dd>
             <dt className="text-muted-foreground">Questions</dt><dd>{q.questionCount}, multiple choice</dd>
             <dt className="text-muted-foreground">Marking</dt>
             <dd>{fmtMark(q.marking.correct)} correct · {fmtMark(q.marking.incorrect)} wrong · {fmtMark(q.marking.unanswered)} unanswered</dd>
