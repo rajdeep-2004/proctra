@@ -2511,7 +2511,7 @@ from stats". The release rule (D-049) says no marks before the teacher's release
 `listMyAttempts` builds `score` only when the attempt is finished **and** released, so the counts inherit the same guard as
 the marks. `ProfileAnalytics` (a server component) filters to rows with a `score`, turns each into a ratio, and feeds
 `summarize` / `pooledAccuracy`. It passes plain `{ id, submittedAt, quizTitle, percent }` points to `ScoreTrendChart`. That
-client component uses `useSyncExternalStore` (like `LocalTime`) to render a placeholder on the server and the chart once in
+client component uses the existing `useIsClient` hook (the same trick as `LocalTime`) to render a placeholder on the server and the chart once in
 the browser, so dates are local and React sees no mismatch. Auto-submitted attempts use `submittedAt` (set to the deadline);
 `deadline` is only a fallback.
 

@@ -47,7 +47,7 @@ correct ÷ answered ("No answers" when nothing was answered, D-060). Reuse here:
 - [x] 04.2 — Add shadcn chart + recharts → `chore(ui): add chart component`
 - [x] 04.3 — Teacher results analytics section → `feat(teacher): add quiz results analytics`
 - [x] 04.4 — Student profile analytics + date-only Taken column → `feat(student): add profile analytics`
-- [ ] 04.5 — Docs pass → `docs: update docs for phase v1/04`
+- [x] 04.5 — Docs pass → `docs: update docs for phase v1/04`
 
 ## Done criteria
 - [ ] Lint + build pass; stats `.scratch/` checks pass
