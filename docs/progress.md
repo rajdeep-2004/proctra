@@ -1,7 +1,7 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/01 — Copy & navigation cleanup (`in-progress`)
+**Current phase:** v1/01 — Copy & navigation cleanup (`review`)
 **Branch:** phase/v1-01-copy-nav
 **Profile:** lean
 
@@ -11,7 +11,7 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 ### v1 — next release (from the user's v1 issues list, planned 2026-10-22)
 | # | Phase | Status | Branch | Issues | Started | Closed |
 |---|---|---|---|---|---|---|
-| 01 | Copy & navigation cleanup | in-progress | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | 2026-10-22 | |
+| 01 | Copy & navigation cleanup | review | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | 2026-10-22 | |
 | 02 | Quiz list tabs | not-started | phase/v1-02-quiz-tabs | 1.1, 2.1 | | |
 | 03 | Leaderboard & attempt details | not-started | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | | |
 | 04 | Analytics: results & profile | not-started | phase/v1-04-analytics | 1.6, 2.2 | | |
@@ -33,6 +33,11 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-22 (phase v1/01)
+- Done: tasks 01.1–01.4. Header simplified, shared back button, em dashes removed from all UI copy, results disclaimer removed (D-057).
+- Verified: lint + build, scratch unit tests (6/6 files), signed-in browser check of 9 pages (9/9).
+- Next: user review → `/phase-close approve` → `/phase-start v1/02` (quiz list tabs).
+
 ### 2026-10-22 (v1 planning)
 - Done: brainstormed the v1 issues list with the user; phases moved to `docs/phases/v0/`, v1 plan in `docs/phases/v1/` (7 phases); global phase rules/commands now take `vN/NN` ids (D-055); release tag v1.0.0 (D-056); issues file removed (content lives in the phase files).
 - User decisions: earlier finish wins leaderboard ties; stat cards + small charts (recharts); teacher's student page scoped to their own quizzes; tabs for quiz lists.

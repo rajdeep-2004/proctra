@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | in-progress |
+| Status | review |
 | Branch | `phase/v1-01-copy-nav` |
 | Depends on | Phase v0/07 (v0.1.0 released) |
 | Issues | 1.2, 1.3, 1.4 (em dash), 2.3 (back navigation), 3.1, 3.2 |
@@ -50,21 +50,28 @@ From v0/07 (Ship, released as v0.1.0 on 2026-10-20): the full product works end 
 - [x] 01.4 — Docs pass → `docs: update docs for phase v1/01`
 
 ## Done criteria
-- [ ] `npm run lint` and `npm run build` pass
-- [ ] No em dash in any user-facing string (grep check, comments excluded)
-- [ ] Teacher and student pages checked in the browser; back buttons work and are keyboard reachable
-- [ ] Docs match what was built; decisions logged
+- [x] `npm run lint` and `npm run build` pass
+- [x] No em dash in any user-facing string (grep check, comments excluded)
+- [x] Teacher and student pages checked in the browser; back buttons work and are keyboard reachable
+- [x] Docs match what was built; decisions logged
 
 ## How to verify
 1. `grep -rn "—" src | grep -vE ":\s*[0-9]+:\s*(//|\*)"` → only comment hits remain.
 2. `npm run dev`, sign in as teacher and student, click through quiz detail, results, attempt, result pages.
+3. Scripted: `next start -p 3100`, then `BASE=http://localhost:3100 NODE_OPTIONS=--experimental-websocket npx tsx .scratch/v1-01-shots.mts`
+   (9 pages: header links, back button label, no em dash, no disclaimer; screenshots `.scratch/shot-v1-01-*.png`). Result: 9/9 pass.
 
 ## Phase summary
 <!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
-- **Next phase should know:**
+- **Built:** header is now logo + "Profile" (students) + name/sign out; shared `BackButton` on all 5 detail screens; every
+  em dash removed from UI copy (19 strings, incl. Electron titles), empty cells say "Pending"/"Not yet"; results-page events
+  disclaimer removed.
+- **Key decisions:** D-057 (copy rule, back button, header). Process: D-055 (versioned phases), D-056 (v1.0.0).
+- **Known limitations:** en dashes in time ranges kept (different character; change on request). Keyboard focus relies on the
+  shadcn button focus ring (checked visually, not with a screen reader).
+- **Next phase should know:** `.scratch/http.mts` + `.scratch/v1-01-shots.mts` give a reusable signed-in screenshot harness
+  (Node 20 needs `NODE_OPTIONS=--experimental-websocket`). Throwaway teacher `t2@scratch.test` was re-seeded; fixture quiz
+  "Scratch Polish" from `.scratch/polish-setup.mts`. `cleanup-users.mts` removes all `@scratch.test` data.
 
 ## Next phase preview
 v1/02 adds tabs to both quiz lists.
