@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/v1-04-analytics` |
 | Depends on | Phase v1/03 |
 | Issues | 1.6, 2.2 |
@@ -43,7 +43,7 @@ correct ÷ answered ("No answers" when nothing was answered, D-060). Reuse here:
 - `decisions.md` → D-049 (release rules)
 
 ## Tasks
-- [ ] 04.1 — Stats helper → `feat(results): add stats helper`
+- [x] 04.1 — Stats helper → `feat(results): add stats helper`
 - [ ] 04.2 — Add shadcn chart + recharts → `chore(ui): add chart component`
 - [ ] 04.3 — Teacher results analytics section → `feat(teacher): add quiz results analytics`
 - [ ] 04.4 — Student profile analytics + date-only Taken column → `feat(student): add profile analytics`

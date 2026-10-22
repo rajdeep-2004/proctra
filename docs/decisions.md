@@ -73,6 +73,7 @@ Rules:
 | D-058 | 2026-10-22 | v1/02 | Dashboard tabs as links (`?tab=`), classified on the server | Active |
 | D-059 | 2026-10-22 | v1/03 | Leaderboard ties broken by earlier finish time | Active |
 | D-060 | 2026-10-22 | v1/03 | Attempt summaries: duration, accuracy (correct ÷ answered), shared stat tiles | Active |
+| D-061 | 2026-10-22 | v1/04 | Analytics numbers: median, pooled accuracy, 10% score buckets | Active |
 
 ---
 
@@ -2387,3 +2388,51 @@ only renders them inside the "released" branch, so no marks or accuracy leak bef
 **Revisit if**
 Teachers want accuracy per question (that's question analytics, a different feature).
 
+
+### D-061 — Analytics numbers: median, pooled accuracy, 10% score buckets
+- **Date:** 2026-10-22
+- **Phase:** v1/04 — Analytics: results & profile
+- **Status:** Active
+- **Type:** Definitions + algorithm
+
+**Context**
+Issues 1.6 and 2.2 ask for summary numbers across many attempts (a whole quiz for the teacher, a student's history for the student).
+"Average" and "accuracy" can be computed in more than one way, and the way you pick changes the answer, so the rules are written
+down here.
+
+**Decision**
+- **Summary** of a list = count, mean, **median**, min, max. An empty list gives count 0 and `null`s, so the UI can show "None
+  yet" instead of `NaN`.
+- **Score %** = marks ÷ maximum marks. It can go below 0 with negative marking; it is `null` if the maximum is 0.
+- **Accuracy across attempts is pooled**: (all correct answers) ÷ (all answered questions), not the average of each attempt's
+  accuracy.
+- **Distribution** = ten buckets of 10% each. A bucket includes its lower edge (exactly 10% → "10–20%"); 100% goes in the last
+  bucket. If any score is negative, one extra "Below 0%" bucket appears in front. Without negatives it stays hidden.
+
+**Alternatives rejected**
+- *Average of per-attempt accuracies:* one 1-question quiz answered wrong (0%) would count as much as a 40-question quiz at 90%.
+  Pooling weights each answer equally, which is what "how often are my answers right" means.
+- *Buckets in marks instead of %:* the student profile mixes quizzes with different maximums, and a teacher reading "70–80%" doesn't
+  need to know the maximum. Percent works for both pages.
+- *Clamping negative scores into 0–10%:* hides that negative marking pushed someone below zero.
+- *Fewer buckets (e.g. 5):* with small classes most buckets would be empty either way; 10% steps match how marks are usually read.
+
+**How it works**
+`summarize` copies and sorts the list (never mutates the input). With an odd count the median is the middle value; with an even
+count it is the mean of the two middle values. `histogram` turns each ratio into a bucket index with `floor(ratio × 10)`, capped at 9.
+Floating-point maths can make 0.7 × 10 come out as 6.9999…, which would drop a 70% score into "60–70%". A tiny `1e-9` nudge
+before `floor` prevents that. `pooledAccuracy` sums the counts and reuses `accuracy` from D-060, so "nothing answered" is still
+`null` ("No answers").
+
+**Files touched**
+- `src/lib/score-stats.ts` (new), tested in `.scratch/score-stats.test.ts` (empty list, one item, odd/even median, negative marks,
+  bucket edges).
+
+**Concepts worth learning**
+- *Mean vs median:* one very low score pulls the mean down a lot but barely moves the median. Showing both tells a teacher if a
+  few outliers are skewing the average.
+- *Pooled vs averaged ratios* (Simpson's-paradox territory): averaging percentages ignores how big each group was.
+- *Floating-point error:* decimals like 0.7 have no exact binary form, so compare or floor with a small tolerance.
+
+**Revisit if**
+Classes get large enough that a finer histogram (5% buckets) would show more, or teachers ask for per-question statistics.
