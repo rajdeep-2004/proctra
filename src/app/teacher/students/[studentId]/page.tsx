@@ -47,7 +47,7 @@ async function Student({ params }: { params: Params }) {
       <div className="grid gap-1">
         <BackButton href="/teacher" label="Back to quizzes" />
         <h1 className="text-2xl font-semibold tracking-tight">{student.name}</h1>
-        <p className="text-muted-foreground">{student.email} · results on your quizzes only</p>
+        <p className="text-muted-foreground">{student.email}</p>
       </div>
       <HistoryAnalytics rows={attempts} label="Student analytics" />
       <Table>

@@ -2547,7 +2547,7 @@ sees that student's results **on their own quizzes**.
 - The quiz owner sees marks even before the release time, the same as the submissions table. The release rule (D-049)
   protects students from each other, not from their teacher.
 - Submissions rows and the attempt detail now include `studentId`, so the UI can link to the student page.
-- **Page** `/teacher/students/[studentId]`: name, email ("results on your quizzes only"), the same four tiles and trend chart
+- **Page** `/teacher/students/[studentId]`: name, email, the same four tiles and trend chart
   as the student profile, and a history table (quiz → its results page, date, status, marks, View → the attempt).
 - **Links:** on the results table the student's **name** now opens the student page, and a new **View** column opens the
   attempt (before, the name opened the attempt). On the attempt page the name heading links to the student page.
