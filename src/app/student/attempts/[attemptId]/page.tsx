@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import { BackButton } from "@/components/layout/back-button";
 import { LocalTime } from "@/components/local-time";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
@@ -20,7 +21,7 @@ type Params = PageProps<"/student/attempts/[attemptId]">["params"];
 export default function ResultPage({ params }: PageProps<"/student/attempts/[attemptId]">) {
   return (
     <div className="grid gap-6">
-      <Link href="/student" className="text-sm text-muted-foreground hover:text-foreground">← All quizzes</Link>
+      <BackButton href="/student" label="Back to quizzes" />
       <Suspense fallback={<div className="h-80 animate-pulse rounded-xl bg-muted" />}>
         <Result params={params} />
       </Suspense>

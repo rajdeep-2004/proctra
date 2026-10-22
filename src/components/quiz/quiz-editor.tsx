@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, issuesByPath } from "@/lib/api-client";
 import { useIsClient } from "@/lib/use-is-client";
 import type { QuizForTeacher } from "@/services/quiz-service";
+import { BackButton } from "@/components/layout/back-button";
 import { blankQuestion, describeSlot, newQuizState, stateFromQuiz, toPayload, type EditorState, type QuestionState } from "@/components/quiz/editor-types";
 import { QuestionCard } from "@/components/quiz/question-card";
 import { StatusBadge } from "@/components/quiz/status-badge";
@@ -110,7 +111,7 @@ function Editor({ initial }: { initial: QuizForTeacher | null }) {
       {/* Top bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/teacher" className="text-sm text-muted-foreground hover:text-foreground">← All quizzes</Link>
+          <BackButton href="/teacher" label="Back to quizzes" />
           <StatusBadge status={meta.status} />
           {dirty && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
         </div>

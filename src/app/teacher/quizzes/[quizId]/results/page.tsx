@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { BackButton } from "@/components/layout/back-button";
 import { LocalTime } from "@/components/local-time";
 import { AttemptStatusBadge } from "@/components/quiz/attempt-status-badge";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ async function Results({ params }: { params: Params }) {
     <section className="grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="grid gap-1">
-          <Link href={`/teacher/quizzes/${quiz.id}`} className="text-sm text-muted-foreground hover:text-foreground">← Edit quiz</Link>
+          <BackButton href={`/teacher/quizzes/${quiz.id}`} label="Edit quiz" />
           <h1 className="text-2xl font-semibold tracking-tight">{quiz.title} — results</h1>
           <p className="text-sm text-muted-foreground">
             {finished.length} submitted · {rows.length - finished.length} in progress
