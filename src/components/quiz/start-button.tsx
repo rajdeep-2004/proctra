@@ -8,6 +8,7 @@ import { api } from "@/lib/api-client";
 import { checkCamera } from "@/lib/camera";
 import { useIsClient } from "@/lib/use-is-client";
 import type { Availability, MyAttempt } from "@/services/quiz-service";
+import { LeaderboardButton } from "@/components/results/leaderboard-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
@@ -27,7 +28,7 @@ export function StartButton({ quizId, availability, myAttempt }: Props) {
     return (
       <div className="flex flex-wrap gap-3">
         <Button size="lg" variant="outline" asChild><Link href={`/student/attempts/${myAttempt.id}`}>View result</Link></Button>
-        <Button size="lg" variant="ghost" asChild><Link href={`/student/quizzes/${quizId}/leaderboard`}>Leaderboard</Link></Button>
+        <LeaderboardButton quizId={quizId} size="lg" />
       </div>
     );
   }

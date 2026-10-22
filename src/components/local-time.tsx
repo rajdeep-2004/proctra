@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { formatLocal } from "@/lib/datetime";
+import { formatLocal, type LocalFormat } from "@/lib/datetime";
 
 const noSubscribe = () => () => {};
 
@@ -10,8 +10,8 @@ const noSubscribe = () => () => {};
  * render shows a placeholder and the browser swaps in local time right after hydration
  * (useSyncExternalStore uses the server snapshot during hydration, then the client snapshot).
  */
-export function LocalTime({ iso, className }: { iso: string; className?: string }) {
-  const text = useSyncExternalStore(noSubscribe, () => formatLocal(iso), () => null);
+export function LocalTime({ iso, className, format = "datetime" }: { iso: string; className?: string; format?: LocalFormat }) {
+  const text = useSyncExternalStore(noSubscribe, () => formatLocal(iso, format), () => null);
   return (
     <time dateTime={iso} className={className}>
       {text ?? "…"}

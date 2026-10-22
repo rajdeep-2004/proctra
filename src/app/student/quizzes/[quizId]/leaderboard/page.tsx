@@ -14,5 +14,5 @@ export default function StudentLeaderboard({ params }: PageProps<"/student/quizz
 
 async function Inner({ params }: { params: PageProps<"/student/quizzes/[quizId]/leaderboard">["params"] }) {
   const { quizId } = await params;
-  return <LeaderboardPage role="student" rawQuizId={quizId} backHref={(id) => `/student/quizzes/${id}`} backLabel="Quiz" />;
+  return <LeaderboardPage role="student" rawQuizId={quizId} backHref={(id) => `/student/quizzes/${id}`} backLabel="Back to quiz" />;
 }

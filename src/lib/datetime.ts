@@ -17,8 +17,14 @@ export function fromLocalInput(local: string): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
-const formatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+export type LocalFormat = "datetime" | "date" | "time-seconds";
 
-export function formatLocal(iso: string): string {
-  return formatter.format(new Date(iso));
+const FORMATTERS: Record<LocalFormat, Intl.DateTimeFormat> = {
+  datetime: new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }), // 22 Oct 2026, 11:18
+  date: new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }), // 22 Oct 2026
+  "time-seconds": new Intl.DateTimeFormat(undefined, { timeStyle: "medium" }), // 11:18:05 (leaderboard tiebreaks, D-059)
+};
+
+export function formatLocal(iso: string, format: LocalFormat = "datetime"): string {
+  return FORMATTERS[format].format(new Date(iso));
 }

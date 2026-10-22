@@ -67,11 +67,11 @@ proctra/
 │   │   ├── auth/, layout/  # sign-in/up forms, app header, back button, link tabs (D-058)
 │   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
 │   │   ├── motion/         # StaggerIn (GSAP entrance for dashboard lists; never on exam screens)
-│   │   ├── results/        # leaderboard view (live polling) + shared page, event timeline
+│   │   ├── results/        # leaderboard view (live polling) + shared page + button, event timeline, StatTile/StatGrid, ResultCounts tags
 │   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue/useAutosave, useExamCamera, useSnapshots, useProctorEvents
 │   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
-│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · shared: utils (cn), quiz-tabs (tab classification, pure)
+│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · shared: utils (cn), quiz-tabs (tab classification, pure), attempt-stats (duration, accuracy, pure)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot

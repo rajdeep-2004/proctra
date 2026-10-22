@@ -146,7 +146,8 @@ sequenceDiagram
 ### Flow: Leaderboard (live, D-049)
 1. Access: owner teacher always; a student only after finishing their own attempt **and** once results are released.
 2. `finalizeExpiredForQuiz` → load finished attempts `{studentName, score}` + count of still-active ones.
-3. Competition ranking (`ranking.ts`): equal scores share a rank, the next rank skips (→ 1, 1, 3); ties listed by name.
+3. Ranking (`ranking.ts`, D-059): marks high → low, then `submittedAt` early → late (auto-submits carry the deadline). A rank is
+   shared only when marks and submit time are both equal (→ 1, 1, 3), listed by name. Each entry returns `submittedAt` ("Finished").
 4. Response: name, rank, score only, plus `live` (exam not over or someone still writing) and `stillWriting`.
 5. While `live`, the page re-fetches every 10 s; when everyone is final it stops. No push channel (D-014).
 

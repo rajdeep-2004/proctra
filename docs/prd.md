@@ -51,7 +51,7 @@ exam window and periodic still snapshots, with no claims of full OS lockdown or 
 | F-10 | Auto-grading | On submit/expiry the server scores the attempt: Σ(correct × mCorrect + incorrect × mIncorrect + unanswered × mUnanswered). |
 | F-11 | Result release | Marks are visible to the student right after submission unless the teacher set a "release results at" time, in which case they appear after that time. |
 | F-12 | Student profile | Lists the student's own attempts: quiz, date, status, marks (if released). Opening one shows the score breakdown. Students can never read another student's attempts. |
-| F-13 | Teacher results & leaderboard | Teacher sees all submissions + marks for quizzes they own, and a quiz leaderboard with competition ranking (1, 1, 3). Students see the leaderboard only once results are released; it shows name, rank and marks, never snapshots or events. |
+| F-13 | Teacher results & leaderboard | Teacher sees all submissions + marks for quizzes they own, and a quiz leaderboard ranked by marks, ties broken by earlier finish time (D-059). Students see the leaderboard only once results are released; it shows name, rank, marks and finish time, never snapshots or events. |
 | F-14 | Packaged app + README | `npm run dist` produces an unsigned macOS `.dmg` that loads the deployed app. README covers setup, env vars, seeding, running, packaging and known limitations. |
 
 ### Should have

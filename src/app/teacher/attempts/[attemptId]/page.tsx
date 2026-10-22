@@ -6,13 +6,16 @@ import { BackButton } from "@/components/layout/back-button";
 import { LocalTime } from "@/components/local-time";
 import { AttemptStatusBadge } from "@/components/quiz/attempt-status-badge";
 import { EventTimeline } from "@/components/results/event-timeline";
+import { ResultCounts } from "@/components/results/result-counts";
 import { SnapshotGallery } from "@/components/results/snapshot-gallery";
+import { StatGrid, StatTile } from "@/components/results/stat-tile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppError } from "@/lib/api-response";
+import { accuracy, durationMs, formatDuration, formatPercent } from "@/lib/attempt-stats";
 import { requirePageUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { ObjectIdString } from "@/schemas/quiz";
-import { getAttemptForTeacher } from "@/services/results-service";
+import { getAttemptForTeacher, type TeacherAttemptView } from "@/services/results-service";
 
 export const metadata: Metadata = { title: "Submission · Proctra" };
 
@@ -50,17 +53,13 @@ async function Detail({ params }: { params: Params }) {
 
   return (
     <section className="grid gap-6">
-      <div className="grid gap-1">
+      <div className="grid gap-4">
         <BackButton href={`/teacher/quizzes/${a.quizId}/results`} label={`Back to ${a.quizTitle} results`} />
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{a.studentName}</h1>
           <AttemptStatusBadge status={a.status} />
         </div>
-        <p className="text-sm text-muted-foreground">
-          Started <LocalTime iso={a.startedAt} />
-          {a.submittedAt && <> · submitted <LocalTime iso={a.submittedAt} /></>}
-          {a.score && <> · <span className="font-medium text-foreground">{fmt(a.score.total)} / {fmt(a.score.maxPossible)}</span> ({a.score.correct} correct, {a.score.incorrect} wrong, {a.score.unanswered} unanswered)</>}
-        </p>
+        <AttemptSummary a={a} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_20rem]">
@@ -111,3 +110,23 @@ async function Detail({ params }: { params: Params }) {
     </section>
   );
 }
+
+/** Start, end, duration and marks as tiles, plus the answer breakdown as tags (issue 1.4). */
+function AttemptSummary({ a }: { a: TeacherAttemptView }) {
+  const ms = durationMs(a.startedAt, a.submittedAt);
+  const acc = a.score ? accuracy(a.score) : null;
+  return (
+    <div className="grid gap-3">
+      <StatGrid>
+        <StatTile label="Started" value={<LocalTime iso={a.startedAt} />} />
+        <StatTile label="Ended" value={a.submittedAt ? <LocalTime iso={a.submittedAt} /> : "Still writing"}
+          hint={a.status === "auto_submitted" ? "At time-up" : undefined} />
+        <StatTile label="Duration" value={ms === null ? "In progress" : formatDuration(ms)} />
+        <StatTile label="Marks" value={a.score ? <>{fmt(a.score.total)} <span className="text-muted-foreground">/ {fmt(a.score.maxPossible)}</span></> : "Pending"}
+          hint={acc !== null ? `${formatPercent(acc)} accuracy` : undefined} />
+      </StatGrid>
+      {a.score && <ResultCounts correct={a.score.correct} incorrect={a.score.incorrect} unanswered={a.score.unanswered} />}
+    </div>
+  );
+}
+

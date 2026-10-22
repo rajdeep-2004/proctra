@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BackButton } from "@/components/layout/back-button";
 import { LocalTime } from "@/components/local-time";
 import { LeaderboardView } from "@/components/results/leaderboard-view";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -30,7 +30,7 @@ export async function LeaderboardPage({ role, rawQuizId, backHref, backLabel }: 
   if (!outcome.ok && role === "teacher") notFound(); // another teacher's quiz looks missing
   return (
     <section className="grid gap-6">
-      <Link href={backHref(parsed.data)} className="text-sm text-muted-foreground hover:text-foreground">← {backLabel}</Link>
+      <BackButton href={backHref(parsed.data)} label={backLabel} />
       {outcome.ok ? (
         <>
           <h1 className="text-2xl font-semibold tracking-tight">{outcome.board.quizTitle} leaderboard</h1>

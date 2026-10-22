@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | review |
 | Branch | `phase/v1-03-leaderboard-details` |
 | Depends on | Phase v1/02 |
 | Issues | 1.4 (summary line), 1.5, 2.3 |
@@ -51,27 +51,35 @@ From v1/02 (Quiz list tabs, merged 2026-10-22):
 - `database-schema.md` → attempts index `{ quizId, status, score.total }`
 
 ## Tasks
-- [ ] 03.1 — Contract update + ranking by score then submit time → `feat(results): break leaderboard ties by finish time`
-- [ ] 03.2 — Leaderboard table: end time column → `feat(results): show finish time on leaderboard`
-- [ ] 03.3 — Teacher attempt header as badges + stat tiles → `feat(teacher): redesign attempt summary`
-- [ ] 03.4 — Student result: duration, accuracy, leaderboard button → `feat(student): add duration and accuracy to result`
-- [ ] 03.5 — Docs pass → `docs: update docs for phase v1/03`
+- [x] 03.1 — Contract update + ranking by score then submit time → `feat(results): break leaderboard ties by finish time`
+- [x] 03.2 — Leaderboard table: end time column → `feat(results): show finish time on leaderboard`
+- [x] 03.3 — Teacher attempt header as badges + stat tiles → `feat(teacher): redesign attempt summary`
+- [x] 03.4 — Student result: duration, accuracy, leaderboard button → `feat(student): add duration and accuracy to result`
+- [x] 03.5 — Docs pass → `docs: update docs for phase v1/03`
 
 ## Done criteria
-- [ ] Lint + build pass; ranking `.scratch/` checks pass
-- [ ] Leaderboard API never exposes answers/events/snapshots (re-check)
-- [ ] Docs match what was built; D-025 marked superseded
+- [x] Lint + build pass; ranking `.scratch/` checks pass
+- [x] Leaderboard API never exposes answers/events/snapshots (re-check)
+- [x] Docs match what was built; D-025 marked superseded
 
 ## How to verify
 1. Two students submit with equal marks a minute apart → earlier one ranks higher on both boards.
 2. Open a teacher attempt and a student result; compare with the old one-line summary.
+3. Scripted (server on :3100 after `npm run build`): `v1-03-setup.mts` (tie fixture), then with
+   `NODE_OPTIONS=--experimental-websocket`: `v1-03-board.mts` (9/9), `v1-03-attempt.mts` (6/6), `v1-03-result.mts` (5/5).
+   Unit: `ranking.test.ts` (7/7), `attempt-stats.test.ts` (3/3).
 
 ## Phase summary
 <!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
-- **Next phase should know:**
+- **Built:** ties broken by earlier finish (API + both boards, "Finished" column with seconds, note under the live label);
+  teacher attempt header as status badge + Started/Ended/Duration/Marks tiles + answer tags; student result with time taken,
+  accuracy, tags and a trophy Leaderboard button (also on the quiz page). Leaderboard pages now use `BackButton` (v1/01 miss).
+- **Key decisions:** D-059 (tiebreak, supersedes D-025), D-060 (duration/accuracy definitions, shared stat tiles).
+- **Known limitations:** "Finished" shows time only (no date); fine for one exam slot, ambiguous only if a slot crosses midnight.
+  The old v0 scratch check `leaderboard.check.mts` was updated to the new ranks but not re-run (needs its own fixture flow).
+- **Next phase should know:** reuse `StatTile`/`StatGrid` (`src/components/results/stat-tile.tsx`), `ResultCounts`,
+  `src/lib/attempt-stats.ts` (`accuracy`, `formatPercent`, `formatDuration`) and `LocalTime format="date"` (for the
+  date-only "Taken" column, issue 2.2).
 
 ## Next phase preview
 v1/04 adds the stats helper and charts.

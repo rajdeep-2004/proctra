@@ -1,8 +1,8 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/03 — Leaderboard & attempt details (`not-started`)
-**Branch:** —
+**Current phase:** v1/03 — Leaderboard & attempt details (`review`)
+**Branch:** phase/v1-03-leaderboard-details
 **Profile:** lean
 
 ## Phases
@@ -13,7 +13,7 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 |---|---|---|---|---|---|---|
 | 01 | Copy & navigation cleanup | done | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | 2026-10-22 | 2026-10-22 |
 | 02 | Quiz list tabs | done | phase/v1-02-quiz-tabs | 1.1, 2.1 | 2026-10-22 | 2026-10-22 |
-| 03 | Leaderboard & attempt details | not-started | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | | |
+| 03 | Leaderboard & attempt details | review | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | 2026-10-22 | |
 | 04 | Analytics: results & profile | not-started | phase/v1-04-analytics | 1.6, 2.2 | | |
 | 05 | Teacher's student view | not-started | phase/v1-05-teacher-student-view | 1.4 | | |
 | 06 | Production performance | not-started | phase/v1-06-performance | 3.3 | | |
@@ -33,6 +33,11 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-22 (phase v1/03)
+- Done: tasks 03.1–03.5. Earlier finish wins ties (D-059, supersedes D-025); finish times on boards; attempt summaries as tiles + tags; result duration/accuracy (D-060).
+- Verified: lint + build, unit tests (8 files), browser/API checks 20/20 incl. unreleased results showing nothing extra.
+- Next: user review → `/phase-close approve` → `/phase-start v1/04` (analytics).
+
 ### 2026-10-22 (phase v1/02)
 - Done: tasks 02.1–02.4. URL tabs on both dashboards + teacher title search (D-058).
 - Verified: lint + build, unit tests (7 files incl. new quiz-tabs 5/5), browser checks 15/15 with fixtures in every state.

@@ -1,14 +1,17 @@
 import { Check, Minus, X } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { BackButton } from "@/components/layout/back-button";
 import { LocalTime } from "@/components/local-time";
+import { LeaderboardButton } from "@/components/results/leaderboard-button";
+import { ResultCounts } from "@/components/results/result-counts";
+import { StatGrid, StatTile } from "@/components/results/stat-tile";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AnimatedCounter } from "@/components/ui/animated-counter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppError } from "@/lib/api-response";
+import { accuracy, durationMs, formatDuration, formatPercent } from "@/lib/attempt-stats";
 import { requirePageUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { ObjectIdString } from "@/schemas/quiz";
@@ -50,14 +53,17 @@ async function Result({ params }: { params: Params }) {
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
 
 function ResultView({ a }: { a: FinishedAttemptView }) {
+  const acc = a.score ? accuracy(a.score) : null;
   return (
     <section className="grid gap-6">
-      <div className="grid gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{a.quizTitle}</h1>
-        <p className="text-sm text-muted-foreground">
-          {a.status === "auto_submitted" ? "Submitted automatically when time ran out" : "Submitted"} · <LocalTime iso={a.submittedAt} />
-          {a.released && <> · <Link href={`/student/quizzes/${a.quizId}/leaderboard`} className="font-medium text-foreground underline underline-offset-4">Leaderboard</Link></>}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="grid gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{a.quizTitle}</h1>
+          <p className="text-sm text-muted-foreground">
+            {a.status === "auto_submitted" ? "Submitted automatically when time ran out" : "Submitted"} · <LocalTime iso={a.submittedAt} />
+          </p>
+        </div>
+        {a.released && <LeaderboardButton quizId={a.quizId} />}
       </div>
 
       {!a.released || !a.score ? (
@@ -77,11 +83,13 @@ function ResultView({ a }: { a: FinishedAttemptView }) {
                 <AnimatedCounter value={a.score.total} decimals={Number.isInteger(a.score.total) ? 0 : 2} gooey={false} />
                 <span className="text-xl text-muted-foreground">/ {fmt(a.score.maxPossible)}</span>
               </p>
-              <dl className="grid grid-cols-3 gap-4 text-sm">
-                <div><dt className="text-muted-foreground">Correct</dt><dd className="text-lg font-medium">{a.score.correct}</dd></div>
-                <div><dt className="text-muted-foreground">Wrong</dt><dd className="text-lg font-medium">{a.score.incorrect}</dd></div>
-                <div><dt className="text-muted-foreground">Unanswered</dt><dd className="text-lg font-medium">{a.score.unanswered}</dd></div>
-              </dl>
+              <div className="grid gap-3">
+                <StatGrid className="sm:grid-cols-2">
+                  <StatTile label="Time taken" value={formatDuration(durationMs(a.startedAt, a.submittedAt) ?? 0)} />
+                  <StatTile label="Accuracy" value={acc === null ? "No answers" : formatPercent(acc)} />
+                </StatGrid>
+                <ResultCounts correct={a.score.correct} incorrect={a.score.incorrect} unanswered={a.score.unanswered} />
+              </div>
             </CardContent>
           </Card>
 
