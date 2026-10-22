@@ -65,8 +65,8 @@ v1/04 (merged 96db24e): analytics on the teacher results page (six tiles + score
 - **Known limitations:** history capped at 200 attempts; no teacher-wide student directory or search (out of scope).
   The v1/03 and v1/04 scratch fixtures have expired (their quizzes closed), so `v1-03-attempt` and `v1-04-teacher` need a
   fresh setup run to pass again. The app itself is fine; the checks expect an open quiz.
-- **Next phase should know:** v1/06 measures production load times. These analytics pages add one recharts bundle and,
+- **Next phase should know:** (written before v1/06 performance was dropped, D-065) v1/06 measures production load times. These analytics pages add one recharts bundle and,
   for the student page, three small queries (quizzes, exists, attempts + user in parallel). Worth including in the timings.
 
 ## Next phase preview
-v1/06 measures and fixes production page load times.
+v1/06 releases v1.0.0 (the performance phase was dropped, D-065).

@@ -1,17 +1,24 @@
-# Phase v1/07 — Release v1.0.0
+# Phase v1/06 — Release v1.0.0
 
 | | |
 |---|---|
 | Status | not-started |
-| Branch | `phase/v1-07-release` |
-| Depends on | Phase v1/06 |
+| Branch | `phase/v1-06-release` |
+| Depends on | Phase v1/05 |
 | Issues | — (ships everything above) |
 
 ## Goal
 v1.0.0 is live: production deployed, per-chip `.dmg` installers on a GitHub Release, README up to date.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+v1/05 (merged e2555fc): teacher's student page + owner-scoped API (D-064). The planned performance phase was dropped by
+the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
+- Production already runs the latest `main` (user, 2026-10-22); redeploy after this phase merges.
+- README screenshots to refresh: quiz tabs (v1/02), leaderboard finish times (v1/03), teacher results analytics and
+  student profile (v1/04), teacher's student page (v1/05).
+- Scratch fixtures (@scratch.test students, `t2@`/`t3@scratch.test` teachers) are in the production database: run
+  `.scratch/cleanup-users.mts` before the release (and check it covers the scratch teachers too).
+- Known slowness (D-065): functions run in `iad1`, the database is in Mumbai; first request after idle ~5 s.
 
 ## In scope — exact features
 1. **Version bump** — `package.json` → `1.0.0` (semver: first stable release after the 0.x line; D-056).
@@ -27,9 +34,9 @@ v1.0.0 is live: production deployed, per-chip `.dmg` installers on a GitHub Rele
 - `decisions.md` → D-051, D-054
 
 ## Tasks
-- [ ] 07.1 — Version bump + build installers → `chore(release): bump version to 1.0.0`
-- [ ] 07.2 — README refresh → `docs: update README for v1.0.0`
-- [ ] 07.3 — Final docs pass → `docs: update docs for phase v1/07`
+- [ ] 06.1 — Version bump + build installers → `chore(release): bump version to 1.0.0`
+- [ ] 06.2 — README refresh → `docs: update README for v1.0.0`
+- [ ] 06.3 — Final docs pass → `docs: update docs for phase v1/06`
 - [ ] After approval/merge: production deploy + `gh release create v1.0.0` (needs user go-ahead; public action)
 
 ## Done criteria
