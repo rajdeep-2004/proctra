@@ -12,7 +12,20 @@ Leaderboards show who finished when and break ties fairly; attempt and result pa
 clear UI instead of one long text line.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+From v1/02 (Quiz list tabs, merged 2026-10-22):
+- Both dashboards have URL tabs (`?tab=`, D-058) via `src/components/layout/link-tabs.tsx` and the pure `src/lib/quiz-tabs.ts`.
+- Code this phase changes:
+  - Ranking: `src/services/ranking.ts` (`competitionRank`, shared ranks, alphabetical within ties, D-025) with unit test
+    `.scratch/ranking.test.ts` (update it: it encodes the old rule).
+  - Leaderboard: `getLeaderboard()` in `src/services/results-service.ts` (currently selects `studentId, studentName, score`;
+    needs `submittedAt`), UI `src/components/results/leaderboard-view.tsx` (polls every 10 s while live, D-049) and
+    `leaderboard-page.tsx`; contract `GET /api/v1/quizzes/:quizId/leaderboard`.
+  - Teacher attempt header: `src/app/teacher/attempts/[attemptId]/page.tsx` (`TeacherAttemptView` has `startedAt`,
+    `submittedAt | null`, `score`). Student result: `src/app/student/attempts/[attemptId]/page.tsx`
+    (`FinishedAttemptView` has `startedAt`, `submittedAt`, `score`, `released`).
+- Auto-submitted attempts: check what `submittedAt` is set to (deadline vs. finalize time, D-006) before using it as the tiebreak.
+- Browser harness: `.scratch/browser.mts` (`openBrowser`, `checker`); fixtures `.scratch/polish-setup.mts`, `v1-02-setup.mts`.
+- Decisions: D-055 – D-058.
 
 ## In scope — exact features
 1. **Ranking with time tiebreak (1.5)** — user decision 2026-10-22

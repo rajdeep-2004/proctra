@@ -1,8 +1,8 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/02 — Quiz list tabs (`review`)
-**Branch:** phase/v1-02-quiz-tabs
+**Current phase:** v1/03 — Leaderboard & attempt details (`not-started`)
+**Branch:** —
 **Profile:** lean
 
 ## Phases
@@ -12,7 +12,7 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 | # | Phase | Status | Branch | Issues | Started | Closed |
 |---|---|---|---|---|---|---|
 | 01 | Copy & navigation cleanup | done | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | 2026-10-22 | 2026-10-22 |
-| 02 | Quiz list tabs | review | phase/v1-02-quiz-tabs | 1.1, 2.1 | 2026-10-22 | |
+| 02 | Quiz list tabs | done | phase/v1-02-quiz-tabs | 1.1, 2.1 | 2026-10-22 | 2026-10-22 |
 | 03 | Leaderboard & attempt details | not-started | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | | |
 | 04 | Analytics: results & profile | not-started | phase/v1-04-analytics | 1.6, 2.2 | | |
 | 05 | Teacher's student view | not-started | phase/v1-05-teacher-student-view | 1.4 | | |
@@ -36,7 +36,8 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 ### 2026-10-22 (phase v1/02)
 - Done: tasks 02.1–02.4. URL tabs on both dashboards + teacher title search (D-058).
 - Verified: lint + build, unit tests (7 files incl. new quiz-tabs 5/5), browser checks 15/15 with fixtures in every state.
-- Next: user review → `/phase-close approve` → `/phase-start v1/03` (leaderboard & attempt details).
+- Merge: an uncommitted editor change (`parse,Tab`) was committed with the user's comment removal and merged while lint was failing (my chained command didn't stop on the error). Fixed in d30df07 and re-merged (9ca4958); lint + build green on `main`. Merge steps now stop on the first failure.
+- Next: approved and merged to `main`; `/phase-start v1/03` (leaderboard & attempt details).
 
 ### 2026-10-22 (phase v1/01)
 - Done: tasks 01.1–01.4. Header simplified, shared back button, em dashes removed from all UI copy, results disclaimer removed (D-057).
