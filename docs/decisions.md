@@ -2547,6 +2547,13 @@ sees that student's results **on their own quizzes**.
 - The quiz owner sees marks even before the release time, the same as the submissions table. The release rule (D-049)
   protects students from each other, not from their teacher.
 - Submissions rows and the attempt detail now include `studentId`, so the UI can link to the student page.
+- **Page** `/teacher/students/[studentId]`: name, email ("results on your quizzes only"), the same four tiles and trend chart
+  as the student profile, and a history table (quiz → its results page, date, status, marks, View → the attempt).
+- **Links:** on the results table the student's **name** now opens the student page, and a new **View** column opens the
+  attempt (before, the name opened the attempt). On the attempt page the name heading links to the student page.
+- **One shared helper** for the tiles: `historyStats` in `score-stats.ts` (tested), rendered by `HistoryAnalytics`
+  (renamed from `ProfileAnalytics`). The profile passes rows whose `score` is null before release, while the teacher passes
+  rows that always carry a score once finished. The same code therefore gives each viewer the right numbers.
 
 **Alternatives rejected**
 - *403 for "exists but not yours":* this would tell a teacher that an id belongs to a real student, which lets them probe for
@@ -2567,6 +2574,8 @@ The response builds `score` field by field. It never includes answers or correct
 **Files touched**
 - `docs/api-contracts.md`, `src/services/results-service.ts` (`getStudentForTeacher`, `studentId` on rows/detail),
   `src/app/api/v1/teacher/students/[studentId]/route.ts`
+- `src/lib/score-stats.ts` (`historyStats`, `HistoryRow`, `TrendPoint`), `src/components/results/history-analytics.tsx`,
+  `src/app/teacher/students/[studentId]/page.tsx`, teacher results page, teacher attempt page, student profile page
 
 **Concepts worth learning**
 - *Existence leaks / enumeration:* different errors for "doesn't exist" and "not allowed" let an attacker map which ids are

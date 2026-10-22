@@ -44,7 +44,7 @@ v1/04 (merged 96db24e): analytics on the teacher results page (six tiles + score
 
 ## Tasks
 - [x] 05.1 — Contract + service (owner-scoped) + route handler → `feat(teacher): add student summary api`
-- [ ] 05.2 — Student page UI + links from results/attempt → `feat(teacher): add student analytics page`
+- [x] 05.2 — Student page UI + links from results/attempt → `feat(teacher): add student analytics page`
 - [ ] 05.3 — Docs pass → `docs: update docs for phase v1/05`
 
 ## Done criteria

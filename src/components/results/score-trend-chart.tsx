@@ -3,9 +3,8 @@
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { formatLocal } from "@/lib/datetime";
+import type { TrendPoint } from "@/lib/score-stats";
 import { useIsClient } from "@/lib/use-is-client";
-
-export type TrendPoint = { id: string; submittedAt: string; quizTitle: string; percent: number };
 
 const config = { percent: { label: "Score", color: "var(--chart-2)" } } satisfies ChartConfig;
 const HEIGHT = "h-52";
