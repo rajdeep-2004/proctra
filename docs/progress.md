@@ -1,8 +1,8 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/02 — Quiz list tabs (`not-started`)
-**Branch:** —
+**Current phase:** v1/02 — Quiz list tabs (`in-progress`)
+**Branch:** phase/v1-02-quiz-tabs
 **Profile:** lean
 
 ## Phases
@@ -12,7 +12,7 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 | # | Phase | Status | Branch | Issues | Started | Closed |
 |---|---|---|---|---|---|---|
 | 01 | Copy & navigation cleanup | done | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | 2026-10-22 | 2026-10-22 |
-| 02 | Quiz list tabs | not-started | phase/v1-02-quiz-tabs | 1.1, 2.1 | | |
+| 02 | Quiz list tabs | in-progress | phase/v1-02-quiz-tabs | 1.1, 2.1 | 2026-10-22 | |
 | 03 | Leaderboard & attempt details | not-started | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | | |
 | 04 | Analytics: results & profile | not-started | phase/v1-04-analytics | 1.6, 2.2 | | |
 | 05 | Teacher's student view | not-started | phase/v1-05-teacher-student-view | 1.4 | | |

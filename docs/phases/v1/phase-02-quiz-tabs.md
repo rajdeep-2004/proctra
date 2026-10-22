@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/v1-02-quiz-tabs` |
 | Depends on | Phase v1/01 |
 | Issues | 1.1, 2.1 |
