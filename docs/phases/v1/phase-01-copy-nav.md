@@ -44,7 +44,7 @@ From v0/07 (Ship, released as v0.1.0 on 2026-10-20): the full product works end 
 - `decisions.md` → D-053 (DevClub/GSAP: never on exam screens)
 
 ## Tasks
-- [ ] 01.1 — Navbar: drop role label and Quizzes link → `refactor(layout): simplify app header nav`
+- [x] 01.1 — Navbar: drop role label and Quizzes link → `refactor(layout): simplify app header nav`
 - [ ] 01.2 — Shared `BackButton` + use it on all detail pages → `feat(ui): add back button component`
 - [ ] 01.3 — Remove em dashes from all UI copy + delete events disclaimer → `fix(copy): remove em dashes and event disclaimer`
 - [ ] 01.4 — Docs pass → `docs: update docs for phase v1/01`
