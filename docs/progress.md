@@ -1,8 +1,8 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/05 — Teacher's student view (`review`)
-**Branch:** phase/v1-05-teacher-student-view
+**Current phase:** v1/06 — Production performance (`not-started`)
+**Branch:** phase/v1-06-performance
 **Profile:** lean
 
 ## Phases
@@ -15,7 +15,7 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 | 02 | Quiz list tabs | done | phase/v1-02-quiz-tabs | 1.1, 2.1 | 2026-10-22 | 2026-10-22 |
 | 03 | Leaderboard & attempt details | done | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | 2026-10-22 | 2026-10-22 |
 | 04 | Analytics: results & profile | done | phase/v1-04-analytics | 1.6, 2.2 | 2026-10-22 | 2026-10-22 |
-| 05 | Teacher's student view | review | phase/v1-05-teacher-student-view | 1.4 | 2026-10-22 | |
+| 05 | Teacher's student view | done | phase/v1-05-teacher-student-view | 1.4 | 2026-10-22 | 2026-10-22 |
 | 06 | Production performance | not-started | phase/v1-06-performance | 3.3 | | |
 | 07 | Release v1.0.0 | not-started | phase/v1-07-release | — | | |
 
@@ -40,7 +40,8 @@ Status values: `not-started` → `in-progress` → `review` → `done`
   bad id 400, unknown 404 with the same message, signed out 401, no answers leaked), page 9/9 incl. 375px and other-teacher
   404, v1/04 profile re-run green.
 - Note: older scratch fixtures expired when their quizzes closed (expected); re-run their setup scripts to reuse them.
-- Next: user review → `/phase-close approve` → `/phase-start v1/06` (production performance).
+- Follow-up: removed the "results on your quizzes only" note under the student's email (578a1b0, user request).
+- Next: approved and merged to `main` (e2555fc); `/phase-start v1/06` (production performance).
 
 ### 2026-10-22 (phase v1/04)
 - Done: tasks 04.1–04.5 + one refactor (reuse `useIsClient`). Stats helper (D-061), recharts via shadcn chart (D-062),

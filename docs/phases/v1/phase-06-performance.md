@@ -11,7 +11,18 @@
 Pages load noticeably faster in production (browser and `.dmg`), with before/after numbers to prove it.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+v1/05 (merged e2555fc): teacher's student page `/teacher/students/[id]` + `GET /api/v1/teacher/students/:id`, scoped to the
+teacher's own quizzes with one enumeration-safe 404 (D-064). Tile maths is shared via `historyStats` / `HistoryAnalytics`.
+Things to know for performance work:
+- **Production still runs v0.1.0 code.** v1/01–v1/05 are merged to `main` but not deployed (deploys are manual,
+  `npx vercel deploy --prod` from `main`, D-031). Decide whether the baseline measures the deployed v0 build or a fresh
+  v1 deploy, and say which in the decision entry.
+- Pages added in v1 that belong in the timings: teacher results (analytics + recharts), student profile (analytics),
+  teacher student page (quizzes → exists → finalize → user + attempts in parallel).
+- Read pages that write: `listSubmissions` and `getLeaderboard` call `finalizeExpiredForQuiz`; `listMyAttempts` and
+  `getStudentForTeacher` call `finalizeExpiredForStudent` (D-006 lazy finalization).
+- Scratch fixtures (@scratch.test users, `t2`/`t3@scratch.test` teachers) live in the `.env` database; run
+  `.scratch/cleanup-users.mts` before the v1.0.0 release.
 
 ## In scope — exact features
 1. **Measure first** (user: slowness is in production / `.dmg`)
