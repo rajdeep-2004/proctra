@@ -38,7 +38,7 @@ const TAB_INFO: Record<TeacherTab, { label: string; empty: string }> = {
 
 async function QuizTabs({ searchParams }: { searchParams: SearchParams }) {
   const user = await requirePageUser("teacher");
-  const tab = parse,Tab((await searchParams).tab, TEACHER_TABS);
+  const tab = parseTab((await searchParams).tab, TEACHER_TABS);
   const quizzes = await listTeacherQuizzes(user.id);
   const now = new Date();
   const counts = countTeacherTabs(quizzes, now);
