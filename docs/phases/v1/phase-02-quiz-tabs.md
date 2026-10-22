@@ -11,7 +11,17 @@
 Both dashboards stay readable as quizzes pile up: tabs split the list, and teachers can search by title.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+From v1/01 (Copy & navigation cleanup, merged 2026-10-22):
+- Header is logo + "Profile" (students) + name/sign out. `BackButton` (`src/components/layout/back-button.tsx`) is used on
+  all detail pages. No em dashes in UI copy (rule in D-057); en dashes in time ranges stay.
+- Dashboards to change: `src/app/teacher/page.tsx` (`QuizTable`, `listTeacherQuizzes`) and `src/app/student/page.tsx`
+  (`QuizGroups` already groups by `availability`: open / upcoming / closed, from `listQuizzesForStudent`).
+- Quiz statuses: `draft | published | archived` (`src/models/quiz.ts`); "live/closed" for teachers must come from
+  `startsAt`/`endsAt` vs server time, like the student availability.
+- Lists render with `StaggerIn` (GSAP); keep that working inside tab panels.
+- Verification harness: `.scratch/v1-01-shots.mts` pattern (signed-in headless Chrome, Node 20 needs
+  `NODE_OPTIONS=--experimental-websocket`); scratch teacher `t2@scratch.test`.
+- Decisions: D-055 – D-057.
 
 ## In scope — exact features
 1. **Teacher quiz tabs + search (1.1)**
