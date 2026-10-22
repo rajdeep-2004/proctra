@@ -180,13 +180,15 @@ Notes: images are private (`type: authenticated`); each URL is signed by the ser
 Response `200`
 ```json
 { "data": { "quizTitle": "DBMS Quiz 1", "maxPossible": 40, "live": true, "stillWriting": 3, "serverNow": "…",
-  "entries": [ { "rank": 1, "studentName": "Asha", "score": 36, "isMe": false },
-               { "rank": 1, "studentName": "Ravi", "score": 36, "isMe": true },
-               { "rank": 3, "studentName": "Meera", "score": 32, "isMe": false } ] } }
+  "entries": [ { "rank": 1, "studentName": "Asha", "score": 36, "submittedAt": "2026-10-22T10:21:04.000Z", "isMe": false },
+               { "rank": 2, "studentName": "Ravi", "score": 36, "submittedAt": "2026-10-22T10:24:40.000Z", "isMe": true },
+               { "rank": 3, "studentName": "Meera", "score": 32, "submittedAt": "2026-10-22T10:30:00.000Z", "isMe": false } ] } }
 ```
 `live` = the exam hasn't ended yet or someone is still writing → the page re-fetches every 10 s and labels ranks provisional.
 Errors: `403 FORBIDDEN` (student hasn't finished this quiz / not the owner), `403 RESULTS_NOT_RELEASED`, `404`
-Notes: competition ranking (1, 1, 3). Never includes events, snapshots or answers. Ties ordered by name.
+Notes: sorted by marks (high first), then by `submittedAt` (earlier first; auto-submitted attempts carry the deadline) (D-059,
+supersedes D-025). Rank is shared only when marks **and** `submittedAt` are equal (1, 1, 3), listed by name. `submittedAt` is the
+end time shown on the board. Never includes events, snapshots or answers.
 
 ### Student — quizzes and attempts
 

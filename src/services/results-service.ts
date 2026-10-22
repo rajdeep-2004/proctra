@@ -10,7 +10,7 @@ import { Snapshot, type SnapshotDoc } from "@/models/snapshot";
 import { finalizeExpiredForQuiz, finalizeIfExpired } from "@/services/attempt-service";
 import { resultFor, type QuestionResult } from "@/services/grading";
 import { eventCounts } from "@/services/proctor-service";
-import { competitionRank } from "@/services/ranking";
+import { rankEntries } from "@/services/ranking";
 import { snapshotCounts } from "@/services/snapshot-service";
 
 /** The teacher must own the quiz: 404 if it doesn't exist, 403 if it belongs to someone else. */
@@ -129,7 +129,7 @@ export type Leaderboard = {
   live: boolean; // exam not over yet or someone still writing → ranks may change
   stillWriting: number;
   serverNow: string;
-  entries: { rank: number; studentName: string; score: number; isMe: boolean }[];
+  entries: { rank: number; studentName: string; score: number; submittedAt: string; isMe: boolean }[];
 };
 
 /**
@@ -153,13 +153,16 @@ export async function getLeaderboard(user: { id: string; role: "student" | "teac
   }
 
   const [finished, stillWriting] = await Promise.all([
-    Attempt.find({ quizId, status: { $ne: "active" } }, { studentId: 1, studentName: 1, score: 1 })
+    Attempt.find({ quizId, status: { $ne: "active" } }, { studentId: 1, studentName: 1, score: 1, submittedAt: 1, deadline: 1 })
       .limit(1000)
-      .lean<Pick<AttemptDoc, "studentId" | "studentName" | "score">[]>(),
+      .lean<Pick<AttemptDoc, "studentId" | "studentName" | "score" | "submittedAt" | "deadline">[]>(),
     Attempt.countDocuments({ quizId, status: "active" }),
   ]);
-  const ranked = competitionRank(
-    finished.map((a) => ({ name: a.studentName, score: a.score?.total ?? 0, studentId: a.studentId.toString() })),
+  const ranked = rankEntries(
+    finished.map((a) => {
+      const end = a.submittedAt ?? a.deadline; // finished attempts always have submittedAt; deadline is a safety net
+      return { name: a.studentName, score: a.score?.total ?? 0, finishedAt: end.getTime(), studentId: a.studentId.toString() };
+    }),
   );
   const now = new Date();
   return {
@@ -173,6 +176,7 @@ export async function getLeaderboard(user: { id: string; role: "student" | "teac
       rank: r.rank,
       studentName: r.name,
       score: r.score,
+      submittedAt: new Date(r.finishedAt).toISOString(),
       isMe: user.role === "student" && r.studentId === user.id,
     })),
   };

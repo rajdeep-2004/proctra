@@ -37,7 +37,7 @@ Rules:
 | D-022 | 2026-10-19 | 00 | Quiz editor saves the whole quiz; lock questions after first attempt | Active |
 | D-023 | 2026-10-19 | 00 | Role-prefixed routes and 404 for other students' attempts | Active |
 | D-024 | 2026-10-19 | 00 | Grading as a pure function with a stored breakdown | Active |
-| D-025 | 2026-10-19 | 00 | Competition ranking computed on read | Active |
+| D-025 | 2026-10-19 | 00 | Competition ranking computed on read | Superseded by D-059 |
 | D-026 | 2026-10-19 | 01 | Keep Next.js 16.4 defaults: Cache Components + Partial Prefetching | Active |
 | D-027 | 2026-10-19 | 01 | shadcn/ui on Radix (nova preset) and its runtime deps | Active |
 | D-028 | 2026-10-19 | 01 | Lazy, validated env access; keys added per phase | Active |
@@ -71,6 +71,7 @@ Rules:
 | D-056 | 2026-10-22 | v1 plan | Next release is v1.0.0 (semver), folder number = major version | Active |
 | D-057 | 2026-10-22 | v1/01 | UI copy without em dashes; one shared back button; leaner header | Active |
 | D-058 | 2026-10-22 | v1/02 | Dashboard tabs as links (`?tab=`), classified on the server | Active |
+| D-059 | 2026-10-22 | v1/03 | Leaderboard ties broken by earlier finish time | Active |
 
 ---
 
@@ -878,7 +879,7 @@ Per-question marks or regrading are added.
 ### D-025 — Competition ranking computed on read
 - **Date:** 2026-10-19
 - **Phase:** 00 — Planning
-- **Status:** Active
+- **Status:** Superseded by D-059 (ties now broken by finish time)
 - **Type:** algorithm
 
 **Decision**
@@ -2305,4 +2306,47 @@ URL as state: anything a user might want to reload, bookmark or share (tab, filt
 
 **Revisit if**
 Lists get big enough that the server should filter in the database (add a `?tab` filter to the query + pagination).
+
+### D-059 — Leaderboard ties broken by earlier finish time
+- **Date:** 2026-10-22
+- **Phase:** v1/03 — Leaderboard & attempt details
+- **Status:** Active (supersedes D-025)
+- **Type:** algorithm
+
+**Context**
+Issue 1.5: "use end time as the tiebreaker when two students have the same marks". D-025 gave equal marks the same rank (1, 1, 3)
+and listed them alphabetically, so a name decided who appeared first. The user chose "earlier finish ranks higher" (2026-10-22).
+
+**Decision**
+Sort by marks (high → low), then by `submittedAt` (early → late). Two students share a rank only if marks **and** submit time are
+exactly equal (to the millisecond); such exact ties keep competition ranking (1, 1, 3) and are listed by name.
+The leaderboard API now returns each entry's `submittedAt`, shown as the "Finished" column.
+
+**Alternatives rejected**
+- Shared rank but ordered by time (1, 1, 3 with earlier first): the user picked a strict tiebreak.
+- Duration (`submittedAt − startedAt`) as the tiebreak: everyone shares one fixed slot and starting late already costs time
+  (D-041), so a late starter with a short duration would beat someone who finished earlier in real time. The issue says "end time".
+
+**How it works**
+`rankEntries()` (`src/services/ranking.ts`) copies the list, sorts it with a three-level comparator
+`b.score − a.score || a.finishedAt − b.finishedAt || a.name.localeCompare(b.name)`, then walks it: if an entry is tied with the one
+above (same score and same time) it reuses that rank, otherwise its rank is its 1-based position.
+Example: Ravi 36 @10:20, Asha 36 @10:30, Meera 32 → 1 Ravi, 2 Asha, 3 Meera.
+
+**Edge cases**
+- Auto-submitted attempts store `submittedAt = deadline` (`attempt-service.ts`, lazy finalization D-006). So among equal marks,
+  everyone who submitted before time ran out beats everyone who was auto-submitted, and auto-submitted ties share a rank.
+- If the teacher extends the end time (D-041), auto-submits use the new deadline, which is still the moment the attempt ended.
+- `submittedAt` should never be null for a finished attempt; the service falls back to `deadline` just in case.
+
+**Files touched**
+- `src/services/ranking.ts` (`competitionRank` → `rankEntries`), `src/services/results-service.ts` (`getLeaderboard`),
+  `docs/api-contracts.md` (leaderboard entry gains `submittedAt`), `.scratch/ranking.test.ts` (7 cases)
+
+**Concepts worth learning**
+- **Multi-key sorting:** chaining comparators with `||` works because a comparator returns 0 for "equal", which is falsy, so the
+  next key decides.
+
+**Revisit if**
+Teachers want a different tiebreak per quiz (e.g. duration, or shared ranks again).
 

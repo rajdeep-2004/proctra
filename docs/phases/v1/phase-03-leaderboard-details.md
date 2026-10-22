@@ -51,7 +51,7 @@ From v1/02 (Quiz list tabs, merged 2026-10-22):
 - `database-schema.md` → attempts index `{ quizId, status, score.total }`
 
 ## Tasks
-- [ ] 03.1 — Contract update + ranking by score then submit time → `feat(results): break leaderboard ties by finish time`
+- [x] 03.1 — Contract update + ranking by score then submit time → `feat(results): break leaderboard ties by finish time`
 - [ ] 03.2 — Leaderboard table: end time column → `feat(results): show finish time on leaderboard`
 - [ ] 03.3 — Teacher attempt header as badges + stat tiles → `feat(teacher): redesign attempt summary`
 - [ ] 03.4 — Student result: duration, accuracy, leaderboard button → `feat(student): add duration and accuracy to result`
