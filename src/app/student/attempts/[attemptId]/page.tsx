@@ -86,7 +86,7 @@ function ResultView({ a }: { a: FinishedAttemptView }) {
               <div className="grid gap-3">
                 <StatGrid className="sm:grid-cols-2">
                   <StatTile label="Time taken" value={formatDuration(durationMs(a.startedAt, a.submittedAt) ?? 0)} />
-                  <StatTile label="Accuracy" value={acc === null ? "No answers" : formatPercent(acc)} hint="Correct out of answered" />
+                  <StatTile label="Accuracy" value={acc === null ? "No answers" : formatPercent(acc)} />
                 </StatGrid>
                 <ResultCounts correct={a.score.correct} incorrect={a.score.incorrect} unanswered={a.score.unanswered} />
               </div>
