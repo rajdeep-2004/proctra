@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/v1-03-leaderboard-details` |
 | Depends on | Phase v1/02 |
 | Issues | 1.4 (summary line), 1.5, 2.3 |
