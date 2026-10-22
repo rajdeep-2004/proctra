@@ -11,7 +11,16 @@
 A teacher can open any student who took their quizzes and see that student's performance across those quizzes.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+v1/04 (merged 96db24e): analytics on the teacher results page (six tiles + score distribution) and the student profile
+(Tests taken, Average, Best, Accuracy + score-over-time chart). Reuse here:
+- `src/lib/score-stats.ts`: `summarize`, `scorePercent`, `pooledAccuracy`, `histogram` (pure, `.scratch/score-stats.test.ts`), D-061.
+- `ProfileAnalytics` (`src/components/results/profile-analytics.tsx`) holds the four-tile logic; v1/05 needs the same numbers
+  scoped to one teacher's quizzes, so move that maths into a shared helper rather than copying it (D-063 "Revisit if").
+- `ScoreTrendChart` (client; draws after hydration via `useIsClient`) and `StatTile`/`StatGrid`; charts use `--chart-2`, a hidden
+  data table and no animation (D-062).
+- Teachers see every finished attempt on their own quizzes, so the release rule (D-049) doesn't hide marks here; students do.
+- Links to add: student names on `src/app/teacher/quizzes/[quizId]/results/page.tsx` (currently link to the attempt) and the
+  teacher attempt page header.
 
 ## In scope — exact features
 1. **Student page for teachers** — user decision 2026-10-22: this teacher's quizzes only
