@@ -2460,7 +2460,13 @@ pins). Charts appear only on analytics pages (teacher results, student profile, 
 
 **How it works**
 `ChartContainer` sets up recharts' responsive wrapper and maps each data series to a CSS colour variable (`--chart-1` … `--chart-5`
-in `globals.css`). Those variables already switch for dark mode, so charts follow the theme. `ChartTooltip` gives styled hover
+in `globals.css`). Those variables already switch for dark mode, so charts follow the theme. Each chart shows one
+series, so it uses one colour: `--chart-2`, the theme's mid grey. It passes the 3:1 contrast check against both the light and
+dark card surfaces (checked with a palette validator). The validator flags it as "reads grey"; that check matters only when
+several hues must be told apart, which a single series doesn't need. The app has no dark-mode switch yet; the check forced the
+`.dark` class to confirm the chart would still read there. Every chart sits in a `<figure>` with a caption and a visually
+hidden data table, so screen readers get the numbers. The SVG itself is `aria-hidden`. Animation is off
+(`isAnimationActive={false}`), which also covers users who prefer reduced motion. `ChartTooltip` gives styled hover
 tooltips. recharts is a client-side (browser) library, so chart components are `"use client"`. Next.js splits client code per
 route, so pages without a chart (including the exam) never download it.
 
