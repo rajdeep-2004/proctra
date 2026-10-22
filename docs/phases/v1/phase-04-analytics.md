@@ -11,7 +11,15 @@
 Teachers see how a quiz went at a glance; students see how they are doing over time.
 
 ## Previous phase summary
-<!-- Filled at /phase-start. -->
+v1/03 (merged 6ebb611): leaderboard ties go to the earlier finish (D-059, supersedes D-025), boards show a "Finished"
+column with seconds, the teacher attempt page and student result use stat tiles + answer tags, and accuracy is
+correct ÷ answered ("No answers" when nothing was answered, D-060). Reuse here:
+- `StatTile` / `StatGrid` (`src/components/results/stat-tile.tsx`) and `ResultCounts` (`result-counts.tsx`).
+- `src/lib/attempt-stats.ts`: `durationMs`, `formatDuration`, `accuracy`, `formatPercent` (pure, tested in `.scratch/`).
+- `LocalTime format="date"` (`src/lib/datetime.ts` `formatLocal`) for the date-only "Taken" column (2.2).
+- Pages to change: `src/app/student/profile/page.tsx` (uses `listMyAttempts`) and
+  `src/app/teacher/quizzes/[quizId]/results/page.tsx`.
+- Release rules (D-049) still apply: never show marks or accuracy for unreleased results.
 
 ## In scope — exact features
 1. **Stats helper**
