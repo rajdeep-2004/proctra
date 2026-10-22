@@ -38,9 +38,9 @@ const TAB_INFO: Record<TeacherTab, { label: string; empty: string }> = {
 
 async function QuizTabs({ searchParams }: { searchParams: SearchParams }) {
   const user = await requirePageUser("teacher");
-  const tab = parseTab((await searchParams).tab, TEACHER_TABS);
+  const tab = parse,Tab((await searchParams).tab, TEACHER_TABS);
   const quizzes = await listTeacherQuizzes(user.id);
-  const now = new Date(); // server time decides live vs closed (D-058)
+  const now = new Date();
   const counts = countTeacherTabs(quizzes, now);
   const visible = tab === "all" ? quizzes : quizzes.filter((q) => teacherTabOf(q, now) === tab);
   const tabs = TEACHER_TABS.map((t) => ({ value: t, label: TAB_INFO[t].label, count: counts[t], href: t === "all" ? "/teacher" : `/teacher?tab=${t}` }));
