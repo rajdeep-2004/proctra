@@ -36,7 +36,7 @@ flowchart LR
 |---|---|---|
 | Desktop shell | Electron 44.9 (Node 24) + electron-builder (phase 07) | D-002, D-012 |
 | Frontend | Next.js 16.4 (App Router, Cache Components) + React 19.3 + TypeScript | D-003 |
-| Styling / UI | Tailwind CSS + shadcn/ui; DevClub UI Animated Counter (result score) + GSAP stagger on dashboards | D-015, D-053 |
+| Styling / UI | Tailwind CSS + shadcn/ui; DevClub UI Animated Counter (result score) + GSAP stagger on dashboards; shadcn `chart` + recharts on analytics pages only | D-015, D-053, D-062 |
 | Backend | Next.js route handlers under `/api/v1` + service layer | D-003 |
 | Validation | Zod | D-011 |
 | Database | MongoDB Atlas (free tier) + Mongoose | D-004 |
@@ -67,11 +67,12 @@ proctra/
 │   │   ├── auth/, layout/  # sign-in/up forms, app header, back button, link tabs (D-058)
 │   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
 │   │   ├── motion/         # StaggerIn (GSAP entrance for dashboard lists; never on exam screens)
-│   │   ├── results/        # leaderboard view (live polling) + shared page + button, event timeline, StatTile/StatGrid, ResultCounts tags
+│   │   ├── results/        # leaderboard view (live polling) + shared page + button, event timeline, StatTile/StatGrid, ResultCounts tags,
+│   │   │                   #   QuizAnalytics + ScoreDistributionChart (teacher), ProfileAnalytics + ScoreTrendChart (student) (D-061–D-063)
 │   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue/useAutosave, useExamCamera, useSnapshots, useProctorEvents
 │   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
-│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · shared: utils (cn), quiz-tabs (tab classification, pure), attempt-stats (duration, accuracy, pure)
+│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · shared: utils (cn), quiz-tabs (tab classification, pure), attempt-stats (duration, accuracy, pure), score-stats (summary, score %, pooled accuracy, histogram, pure)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot

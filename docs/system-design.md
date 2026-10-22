@@ -151,6 +151,15 @@ sequenceDiagram
 4. Response: name, rank, score only, plus `live` (exam not over or someone still writing) and `stillWriting`.
 5. While `live`, the page re-fetches every 10 s; when everyone is final it stops. No push channel (D-014).
 
+### Flow: Analytics (v1/04, D-061–D-063)
+1. No extra queries: the teacher results page reuses `listSubmissions` rows; the profile reuses `listMyAttempts` rows.
+2. Numbers are computed per request on the server with pure helpers (`score-stats.ts`): summary (count, mean, median, min,
+   max), score % (marks ÷ max), pooled accuracy, 10% histogram buckets (+ "Below 0%" only when needed).
+3. Teacher: marks stats and the distribution use finished attempts only. Student: "Tests taken" counts finished attempts;
+   every marks-based number uses released results only. `score` is already `null` before release, so the guard lives in the service.
+4. Charts are client components (recharts). The trend chart draws only after hydration because its dates are the viewer's
+   local dates. Each chart also renders a visually hidden table for screen readers; animation is off.
+
 ## 3. State and data ownership
 | Data | Source of truth | Copies |
 |---|---|---|

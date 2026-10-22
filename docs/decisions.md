@@ -73,6 +73,9 @@ Rules:
 | D-058 | 2026-10-22 | v1/02 | Dashboard tabs as links (`?tab=`), classified on the server | Active |
 | D-059 | 2026-10-22 | v1/03 | Leaderboard ties broken by earlier finish time | Active |
 | D-060 | 2026-10-22 | v1/03 | Attempt summaries: duration, accuracy (correct ÷ answered), shared stat tiles | Active |
+| D-061 | 2026-10-22 | v1/04 | Analytics numbers: median, pooled accuracy, 10% score buckets | Active |
+| D-062 | 2026-10-22 | v1/04 | Charts: shadcn `chart` + recharts, analytics pages only | Active |
+| D-063 | 2026-10-22 | v1/04 | Profile analytics: released results only; answer counts in `/me/attempts` | Active |
 
 ---
 
@@ -2387,3 +2390,140 @@ only renders them inside the "released" branch, so no marks or accuracy leak bef
 **Revisit if**
 Teachers want accuracy per question (that's question analytics, a different feature).
 
+
+### D-061 — Analytics numbers: median, pooled accuracy, 10% score buckets
+- **Date:** 2026-10-22
+- **Phase:** v1/04 — Analytics: results & profile
+- **Status:** Active
+- **Type:** Definitions + algorithm
+
+**Context**
+Issues 1.6 and 2.2 ask for summary numbers across many attempts (a whole quiz for the teacher, a student's history for the student).
+"Average" and "accuracy" can be computed in more than one way, and the way you pick changes the answer, so the rules are written
+down here.
+
+**Decision**
+- **Summary** of a list = count, mean, **median**, min, max. An empty list gives count 0 and `null`s, so the UI can show "None
+  yet" instead of `NaN`.
+- **Score %** = marks ÷ maximum marks. It can go below 0 with negative marking; it is `null` if the maximum is 0.
+- **Accuracy across attempts is pooled**: (all correct answers) ÷ (all answered questions), not the average of each attempt's
+  accuracy.
+- **Distribution** = ten buckets of 10% each. A bucket includes its lower edge (exactly 10% → "10–20%"); 100% goes in the last
+  bucket. If any score is negative, one extra "Below 0%" bucket appears in front. Without negatives it stays hidden.
+
+**Alternatives rejected**
+- *Average of per-attempt accuracies:* one 1-question quiz answered wrong (0%) would count as much as a 40-question quiz at 90%.
+  Pooling weights each answer equally, which is what "how often are my answers right" means.
+- *Buckets in marks instead of %:* the student profile mixes quizzes with different maximums, and a teacher reading "70–80%" doesn't
+  need to know the maximum. Percent works for both pages.
+- *Clamping negative scores into 0–10%:* hides that negative marking pushed someone below zero.
+- *Fewer buckets (e.g. 5):* with small classes most buckets would be empty either way; 10% steps match how marks are usually read.
+
+**How it works**
+`summarize` copies and sorts the list (never mutates the input). With an odd count the median is the middle value; with an even
+count it is the mean of the two middle values. `histogram` turns each ratio into a bucket index with `floor(ratio × 10)`, capped at 9.
+Floating-point maths can make 0.7 × 10 come out as 6.9999…, which would drop a 70% score into "60–70%". A tiny `1e-9` nudge
+before `floor` prevents that. `pooledAccuracy` sums the counts and reuses `accuracy` from D-060, so "nothing answered" is still
+`null` ("No answers").
+
+**Files touched**
+- `src/lib/score-stats.ts` (new), tested in `.scratch/score-stats.test.ts` (empty list, one item, odd/even median, negative marks,
+  bucket edges).
+
+**Concepts worth learning**
+- *Mean vs median:* one very low score pulls the mean down a lot but barely moves the median. Showing both tells a teacher if a
+  few outliers are skewing the average.
+- *Pooled vs averaged ratios* (Simpson's-paradox territory): averaging percentages ignores how big each group was.
+- *Floating-point error:* decimals like 0.7 have no exact binary form, so compare or floor with a small tolerance.
+
+**Revisit if**
+Classes get large enough that a finer histogram (5% buckets) would show more, or teachers ask for per-question statistics.
+
+### D-062 — Charts: shadcn `chart` + recharts, analytics pages only
+- **Date:** 2026-10-22
+- **Phase:** v1/04 — Analytics: results & profile
+- **Status:** Active
+- **Type:** Dependency
+
+**Context**
+On 2026-10-22 the user picked "stat cards + small charts" for analytics. The app had no chart library, and drawing axes,
+tooltips and responsive sizing by hand in SVG is a lot of code to get right and accessible.
+
+**Decision**
+Add shadcn's `chart` component (`src/components/ui/chart.tsx`), which wraps **recharts** (`^3.8.0`, the version the shadcn CLI
+pins). Charts appear only on analytics pages (teacher results, student profile, and v1/05's student page), never on exam screens.
+
+**Alternatives rejected**
+- *Hand-written SVG:* fine for one bar chart, but each new chart would need its own axes, tooltips and resizing.
+- *Chart.js:* draws on a `<canvas>`, so there is no DOM for screen readers and colours can't come from our CSS variables. It also
+  doesn't match the shadcn styling already in the app.
+- *A bigger library (ECharts, Nivo):* heavier, and we need two simple charts.
+
+**How it works**
+`ChartContainer` sets up recharts' responsive wrapper and maps each data series to a CSS colour variable (`--chart-1` … `--chart-5`
+in `globals.css`). Those variables already switch for dark mode, so charts follow the theme. Each chart shows one
+series, so it uses one colour: `--chart-2`, the theme's mid grey. It passes the 3:1 contrast check against both the light and
+dark card surfaces (checked with a palette validator). The validator flags it as "reads grey"; that check matters only when
+several hues must be told apart, which a single series doesn't need. The app has no dark-mode switch yet; the check forced the
+`.dark` class to confirm the chart would still read there. Every chart sits in a `<figure>` with a caption and a visually
+hidden data table, so screen readers get the numbers. The SVG itself is `aria-hidden`. Animation is off
+(`isAnimationActive={false}`), which also covers users who prefer reduced motion. `ChartTooltip` gives styled hover
+tooltips. recharts is a client-side (browser) library, so chart components are `"use client"`. Next.js splits client code per
+route, so pages without a chart (including the exam) never download it.
+
+**Files touched**
+- `package.json` / `package-lock.json` (+ `recharts`), `src/components/ui/chart.tsx` (generated by `npx shadcn add chart`).
+
+**Concepts worth learning**
+- *SVG vs canvas charts:* SVG elements are part of the page (styleable, inspectable); canvas is one bitmap.
+- *Code splitting:* a library imported only by some pages only ships to those pages.
+
+**Revisit if**
+Charts need more than bars and lines, or the analytics bundle becomes a measurable part of v1/06's load times.
+
+### D-063 — Profile analytics: released results only; answer counts in `/me/attempts`
+- **Date:** 2026-10-22
+- **Phase:** v1/04 — Analytics: results & profile
+- **Status:** Active
+- **Type:** API + UI + privacy rule
+
+**Context**
+Issue 2.2: the student profile should show how they are doing over time. The phase rule is "unreleased results are excluded
+from stats". The release rule (D-049) says no marks before the teacher's release time.
+
+**Decision**
+- Tiles: **Tests taken** (every finished attempt, plus "N awaiting results" when some aren't released), **Average score** and
+  **Best score** (score % from D-061), and **Accuracy** (pooled, D-061). The last three use **released results only**.
+- **Score over time** line chart: one point per released result, oldest first, by finish time. It appears only with 2 or more
+  points, because one point isn't a trend.
+- The "Taken" column shows the date only; the time no longer appears there.
+- `GET /api/v1/me/attempts` → `score` now also carries `correct` / `incorrect` / `unanswered`, still `null` before release.
+
+**Alternatives rejected**
+- *Leave unreleased attempts out of "Tests taken" too:* the student knows they took the test, and the table already lists it.
+  Hiding it would only make the number look wrong. A count reveals no marks.
+- *Compute accuracy in the API:* the page would then need one more field for a single tile; returning the three counts lets
+  the UI reuse the pure helpers, and they are the same counts the released result page already shows.
+- *Draw the chart on the server:* the X axis shows dates in the viewer's time zone, which the server (UTC on Vercel) doesn't
+  know. Drawing it on the server and again in the browser could show different dates (a hydration mismatch).
+
+**How it works**
+`listMyAttempts` builds `score` only when the attempt is finished **and** released, so the counts inherit the same guard as
+the marks. `ProfileAnalytics` (a server component) filters to rows with a `score`, turns each into a ratio, and feeds
+`summarize` / `pooledAccuracy`. It passes plain `{ id, submittedAt, quizTitle, percent }` points to `ScoreTrendChart`. That
+client component uses the existing `useIsClient` hook (the same trick as `LocalTime`) to render a placeholder on the server and the chart once in
+the browser, so dates are local and React sees no mismatch. Auto-submitted attempts use `submittedAt` (set to the deadline);
+`deadline` is only a fallback.
+
+**Files touched**
+- `docs/api-contracts.md`, `src/services/attempt-service.ts` (`MyAttemptRow.score`)
+- `src/components/results/profile-analytics.tsx`, `src/components/results/score-trend-chart.tsx`, `src/app/student/profile/page.tsx`
+
+**Concepts worth learning**
+- *Hydration:* React re-runs the server's HTML in the browser and expects identical output; anything that depends on the
+  browser (time zone, screen size) must wait until after hydration.
+- *Least privilege for data:* the guard lives in one place (the service), so every page built on it gets the rule for free.
+
+**Revisit if**
+Students take enough quizzes that the trend needs a date range filter, or a teacher view of the same student (v1/05) wants
+these exact numbers. In that case, move the tile logic into a shared helper.

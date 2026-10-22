@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | review |
 | Branch | `phase/v1-04-analytics` |
 | Depends on | Phase v1/03 |
 | Issues | 1.6, 2.2 |
@@ -43,28 +43,34 @@ correct ÷ answered ("No answers" when nothing was answered, D-060). Reuse here:
 - `decisions.md` → D-049 (release rules)
 
 ## Tasks
-- [ ] 04.1 — Stats helper → `feat(results): add stats helper`
-- [ ] 04.2 — Add shadcn chart + recharts → `chore(ui): add chart component`
-- [ ] 04.3 — Teacher results analytics section → `feat(teacher): add quiz results analytics`
-- [ ] 04.4 — Student profile analytics + date-only Taken column → `feat(student): add profile analytics`
-- [ ] 04.5 — Docs pass → `docs: update docs for phase v1/04`
+- [x] 04.1 — Stats helper → `feat(results): add stats helper`
+- [x] 04.2 — Add shadcn chart + recharts → `chore(ui): add chart component`
+- [x] 04.3 — Teacher results analytics section → `feat(teacher): add quiz results analytics`
+- [x] 04.4 — Student profile analytics + date-only Taken column → `feat(student): add profile analytics`
+- [x] 04.5 — Docs pass → `docs: update docs for phase v1/04`
 
 ## Done criteria
-- [ ] Lint + build pass; stats `.scratch/` checks pass
-- [ ] Charts readable in light and dark mode, have text alternatives, respect reduced motion
-- [ ] No unreleased marks visible to students anywhere
-- [ ] Docs match what was built; decisions logged
+- [x] Lint + build pass; stats `.scratch/` checks pass
+- [x] Charts readable in light and dark mode, have text alternatives, respect reduced motion
+- [x] No unreleased marks visible to students anywhere
+- [x] Docs match what was built; decisions logged
 
 ## How to verify
 1. A quiz with 3+ finished attempts → check tiles against hand-computed numbers.
 2. Student with several released results → profile tiles + trend; an unreleased one is excluded.
 
 ## Phase summary
-<!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
-- **Next phase should know:**
+- **Built:** pure stats helper (`src/lib/score-stats.ts`: summary, score %, pooled accuracy, 10% histogram);
+  shadcn `chart` + recharts; teacher results page now shows six tiles (Submitted, In progress, Average, Median, Highest,
+  Lowest) and a score distribution bar chart; student profile shows Tests taken, Average score, Best score, Accuracy and a
+  score-over-time line chart, and the "Taken" column is date only. `/me/attempts` released scores now carry answer counts.
+- **Key decisions:** D-061 (median, pooled accuracy, bucket edges, "Below 0%"), D-062 (recharts, one grey series, hidden
+  data table, no animation), D-063 (released-only analytics, "Tests taken" counts all finished, trend drawn after hydration).
+- **Known limitations:** the app has no dark-mode switch yet; dark was checked by forcing the `.dark` class. The trend chart
+  needs 2+ released results. The teacher's Lowest/Highest show raw marks; negative marks print as "-2".
+- **Next phase should know:** reuse `ProfileAnalytics`' logic for v1/05 (same four tiles + `ScoreTrendChart`), but feed it
+  only this teacher's quizzes. Consider moving the tile maths into a shared helper then (D-063 "Revisit if").
+  `useIsClient` (`src/lib/use-is-client.ts`) is the hook for anything that needs the viewer's time zone.
 
 ## Next phase preview
 v1/05 reuses the stats helper and chart for the teacher's student page.

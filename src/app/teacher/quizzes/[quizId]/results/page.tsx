@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { BackButton } from "@/components/layout/back-button";
 import { LocalTime } from "@/components/local-time";
 import { AttemptStatusBadge } from "@/components/quiz/attempt-status-badge";
+import { QuizAnalytics } from "@/components/results/quiz-analytics";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AppError } from "@/lib/api-response";
@@ -40,8 +41,6 @@ async function Results({ params }: { params: Params }) {
   const parsed = ObjectIdString.safeParse((await params).quizId);
   if (!parsed.success) notFound();
   const { quiz, rows } = await load(user.id, parsed.data);
-  const finished = rows.filter((r) => r.status !== "active");
-  const avg = finished.length ? finished.reduce((s, r) => s + (r.score?.total ?? 0), 0) / finished.length : null;
 
   return (
     <section className="grid gap-6">
@@ -49,13 +48,11 @@ async function Results({ params }: { params: Params }) {
         <div className="grid gap-1">
           <BackButton href={`/teacher/quizzes/${quiz.id}`} label="Edit quiz" />
           <h1 className="text-2xl font-semibold tracking-tight">{quiz.title} results</h1>
-          <p className="text-sm text-muted-foreground">
-            {finished.length} submitted · {rows.length - finished.length} in progress
-            {avg !== null && <> · average {fmt(avg)} / {fmt(quiz.maxPossible)}</>}
-          </p>
         </div>
         <Button variant="outline" asChild><Link href={`/teacher/quizzes/${quiz.id}/leaderboard`}>Leaderboard</Link></Button>
       </div>
+
+      {rows.length > 0 && <QuizAnalytics rows={rows} maxPossible={quiz.maxPossible} />}
 
       {rows.length === 0 ? (
         <p className="text-muted-foreground">No one has started this quiz yet.</p>
