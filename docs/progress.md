@@ -1,8 +1,8 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/06 — Production performance (`not-started`)
-**Branch:** phase/v1-06-performance
+**Current phase:** v1/06 — Release v1.0.0 (`not-started`)
+**Branch:** phase/v1-06-release
 **Profile:** lean
 
 ## Phases
@@ -16,8 +16,8 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 | 03 | Leaderboard & attempt details | done | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | 2026-10-22 | 2026-10-22 |
 | 04 | Analytics: results & profile | done | phase/v1-04-analytics | 1.6, 2.2 | 2026-10-22 | 2026-10-22 |
 | 05 | Teacher's student view | done | phase/v1-05-teacher-student-view | 1.4 | 2026-10-22 | 2026-10-22 |
-| 06 | Production performance | not-started | phase/v1-06-performance | 3.3 | | |
-| 07 | Release v1.0.0 | not-started | phase/v1-07-release | — | | |
+| 06 | Release v1.0.0 | not-started | phase/v1-06-release | — | | |
+| — | ~~Production performance~~ | dropped | — | 3.3 | 2026-10-22 | 2026-10-22 |
 
 ### v0 — shipped as v0.1.0 (deadline 2026-10-25 met)
 | # | Phase | Status | Branch | Target | Started | Closed |
@@ -33,6 +33,13 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-22 (v1/06 performance, dropped)
+- Measured production before any change: functions run in `iad1` (Washington, D.C.), Atlas in Mumbai; warm API calls
+  0.8–1.2 s, first request after 10 min idle 5.3 s; `/api/v1/me/attempts` hung twice early in a run (not reproduced on demand).
+- User decision: drop the performance phase. They attribute the slowness to cold starts and find deeper tuning out of scope
+  for a capstone (D-065). Old phase 07 (release) is now v1/06. Nothing was changed in code or production.
+- Next: `/phase-start v1/06` (release v1.0.0).
+
 ### 2026-10-22 (phase v1/05)
 - Done: tasks 05.1–05.3. Teacher's student page + API scoped to the teacher's own quizzes (D-064); tile maths shared with
   the profile (`historyStats`, `HistoryAnalytics`); names on results/attempt pages link to it.
@@ -126,6 +133,8 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 - Blockers: none. User needs MongoDB Atlas, Cloudinary and Vercel accounts before phases 01/05.
 
 ## Known debt
+- Vercel functions run in `iad1`, far from the Atlas cluster (Mumbai): every DB round trip crosses the world; cold start ~5 s.
+  A rare long hang was seen on `/api/v1/me/attempts` (D-065).
 - No rate limiting on API routes (system-design §11).
 - Manual deploys only (`npx vercel deploy --prod` from `main` after each merge) (D-031).
 - Auth.js is a pinned **beta** (`5.0.0-beta.32`); fallback plan is `jose` + own cookie (D-033).
@@ -134,6 +143,8 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 - Snapshots have no automatic retention/deletion yet (PRD open question 1).
 
 ## Parked ideas
+- Production performance (ex v1/06, D-065): pin functions to `bom1` (Mumbai) via `vercel.json` `regions`; add
+  `socketTimeoutMS` / `maxIdleTimeMS` to the Mongo connection; re-measure with `.scratch/perf.mts`.
 - Drag-and-drop question reordering (up/down buttons for now).
 - Pluralize counts on student quiz cards ("1 questions" → "1 question"); found in v1/02.
 - Resume at the last viewed question instead of question 1.

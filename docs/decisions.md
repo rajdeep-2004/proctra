@@ -77,6 +77,7 @@ Rules:
 | D-062 | 2026-10-22 | v1/04 | Charts: shadcn `chart` + recharts, analytics pages only | Active |
 | D-063 | 2026-10-22 | v1/04 | Profile analytics: released results only; answer counts in `/me/attempts` | Active |
 | D-064 | 2026-10-22 | v1/05 | Teacher student view: owner-scoped, one 404 for unknown or not-mine | Active |
+| D-065 | 2026-10-22 | v1/06 | Drop the production performance phase; record findings as known debt | Active |
 
 ---
 
@@ -2237,7 +2238,7 @@ stable release, which fits a product that is now deployed and used. Folder `vN/`
 - `v0.2.0`: valid semver, but the folder name (`v1/`) and tag wouldn't match.
 
 **Files touched**
-- `docs/progress.md`, `docs/phases/v1/phase-07-release.md` (the actual `package.json` bump happens in v1/07)
+- `docs/progress.md`, `docs/phases/v1/phase-06-release.md` (the actual `package.json` bump happens in the release phase; was v1/07 until D-065)
 
 **Revisit if**
 The user wants to stay pre-1.0 until signing/notarization is done.
@@ -2480,7 +2481,7 @@ route, so pages without a chart (including the exam) never download it.
 - *Code splitting:* a library imported only by some pages only ships to those pages.
 
 **Revisit if**
-Charts need more than bars and lines, or the analytics bundle becomes a measurable part of v1/06's load times.
+Charts need more than bars and lines, or the analytics bundle becomes a measurable part of production load times.
 
 ### D-063 — Profile analytics: released results only; answer counts in `/me/attempts`
 - **Date:** 2026-10-22
@@ -2585,3 +2586,53 @@ The response builds `score` field by field. It never includes answers or correct
 
 **Revisit if**
 Teachers share quizzes (co-teaching), or a school wants a teacher-wide student directory (out of scope for v1/05).
+
+### D-065 — Drop the production performance phase; record findings as known debt
+- **Date:** 2026-10-22
+- **Phase:** v1/06 (was: Production performance) — dropped before any change
+- **Status:** Active
+- **Type:** Scope (release plan)
+
+**Context**
+Issue 3.3 said the app feels slow in production and in the `.dmg`. Phase v1/06 was planned as "measure first, then fix". A
+first round of measurements was taken against production (running the latest `main`) before any change.
+
+**What was measured**
+- `x-vercel-id: bom1::iad1::…`: requests enter Vercel in Mumbai, but **functions run in `iad1` (Washington, D.C.)**. The
+  Atlas cluster is in Mumbai (AWS ap-south-1). Every database round trip crosses the world.
+- Warm requests: simple API calls 0.8–1.2 s; pages 0.8–1.1 s in total (the shell arrives in ~0.1 s, then data streams in).
+  The teacher dashboard took 4.8 s and results 2.4 s on first load.
+- First request after 10 minutes idle: 5.3 s (cold function start + new database connection from `iad1`).
+- `GET /api/v1/me/attempts` hung twice early in a measurement run (once > 5 minutes, once > 30 s), then answered in ~0.95 s.
+  It did not hang again after a 10-minute idle test. Hobby-plan logs had no record of it.
+
+**Decision**
+The user dropped the phase on 2026-10-22. In their view the slowness is mostly the server starting up again after being idle
+(a cold start), and digging into each infrastructure limit is beyond what this capstone needs. No code or production setting
+was changed. The release phase (was v1/07) is now v1/06. The findings above go into `progress.md` as known debt, and the fixes
+are parked.
+
+**Alternatives rejected**
+- *Pin the functions to Mumbai (`bom1`) now:* likely the single biggest win (each query ~200 ms → a few ms). The user
+  preferred to stop here; it stays parked.
+- *Investigate the rare hang further:* it couldn't be reproduced on demand, and the paid log retention needed to see it
+  isn't available on the Hobby plan.
+
+**How it works (for whoever picks this up)**
+- *Region:* add `vercel.json` with `"regions": ["bom1"]` (or set Function Region in the Vercel dashboard), deploy a preview,
+  re-run `.scratch/perf.mts` (`BASE=… LABEL=after`).
+- *Hang:* a likely cause is a database socket that went stale while the serverless function was frozen. The driver waits
+  forever because `socketTimeoutMS` is unset. Setting `socketTimeoutMS` (e.g. 20 s) and `maxIdleTimeMS` (e.g. 60 s) in
+  `src/lib/db.ts` turns that hang into a fast error plus a retry.
+
+**Files touched**
+- `docs/phases/v1/phase-06-performance.md` (removed), `docs/phases/v1/phase-06-release.md` (renamed from phase-07),
+  `docs/progress.md`, references in `phase-05` and earlier decision entries.
+
+**Concepts worth learning**
+- *Cold start:* serverless functions are stopped when idle; the next request pays for starting the runtime and reconnecting.
+- *Latency is per round trip:* a page that makes 4 sequential queries 200 ms apart waits 800 ms just in transit, which is
+  why the region matters more than raw server speed.
+
+**Revisit if**
+Users complain about load times after release, or the project moves beyond the capstone. The parked items are ready to do.
