@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/v1-04-analytics` |
 | Depends on | Phase v1/03 |
 | Issues | 1.6, 2.2 |
