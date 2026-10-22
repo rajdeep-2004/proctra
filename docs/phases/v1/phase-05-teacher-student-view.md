@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/v1-05-teacher-student-view` |
 | Depends on | Phase v1/04 |
 | Issues | 1.4 (student analytics) |
