@@ -42,7 +42,7 @@ From v1/01 (Copy & navigation cleanup, merged 2026-10-22):
 ## Tasks
 - [x] 02.1 — Tabs UI primitive (shadcn `tabs`) + URL-synced tab helper → `feat(ui): add url-synced tabs`
 - [x] 02.2 — Teacher dashboard tabs + title search → `feat(teacher): add quiz tabs and search`
-- [ ] 02.3 — Student dashboard tabs → `feat(student): split quizzes into tabs`
+- [x] 02.3 — Student dashboard tabs → `feat(student): split quizzes into tabs`
 - [ ] 02.4 — Docs pass → `docs: update docs for phase v1/02`
 
 ## Done criteria
