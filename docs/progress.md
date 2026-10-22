@@ -1,8 +1,8 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/01 — Copy & navigation cleanup (`not-started`)
-**Branch:** —
+**Current phase:** v1/01 — Copy & navigation cleanup (`in-progress`)
+**Branch:** phase/v1-01-copy-nav
 **Profile:** lean
 
 ## Phases
@@ -11,7 +11,7 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 ### v1 — next release (from the user's v1 issues list, planned 2026-10-22)
 | # | Phase | Status | Branch | Issues | Started | Closed |
 |---|---|---|---|---|---|---|
-| 01 | Copy & navigation cleanup | not-started | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | | |
+| 01 | Copy & navigation cleanup | in-progress | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | 2026-10-22 | |
 | 02 | Quiz list tabs | not-started | phase/v1-02-quiz-tabs | 1.1, 2.1 | | |
 | 03 | Leaderboard & attempt details | not-started | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | | |
 | 04 | Analytics: results & profile | not-started | phase/v1-04-analytics | 1.6, 2.2 | | |

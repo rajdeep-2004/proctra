@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/v1-01-copy-nav` |
 | Depends on | Phase v0/07 (v0.1.0 released) |
 | Issues | 1.2, 1.3, 1.4 (em dash), 2.3 (back navigation), 3.1, 3.2 |
@@ -12,7 +12,12 @@ The app reads cleanly: a simpler navbar, no em dashes anywhere in the UI, no rep
 misconduct" disclaimers, and real buttons for back navigation instead of small text links.
 
 ## Previous phase summary
-<!-- Filled at /phase-start from v0/07's "Phase summary". -->
+From v0/07 (Ship, released as v0.1.0 on 2026-10-20): the full product works end to end in production and from the per-chip `.dmg`s.
+- UI: shadcn/ui primitives in `src/components/ui/` (`button`, `badge`, `card`, `table`, …); light DevClub counter + GSAP stagger on
+  dashboards only, never on exam screens (D-053).
+- Header: `src/components/layout/app-header.tsx` (role label + per-role nav list; user menu streams in under `<Suspense>`, D-026).
+- Back links today are plain text links: student quiz page, student result page, quiz editor, teacher results, teacher attempt page.
+- Known debt carried over: CSP, rate limiting, snapshot retention. Decisions up to D-054 (+ D-055/D-056 from v1 planning).
 
 ## In scope — exact features
 1. **Navbar (3.1)**
