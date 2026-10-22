@@ -1,7 +1,7 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/02 — Quiz list tabs (`in-progress`)
+**Current phase:** v1/02 — Quiz list tabs (`review`)
 **Branch:** phase/v1-02-quiz-tabs
 **Profile:** lean
 
@@ -12,7 +12,7 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 | # | Phase | Status | Branch | Issues | Started | Closed |
 |---|---|---|---|---|---|---|
 | 01 | Copy & navigation cleanup | done | phase/v1-01-copy-nav | 1.2, 1.3, 1.4, 2.3, 3.1, 3.2 | 2026-10-22 | 2026-10-22 |
-| 02 | Quiz list tabs | in-progress | phase/v1-02-quiz-tabs | 1.1, 2.1 | 2026-10-22 | |
+| 02 | Quiz list tabs | review | phase/v1-02-quiz-tabs | 1.1, 2.1 | 2026-10-22 | |
 | 03 | Leaderboard & attempt details | not-started | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | | |
 | 04 | Analytics: results & profile | not-started | phase/v1-04-analytics | 1.6, 2.2 | | |
 | 05 | Teacher's student view | not-started | phase/v1-05-teacher-student-view | 1.4 | | |
@@ -33,6 +33,11 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-22 (phase v1/02)
+- Done: tasks 02.1–02.4. URL tabs on both dashboards + teacher title search (D-058).
+- Verified: lint + build, unit tests (7 files incl. new quiz-tabs 5/5), browser checks 15/15 with fixtures in every state.
+- Next: user review → `/phase-close approve` → `/phase-start v1/03` (leaderboard & attempt details).
+
 ### 2026-10-22 (phase v1/01)
 - Done: tasks 01.1–01.4. Header simplified, shared back button, em dashes removed from all UI copy, results disclaimer removed (D-057).
 - Verified: lint + build, scratch unit tests (6/6 files), signed-in browser check of 9 pages (9/9).
@@ -106,6 +111,7 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Parked ideas
 - Drag-and-drop question reordering (up/down buttons for now).
+- Pluralize counts on student quiz cards ("1 questions" → "1 question"); found in v1/02.
 - Resume at the last viewed question instead of question 1.
 - Developer ID signing + notarization (removes Gatekeeper steps).
 - Retakes; cohort assignment; configurable snapshot interval; automated snapshot retention cleanup; Windows build; code signing (PRD §5 Later).
