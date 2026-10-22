@@ -145,7 +145,7 @@ Purpose: one student's single attempt at one quiz, including answers and final s
 | Fields | Type | Why (which query) |
 |---|---|---|
 | `{ quizId: 1, studentId: 1 }` | unique | one attempt per student per quiz; start/resume lookup; blocks double-start races |
-| `{ studentId: 1, startedAt: -1 }` | compound | student profile history, "active attempt to resume" |
+| `{ studentId: 1, startedAt: -1 }` | compound | student profile history, "active attempt to resume", teacher's student page (+ `quizId $in` my quizzes, D-064) |
 | `{ quizId: 1, status: 1, "score.total": -1 }` | compound | teacher submissions list + leaderboard sort |
 
 **Relations:** references `quizzes` and `users`. Snapshots and events reference the attempt.
