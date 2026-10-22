@@ -33,7 +33,7 @@ export async function LeaderboardPage({ role, rawQuizId, backHref, backLabel }: 
       <Link href={backHref(parsed.data)} className="text-sm text-muted-foreground hover:text-foreground">← {backLabel}</Link>
       {outcome.ok ? (
         <>
-          <h1 className="text-2xl font-semibold tracking-tight">{outcome.board.quizTitle} — leaderboard</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{outcome.board.quizTitle} leaderboard</h1>
           <LeaderboardView initial={outcome.board} />
         </>
       ) : (

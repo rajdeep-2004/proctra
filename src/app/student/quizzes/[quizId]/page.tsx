@@ -64,7 +64,7 @@ async function Detail({ params }: { params: Params }) {
           <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
             <dt className="text-muted-foreground">Starts</dt><dd><LocalTime iso={q.startsAt} /></dd>
             <dt className="text-muted-foreground">Ends</dt><dd><LocalTime iso={q.endsAt} /></dd>
-            <dt className="text-muted-foreground">Duration</dt><dd>{q.durationMinutes} minutes — everyone finishes at the end time, so starting late means less time</dd>
+            <dt className="text-muted-foreground">Duration</dt><dd>{q.durationMinutes} minutes. Everyone finishes at the end time, so starting late means less time.</dd>
             <dt className="text-muted-foreground">Questions</dt><dd>{q.questionCount}, multiple choice</dd>
             <dt className="text-muted-foreground">Marking</dt>
             <dd>{fmtMark(q.marking.correct)} correct · {fmtMark(q.marking.incorrect)} wrong · {fmtMark(q.marking.unanswered)} unanswered</dd>

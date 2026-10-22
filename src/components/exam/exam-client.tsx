@@ -29,7 +29,7 @@ export function ExamClient({ attempt }: { attempt: ActiveAttemptView }) {
     return (
       <div className="mx-auto grid max-w-lg gap-3 p-8 text-center">
         <h1 className="text-xl font-semibold">Open this exam in the Proctra desktop app</h1>
-        <p className="text-muted-foreground">Exams run in a full-screen window with the camera on. Your attempt is saved — resume it from the app.</p>
+        <p className="text-muted-foreground">Exams run in a full-screen window with the camera on. Your attempt is saved. Resume it from the app.</p>
       </div>
     );
   }
@@ -93,7 +93,7 @@ function Exam({ attempt }: { attempt: ActiveAttemptView }) {
     const allSaved = await autosave.flush(8000);
     if (!allSaved) {
       setSubmitState("error");
-      setSubmitError("Some answers haven't reached the server yet. Check your connection, then submit again — nothing is lost.");
+      setSubmitError("Some answers haven't reached the server yet. Check your connection, then submit again. Nothing is lost.");
       return;
     }
     if (await sendSubmit(3)) goToResult();

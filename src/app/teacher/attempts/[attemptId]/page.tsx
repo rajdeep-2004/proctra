@@ -99,7 +99,7 @@ async function Detail({ params }: { params: Params }) {
             <CardHeader><CardTitle className="text-base">Session events</CardTitle></CardHeader>
             <CardContent className="grid gap-3">
               <EventTimeline events={a.events} />
-              <p className="text-xs text-muted-foreground">Neutral facts about the exam session — not evidence of misconduct.</p>
+              <p className="text-xs text-muted-foreground">Neutral facts about the exam session, not evidence of misconduct.</p>
             </CardContent>
           </Card>
           <Card>

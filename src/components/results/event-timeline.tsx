@@ -33,7 +33,7 @@ export function EventTimeline({ events }: { events: { type: EventType; occurredA
             <LocalTime iso={e.occurredAt} className="w-40 shrink-0 tabular-nums text-muted-foreground" />
             <span>
               {LABEL[e.type]}
-              {end && <span className="text-muted-foreground"> — back after {secondsBetween(e.occurredAt, end.occurredAt)} s</span>}
+              {end && <span className="text-muted-foreground">, back after {secondsBetween(e.occurredAt, end.occurredAt)} s</span>}
             </span>
           </li>
         );

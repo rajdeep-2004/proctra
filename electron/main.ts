@@ -132,7 +132,7 @@ function openExamWindow(attemptId: string) {
   examAttemptId = attemptId;
   const examUrl = new URL(`/exam/${attemptId}`, APP_URL).href;
   examWindow = new BrowserWindow({
-    title: "Proctra — Exam",
+    title: "Proctra · Exam",
     show: false,
     kiosk: KIOSK,
     fullscreen: KIOSK,

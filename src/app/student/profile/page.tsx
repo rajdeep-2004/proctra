@@ -67,12 +67,12 @@ async function History() {
 }
 
 function Marks({ row }: { row: MyAttemptRow }) {
-  if (row.status === "active") return <span className="text-muted-foreground">—</span>;
+  if (row.status === "active") return <span className="text-muted-foreground">Pending</span>;
   if (!row.score) {
     return row.resultsReleaseAt ? (
       <span className="text-sm text-muted-foreground">from <LocalTime iso={row.resultsReleaseAt} /></span>
     ) : (
-      <span className="text-muted-foreground">—</span>
+      <span className="text-muted-foreground">Pending</span>
     );
   }
   return <span>{fmt(row.score.total)} <span className="text-muted-foreground">/ {fmt(row.score.maxPossible)}</span></span>;

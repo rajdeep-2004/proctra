@@ -58,7 +58,7 @@ export function SnapshotGallery({ attemptId, count }: { attemptId: string; count
         Private images. Links expire at <LocalTime iso={data.expiresAt} />.{" "}
         <button type="button" className="underline underline-offset-4" onClick={load}>Refresh links</button>
       </p>
-      {expired && <p className="text-sm text-destructive" role="alert">These links have expired — refresh to view again.</p>}
+      {expired && <p className="text-sm text-destructive" role="alert">These links have expired. Refresh to view again.</p>}
       <ul className="grid grid-cols-3 gap-2">
         {data.snapshots.slice(0, shown).map((s) => (
           <li key={s.id}>
