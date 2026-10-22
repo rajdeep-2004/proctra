@@ -72,6 +72,7 @@ Rules:
 | D-057 | 2026-10-22 | v1/01 | UI copy without em dashes; one shared back button; leaner header | Active |
 | D-058 | 2026-10-22 | v1/02 | Dashboard tabs as links (`?tab=`), classified on the server | Active |
 | D-059 | 2026-10-22 | v1/03 | Leaderboard ties broken by earlier finish time | Active |
+| D-060 | 2026-10-22 | v1/03 | Attempt summaries: duration, accuracy (correct ÷ answered), shared stat tiles | Active |
 
 ---
 
@@ -2349,4 +2350,40 @@ Example: Ravi 36 @10:20, Asha 36 @10:30, Meera 32 → 1 Ravi, 2 Asha, 3 Meera.
 
 **Revisit if**
 Teachers want a different tiebreak per quiz (e.g. duration, or shared ranks again).
+
+### D-060 — Attempt summaries: duration, accuracy (correct ÷ answered), shared stat tiles
+- **Date:** 2026-10-22
+- **Phase:** v1/03 — Leaderboard & attempt details
+- **Status:** Active
+- **Type:** UI + definitions
+
+**Context**
+Issues 1.4 and 2.3: the teacher's attempt header was one long text line, and the student result card had no duration or accuracy.
+
+**Decision**
+- **Duration** = `submittedAt − startedAt`, formatted "42 s" / "1 min 5 s" / "1 h 3 min". While the attempt is running it shows
+  "In progress".
+- **Accuracy** = correct ÷ **answered** (correct + wrong), rounded to a whole percent. Unanswered questions don't count, so accuracy
+  says "how often were your answers right" while marks already cover skipped questions. Nothing answered → "No answers"
+  (not 0%, which would be misleading).
+- One set of building blocks for every summary: `StatTile` / `StatGrid` (a `<dl>` grid of labelled values) and `ResultCounts`
+  (correct / wrong / unanswered as tags with icons and words, never colour alone). v1/04 analytics reuses `StatTile`.
+- One `LeaderboardButton` (outlined, trophy icon) on the result page and the quiz page; it only renders where results are released.
+- Leaderboard "Finished" times show seconds, because the tiebreak (D-059) can depend on seconds.
+
+**Alternatives rejected**
+- Accuracy = correct ÷ all questions: that is just marks again when marking is +1/0, and it punishes skipping twice.
+
+**How it works**
+`src/lib/attempt-stats.ts` holds the pure functions (`durationMs`, `formatDuration`, `accuracy`, `formatPercent`), tested in
+`.scratch/attempt-stats.test.ts`. Pages compute the numbers on the server from data the viewer may already see; the student page
+only renders them inside the "released" branch, so no marks or accuracy leak before release.
+
+**Files touched**
+- `src/lib/attempt-stats.ts`, `src/lib/datetime.ts` + `src/components/local-time.tsx` (`format`: datetime | date | time-seconds),
+  `src/components/results/{stat-tile,result-counts,leaderboard-button}.tsx`, teacher attempt page, student result page, start button
+- Also fixed a v1/01 miss: the leaderboard pages still had a "← Quiz/Results" text link; now `BackButton` ("Back to quiz/results").
+
+**Revisit if**
+Teachers want accuracy per question (that's question analytics, a different feature).
 

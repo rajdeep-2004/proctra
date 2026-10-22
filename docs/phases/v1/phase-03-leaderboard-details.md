@@ -55,7 +55,7 @@ From v1/02 (Quiz list tabs, merged 2026-10-22):
 - [x] 03.2 — Leaderboard table: end time column → `feat(results): show finish time on leaderboard`
 - [x] 03.3 — Teacher attempt header as badges + stat tiles → `feat(teacher): redesign attempt summary`
 - [x] 03.4 — Student result: duration, accuracy, leaderboard button → `feat(student): add duration and accuracy to result`
-- [ ] 03.5 — Docs pass → `docs: update docs for phase v1/03`
+- [x] 03.5 — Docs pass → `docs: update docs for phase v1/03`
 
 ## Done criteria
 - [ ] Lint + build pass; ranking `.scratch/` checks pass
