@@ -285,10 +285,13 @@ Errors: `400`, `403` (teacher), `404` (not mine), `409 ATTEMPT_CLOSED` (more tha
 Response `200`
 ```json
 { "data": [ { "id": "…", "quizId": "…", "quizTitle": "…", "startedAt": "…", "submittedAt": "…", "deadline": "…",
-  "status": "submitted", "released": true, "resultsReleaseAt": null, "score": { "total": 36, "maxPossible": 40 } } ] }
+  "status": "submitted", "released": true, "resultsReleaseAt": null,
+  "score": { "total": 36, "correct": 9, "incorrect": 0, "unanswered": 1, "maxPossible": 40 } } ] }
 ```
 Notes: only the caller's attempts, newest first, expired ones finalized first. Active attempts are included (`status: "active"`,
 `submittedAt: null`) so the profile can offer Resume. `score` is `null` while active or not yet released.
+v1/04: `score` also carries `correct` / `incorrect` / `unanswered` (for the profile's accuracy tile, D-063). They are the same
+counts the released result page already shows, so nothing new is exposed before release.
 
 ## 3. Desktop bridge (Electron preload → main IPC)
 Not HTTP, but a contract between the web app and the Electron shell.

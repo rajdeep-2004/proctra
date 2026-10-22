@@ -274,7 +274,8 @@ export type MyAttemptRow = {
   status: AttemptStatus;
   released: boolean;
   resultsReleaseAt: string | null;
-  score: { total: number; maxPossible: number } | null; // null while active or before release
+  // null while active or before release (D-049); counts feed the profile's accuracy tile (v1/04)
+  score: { total: number; correct: number; incorrect: number; unanswered: number; maxPossible: number } | null;
 };
 
 /** The caller's own attempts, newest first. Expired ones are finalized first so statuses are current. */
@@ -301,7 +302,16 @@ export async function listMyAttempts(studentId: string): Promise<MyAttemptRow[]>
       status: a.status,
       released,
       resultsReleaseAt: quiz?.resultsReleaseAt ? quiz.resultsReleaseAt.toISOString() : null,
-      score: finished && released && a.score ? { total: a.score.total, maxPossible: a.score.maxPossible } : null,
+      score:
+        finished && released && a.score
+          ? {
+              total: a.score.total,
+              correct: a.score.correct,
+              incorrect: a.score.incorrect,
+              unanswered: a.score.unanswered,
+              maxPossible: a.score.maxPossible,
+            }
+          : null,
     };
   });
 }

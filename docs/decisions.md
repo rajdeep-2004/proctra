@@ -75,6 +75,7 @@ Rules:
 | D-060 | 2026-10-22 | v1/03 | Attempt summaries: duration, accuracy (correct ÷ answered), shared stat tiles | Active |
 | D-061 | 2026-10-22 | v1/04 | Analytics numbers: median, pooled accuracy, 10% score buckets | Active |
 | D-062 | 2026-10-22 | v1/04 | Charts: shadcn `chart` + recharts, analytics pages only | Active |
+| D-063 | 2026-10-22 | v1/04 | Profile analytics: released results only; answer counts in `/me/attempts` | Active |
 
 ---
 
@@ -2479,3 +2480,50 @@ route, so pages without a chart (including the exam) never download it.
 
 **Revisit if**
 Charts need more than bars and lines, or the analytics bundle becomes a measurable part of v1/06's load times.
+
+### D-063 — Profile analytics: released results only; answer counts in `/me/attempts`
+- **Date:** 2026-10-22
+- **Phase:** v1/04 — Analytics: results & profile
+- **Status:** Active
+- **Type:** API + UI + privacy rule
+
+**Context**
+Issue 2.2: the student profile should show how they are doing over time. The phase rule is "unreleased results are excluded
+from stats". The release rule (D-049) says no marks before the teacher's release time.
+
+**Decision**
+- Tiles: **Tests taken** (every finished attempt, plus "N awaiting results" when some aren't released), **Average score** and
+  **Best score** (score % from D-061), and **Accuracy** (pooled, D-061). The last three use **released results only**.
+- **Score over time** line chart: one point per released result, oldest first, by finish time. It appears only with 2 or more
+  points, because one point isn't a trend.
+- The "Taken" column shows the date only; the time no longer appears there.
+- `GET /api/v1/me/attempts` → `score` now also carries `correct` / `incorrect` / `unanswered`, still `null` before release.
+
+**Alternatives rejected**
+- *Leave unreleased attempts out of "Tests taken" too:* the student knows they took the test, and the table already lists it.
+  Hiding it would only make the number look wrong. A count reveals no marks.
+- *Compute accuracy in the API:* the page would then need one more field for a single tile; returning the three counts lets
+  the UI reuse the pure helpers, and they are the same counts the released result page already shows.
+- *Draw the chart on the server:* the X axis shows dates in the viewer's time zone, which the server (UTC on Vercel) doesn't
+  know. Drawing it on the server and again in the browser could show different dates (a hydration mismatch).
+
+**How it works**
+`listMyAttempts` builds `score` only when the attempt is finished **and** released, so the counts inherit the same guard as
+the marks. `ProfileAnalytics` (a server component) filters to rows with a `score`, turns each into a ratio, and feeds
+`summarize` / `pooledAccuracy`. It passes plain `{ id, submittedAt, quizTitle, percent }` points to `ScoreTrendChart`. That
+client component uses `useSyncExternalStore` (like `LocalTime`) to render a placeholder on the server and the chart once in
+the browser, so dates are local and React sees no mismatch. Auto-submitted attempts use `submittedAt` (set to the deadline);
+`deadline` is only a fallback.
+
+**Files touched**
+- `docs/api-contracts.md`, `src/services/attempt-service.ts` (`MyAttemptRow.score`)
+- `src/components/results/profile-analytics.tsx`, `src/components/results/score-trend-chart.tsx`, `src/app/student/profile/page.tsx`
+
+**Concepts worth learning**
+- *Hydration:* React re-runs the server's HTML in the browser and expects identical output; anything that depends on the
+  browser (time zone, screen size) must wait until after hydration.
+- *Least privilege for data:* the guard lives in one place (the service), so every page built on it gets the rule for free.
+
+**Revisit if**
+Students take enough quizzes that the trend needs a date range filter, or a teacher view of the same student (v1/05) wants
+these exact numbers. In that case, move the tile logic into a shared helper.

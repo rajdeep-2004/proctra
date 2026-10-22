@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { LocalTime } from "@/components/local-time";
 import { AttemptStatusBadge } from "@/components/quiz/attempt-status-badge";
+import { ProfileAnalytics } from "@/components/results/profile-analytics";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { requirePageUser } from "@/lib/session";
 import { listMyAttempts, type MyAttemptRow } from "@/services/attempt-service";
@@ -30,6 +31,7 @@ async function History() {
         <h1 className="text-2xl font-semibold tracking-tight">{user.name}</h1>
         <p className="text-muted-foreground">{user.email} · {rows.length} attempt{rows.length === 1 ? "" : "s"}</p>
       </div>
+      {rows.length > 0 && <ProfileAnalytics rows={rows} />}
       {rows.length === 0 ? (
         <p className="text-muted-foreground">You haven&apos;t taken any quizzes yet.</p>
       ) : (
@@ -47,7 +49,7 @@ async function History() {
             {rows.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="font-medium">{r.quizTitle}</TableCell>
-                <TableCell><LocalTime iso={r.startedAt} /></TableCell>
+                <TableCell><LocalTime iso={r.startedAt} format="date" /></TableCell>
                 <TableCell><AttemptStatusBadge status={r.status} /></TableCell>
                 <TableCell className="text-right tabular-nums"><Marks row={r} /></TableCell>
                 <TableCell className="text-right">
