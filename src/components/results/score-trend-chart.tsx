@@ -1,22 +1,21 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { formatLocal } from "@/lib/datetime";
+import { useIsClient } from "@/lib/use-is-client";
 
 export type TrendPoint = { id: string; submittedAt: string; quizTitle: string; percent: number };
 
 const config = { percent: { label: "Score", color: "var(--chart-2)" } } satisfies ChartConfig;
-const noSubscribe = () => () => {};
 const HEIGHT = "h-52";
 
 /**
  * Score % per released result, oldest → newest (D-061/D-062). Dates are the viewer's local dates, which the server
- * can't know, so the chart only draws after hydration (same trick as LocalTime). A hidden table carries the numbers.
+ * can't know, so the chart only draws after hydration (useIsClient). A hidden table carries the numbers.
  */
 export function ScoreTrendChart({ points }: { points: TrendPoint[] }) {
-  const isClient = useSyncExternalStore(noSubscribe, () => true, () => false);
+  const isClient = useIsClient();
   const data = isClient ? points.map((p) => ({ ...p, date: formatLocal(p.submittedAt, "date") })) : [];
   const lowest = Math.min(0, ...points.map((p) => p.percent));
 
