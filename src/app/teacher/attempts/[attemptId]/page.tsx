@@ -1,5 +1,6 @@
 import { Check, Flag, Minus, X } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { BackButton } from "@/components/layout/back-button";
@@ -56,7 +57,9 @@ async function Detail({ params }: { params: Params }) {
       <div className="grid gap-4">
         <BackButton href={`/teacher/quizzes/${a.quizId}/results`} label={`Back to ${a.quizTitle} results`} />
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{a.studentName}</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            <Link href={`/teacher/students/${a.studentId}`} className="hover:underline">{a.studentName}</Link>
+          </h1>
           <AttemptStatusBadge status={a.status} />
         </div>
         <AttemptSummary a={a} />

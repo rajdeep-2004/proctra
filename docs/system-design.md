@@ -151,6 +151,14 @@ sequenceDiagram
 4. Response: name, rank, score only, plus `live` (exam not over or someone still writing) and `stillWriting`.
 5. While `live`, the page re-fetches every 10 s; when everyone is final it stops. No push channel (D-014).
 
+### Flow: Teacher's student page (v1/05, D-064)
+1. `GET /api/v1/teacher/students/:id` (or the page calling the service directly): load this teacher's quiz ids.
+2. `Attempt.exists({ studentId, quizId: { $in: myQuizIds } })`. If nothing matches → **404**, the same answer as an unknown
+   id, so the endpoint can't be used to check whether a student exists.
+3. Lazy finalization for the student, then the user's name/email and the scoped attempts (newest first, ≤ 200) in parallel.
+4. Owner rule: marks show even before the release time (as on the submissions table); answers and correct options are never
+   included. Tiles and trend come from the shared `historyStats` helper.
+
 ### Flow: Analytics (v1/04, D-061–D-063)
 1. No extra queries: the teacher results page reuses `listSubmissions` rows; the profile reuses `listMyAttempts` rows.
 2. Numbers are computed per request on the server with pure helpers (`score-stats.ts`): summary (count, mean, median, min,

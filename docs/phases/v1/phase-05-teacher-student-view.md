@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | review |
 | Branch | `phase/v1-05-teacher-student-view` |
 | Depends on | Phase v1/04 |
 | Issues | 1.4 (student analytics) |
@@ -43,25 +43,30 @@ v1/04 (merged 96db24e): analytics on the teacher results page (six tiles + score
 - `system-design.md` → ownership checks
 
 ## Tasks
-- [ ] 05.1 — Contract + service (owner-scoped) + route handler → `feat(teacher): add student summary api`
-- [ ] 05.2 — Student page UI + links from results/attempt → `feat(teacher): add student analytics page`
-- [ ] 05.3 — Docs pass → `docs: update docs for phase v1/05`
+- [x] 05.1 — Contract + service (owner-scoped) + route handler → `feat(teacher): add student summary api`
+- [x] 05.2 — Student page UI + links from results/attempt → `feat(teacher): add student analytics page`
+- [x] 05.3 — Docs pass → `docs: update docs for phase v1/05`
 
 ## Done criteria
-- [ ] Lint + build pass
-- [ ] API checks in `.scratch/`: owner 200, other teacher 404, student 403, bad id 400/404
-- [ ] Docs match what was built; decisions logged
+- [x] Lint + build pass
+- [x] API checks in `.scratch/`: owner 200, other teacher 404, student 403, bad id 400/404
+- [x] Docs match what was built; decisions logged
 
 ## How to verify
 1. Teacher A opens a student from a results table → sees only A's quizzes.
 2. Teacher B opens the same URL → 404.
 
 ## Phase summary
-<!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
-- **Next phase should know:**
+- **Built:** `GET /api/v1/teacher/students/:studentId` (owner-scoped, one 404 for unknown or not-mine);
+  page `/teacher/students/[studentId]` with name, email, four tiles, trend chart and history table; results-table names
+  and the attempt-page heading link to it (a new View column opens the attempt). The tile maths moved into the tested
+  `historyStats` helper, shared with the student profile via `HistoryAnalytics`.
+- **Key decisions:** D-064 (owner scoping, enumeration-safe 404, owner sees unreleased marks, shared helper, link changes).
+- **Known limitations:** history capped at 200 attempts; no teacher-wide student directory or search (out of scope).
+  The v1/03 and v1/04 scratch fixtures have expired (their quizzes closed), so `v1-03-attempt` and `v1-04-teacher` need a
+  fresh setup run to pass again. The app itself is fine; the checks expect an open quiz.
+- **Next phase should know:** v1/06 measures production load times. These analytics pages add one recharts bundle and,
+  for the student page, three small queries (quizzes, exists, attempts + user in parallel). Worth including in the timings.
 
 ## Next phase preview
 v1/06 measures and fixes production page load times.

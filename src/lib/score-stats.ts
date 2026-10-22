@@ -55,3 +55,47 @@ export function histogram(ratios: readonly number[]): Bucket[] {
   const buckets = counts.map((count, i) => ({ label: `${i * 10}–${(i + 1) * 10}%`, count }));
   return below > 0 ? [{ label: "Below 0%", count: below }, ...buckets] : buckets;
 }
+
+// ---------- one student's history (profile + teacher's student page, D-063/D-064) ----------
+
+/** Minimal attempt shape both history pages share. `score` is null while active or, for students, before release. */
+export type HistoryRow = {
+  id: string;
+  quizTitle: string;
+  status: string;
+  submittedAt: string | null;
+  deadline: string;
+  score: { total: number; correct: number; incorrect: number; maxPossible: number } | null;
+};
+export type TrendPoint = { id: string; submittedAt: string; quizTitle: string; percent: number };
+export type HistoryStats = {
+  taken: number; // finished attempts (taking a test reveals no marks)
+  awaiting: number; // finished but no score visible yet (unreleased)
+  average: number | null; // mean score ratio over scored attempts
+  best: number | null;
+  accuracy: number | null; // pooled over scored attempts
+  scored: number; // how many attempts the marks numbers are based on
+  points: TrendPoint[]; // score % per scored attempt, oldest first
+};
+
+/** The four history tiles + trend points. Marks-based numbers use only rows that carry a score. */
+export function historyStats(rows: readonly HistoryRow[]): HistoryStats {
+  const finished = rows.filter((r) => r.status !== "active");
+  const scored = finished.flatMap((r) => {
+    const ratio = r.score ? scorePercent(r.score.total, r.score.maxPossible) : null;
+    return r.score && ratio !== null ? [{ row: r, score: r.score, ratio }] : [];
+  });
+  const summary = summarize(scored.map((x) => x.ratio));
+  const points = scored
+    .map(({ row, ratio }) => ({ id: row.id, submittedAt: row.submittedAt ?? row.deadline, quizTitle: row.quizTitle, percent: Math.round(ratio * 100) }))
+    .sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
+  return {
+    taken: finished.length,
+    awaiting: finished.filter((r) => !r.score).length,
+    average: summary.mean,
+    best: summary.max,
+    accuracy: pooledAccuracy(scored.map((x) => x.score)),
+    scored: scored.length,
+    points,
+  };
+}

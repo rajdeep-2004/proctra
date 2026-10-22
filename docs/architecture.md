@@ -59,7 +59,7 @@ proctra/
 │   ├── app/                # Next.js App Router
 │   │   ├── (auth)/         # sign-in, sign-up pages
 │   │   ├── student/        # dashboard (?tab=current|closed), quiz detail (Start/Resume), attempts/[id] result, profile, quizzes/[id]/leaderboard
-│   │   ├── teacher/        # dashboard (?tab=all|drafts|live|closed|archived + title search), quiz editor, quizzes/[id]/results + /leaderboard, attempts/[id] detail
+│   │   ├── teacher/        # dashboard (?tab=all|drafts|live|closed|archived + title search), quiz editor, quizzes/[id]/results + /leaderboard, attempts/[id] detail, students/[id] (one student on my quizzes, D-064)
 │   │   ├── exam/[attemptId]/ # bare exam page (timer, palette, autosave); kiosk window in phase 05
 │   │   └── api/v1/         # route handlers (thin: auth → validate → service → respond)
 │   ├── components/
@@ -68,11 +68,11 @@ proctra/
 │   │   ├── quiz/           # quiz editor, question card, badges, countdown, start button
 │   │   ├── motion/         # StaggerIn (GSAP entrance for dashboard lists; never on exam screens)
 │   │   ├── results/        # leaderboard view (live polling) + shared page + button, event timeline, StatTile/StatGrid, ResultCounts tags,
-│   │   │                   #   QuizAnalytics + ScoreDistributionChart (teacher), ProfileAnalytics + ScoreTrendChart (student) (D-061–D-063)
+│   │   │                   #   QuizAnalytics + ScoreDistributionChart (teacher), HistoryAnalytics + ScoreTrendChart (profile + teacher's student page) (D-061–D-064)
 │   │   ├── exam/           # exam client, timer, palette, submit dialog, SaveQueue/useAutosave, useExamCamera, useSnapshots, useProctorEvents
 │   │   └── local-time.tsx  # renders an instant in the viewer's time zone (D-039)
 │   ├── auth.ts, auth.config.ts # Auth.js setup (full / proxy-safe shared part)
-│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · shared: utils (cn), quiz-tabs (tab classification, pure), attempt-stats (duration, accuracy, pure), score-stats (summary, score %, pooled accuracy, histogram, pure)
+│   ├── lib/                # server: db, env, api-response, session · browser: api-client, datetime, use-is-client, server-clock, camera · server: cloudinary · shared: utils (cn), quiz-tabs (tab classification, pure), attempt-stats (duration, accuracy, pure), score-stats (summary, score %, pooled accuracy, histogram, historyStats, pure)
 │   ├── models/             # Mongoose models (User, Quiz, Attempt, Snapshot, ProctorEvent)
 │   ├── schemas/            # Zod request schemas, shared by route handlers and forms
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot

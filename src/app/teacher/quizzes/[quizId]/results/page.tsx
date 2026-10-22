@@ -66,13 +66,14 @@ async function Results({ params }: { params: Params }) {
               <TableHead className="text-right">Marks</TableHead>
               <TableHead className="text-right">Events</TableHead>
               <TableHead className="text-right">Snapshots</TableHead>
+              <TableHead className="text-right"><span className="sr-only">Open</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rows.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="font-medium">
-                  <Link href={`/teacher/attempts/${r.id}`} className="hover:underline">{r.studentName}</Link>
+                  <Link href={`/teacher/students/${r.studentId}`} className="hover:underline">{r.studentName}</Link>
                 </TableCell>
                 <TableCell><AttemptStatusBadge status={r.status} /></TableCell>
                 <TableCell>{r.submittedAt ? <LocalTime iso={r.submittedAt} /> : <span className="text-muted-foreground">Not yet</span>}</TableCell>
@@ -81,6 +82,9 @@ async function Results({ params }: { params: Params }) {
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{r.eventCount}</TableCell>
                 <TableCell className="text-right tabular-nums">{r.snapshotCount}</TableCell>
+                <TableCell className="text-right">
+                  <Link className="font-medium underline underline-offset-4" href={`/teacher/attempts/${r.id}`}>View</Link>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
