@@ -76,6 +76,7 @@ Rules:
 | D-061 | 2026-10-22 | v1/04 | Analytics numbers: median, pooled accuracy, 10% score buckets | Active |
 | D-062 | 2026-10-22 | v1/04 | Charts: shadcn `chart` + recharts, analytics pages only | Active |
 | D-063 | 2026-10-22 | v1/04 | Profile analytics: released results only; answer counts in `/me/attempts` | Active |
+| D-064 | 2026-10-22 | v1/05 | Teacher student view: owner-scoped, one 404 for unknown or not-mine | Active |
 
 ---
 
@@ -2527,3 +2528,51 @@ the browser, so dates are local and React sees no mismatch. Auto-submitted attem
 **Revisit if**
 Students take enough quizzes that the trend needs a date range filter, or a teacher view of the same student (v1/05) wants
 these exact numbers. In that case, move the tile logic into a shared helper.
+
+### D-064 — Teacher student view: owner-scoped, one 404 for unknown or not-mine
+- **Date:** 2026-10-22
+- **Phase:** v1/05 — Teacher's student view
+- **Status:** Active
+- **Type:** API + authorization
+
+**Context**
+Issue 1.4: a teacher wants to open a student and see how they are doing. The user decided (2026-10-22) that a teacher only
+sees that student's results **on their own quizzes**.
+
+**Decision**
+- `GET /api/v1/teacher/students/:studentId` returns `{ student: { id, name, email }, attempts }`. It only includes attempts
+  whose quiz belongs to the calling teacher, newest first, at most 200.
+- If the id is unknown **or** the student never attempted one of this teacher's quizzes, the answer is the same `404 Student
+  not found`.
+- The quiz owner sees marks even before the release time, the same as the submissions table. The release rule (D-049)
+  protects students from each other, not from their teacher.
+- Submissions rows and the attempt detail now include `studentId`, so the UI can link to the student page.
+
+**Alternatives rejected**
+- *403 for "exists but not yours":* this would tell a teacher that an id belongs to a real student, which lets them probe for
+  students. One 404 for both cases reveals nothing.
+- *Show the student's results on every teacher's quizzes:* the user ruled it out; other teachers' quizzes aren't this teacher's
+  business.
+- *Query attempts first, then filter by quiz owner in code:* this loads the student's other attempts for nothing. Filtering
+  in the query (`quizId: { $in: myQuizIds }`) means the database only returns what the teacher may see.
+
+**How it works**
+1. Load this teacher's quiz ids and titles (`{ teacherId }`, index `teacherId_1_updatedAt_-1`).
+2. `Attempt.exists({ studentId, quizId: { $in: ids } })`: no match → 404. This runs before anything else is read.
+3. Lazy finalization for the student (D-006), so an expired attempt shows as submitted with its score.
+4. Load the user's name and email and the scoped attempts in parallel. The query uses the `{ studentId, startedAt }` index:
+   it walks only this student's attempts, newest first, then keeps those whose `quizId` is in the list.
+The response builds `score` field by field. It never includes answers or correct options.
+
+**Files touched**
+- `docs/api-contracts.md`, `src/services/results-service.ts` (`getStudentForTeacher`, `studentId` on rows/detail),
+  `src/app/api/v1/teacher/students/[studentId]/route.ts`
+
+**Concepts worth learning**
+- *Existence leaks / enumeration:* different errors for "doesn't exist" and "not allowed" let an attacker map which ids are
+  real. Returning the same answer for both closes that.
+- *Authorization in the query:* putting the ownership condition inside the database filter makes it impossible to forget in
+  a later code path.
+
+**Revisit if**
+Teachers share quizzes (co-teaching), or a school wants a teacher-wide student directory (out of scope for v1/05).

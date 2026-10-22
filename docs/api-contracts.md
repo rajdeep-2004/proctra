@@ -146,22 +146,40 @@ Errors: `403`, `404`, `409 INVALID_STATE`
 Response `200`
 ```json
 { "data": { "quiz": { "id": "…", "title": "…", "startsAt": "…", "endsAt": "…", "questionCount": 10, "maxPossible": 40 },
-  "rows": [ { "id": "…", "studentName": "Asha Rao", "status": "submitted",
+  "rows": [ { "id": "…", "studentId": "…", "studentName": "Asha Rao", "status": "submitted",
   "startedAt": "…", "submittedAt": "…", "score": { "total": 36, "correct": 9, "incorrect": 0, "unanswered": 1, "maxPossible": 40 },
   "eventCount": 3, "snapshotCount": 172 } ] } }
 ```
+v1/05: rows carry `studentId` (links to the student page).
 
 #### `GET /api/v1/teacher/attempts/:attemptId`
 - Auth: teacher (owner of the quiz) · Phase: 06 · Purpose: one submission in detail
 Response `200`
 ```json
 { "data": {
-  "id": "…", "studentName": "…", "status": "submitted", "startedAt": "…", "deadline": "…", "submittedAt": "…",
+  "id": "…", "studentId": "…", "studentName": "…", "status": "submitted", "startedAt": "…", "deadline": "…", "submittedAt": "…",
   "score": { "total": 36, "correct": 9, "incorrect": 0, "unanswered": 1, "maxPossible": 40 },
   "questions": [ { "id": "…", "text": "…", "options": ["…"], "correctIndex": 2, "selectedIndex": 2, "markedForReview": false, "result": "correct" } ],
   "events": [ { "type": "window_blur", "occurredAt": "…" } ],
   "snapshotCount": 172 } }
 ```
+v1/05: carries `studentId` (the name links to the student page).
+
+#### `GET /api/v1/teacher/students/:studentId`
+- Auth: teacher · Phase: v1/05 · Purpose: one student's performance on **this teacher's quizzes only** (D-064)
+- Runs lazy finalization for the student first.
+Response `200`
+```json
+{ "data": {
+  "student": { "id": "…", "name": "Asha Rao", "email": "asha@example.com" },
+  "attempts": [ { "id": "…", "quizId": "…", "quizTitle": "…", "status": "submitted",
+    "startedAt": "…", "submittedAt": "…", "deadline": "…",
+    "score": { "total": 36, "correct": 9, "incorrect": 0, "unanswered": 1, "maxPossible": 40 } } ] } }
+```
+Errors: `400` (not an id), `403` (caller is a student), `404` (unknown id **or** no attempts on this teacher's quizzes; same
+message, so the endpoint can't be used to find out whether a student exists).
+Notes: newest first, at most 200. `score` is `null` only while an attempt is active; the release time doesn't hide marks from
+the quiz owner (same as the submissions table).
 
 #### `GET /api/v1/teacher/attempts/:attemptId/snapshots`
 - Auth: teacher (owner of the quiz) · Phase: 07 (S-01, should-have)
@@ -330,5 +348,6 @@ Permissions: the session grants only `media` with **video only** to the app orig
 | GET | /api/v1/me/attempts | student | 06 | built |
 | GET | /api/v1/teacher/quizzes/:quizId/attempts | teacher | 06 | built |
 | GET | /api/v1/teacher/attempts/:attemptId | teacher | 06 | built |
+| GET | /api/v1/teacher/students/:studentId | teacher | v1/05 | built |
 | GET | /api/v1/quizzes/:quizId/leaderboard | teacher, student | 06 | built |
 | GET | /api/v1/teacher/attempts/:attemptId/snapshots | teacher | 07 | built (S-01) |

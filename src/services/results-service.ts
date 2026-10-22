@@ -7,7 +7,8 @@ import { Attempt, type AttemptDoc, type AttemptStatus, type ScoreDoc } from "@/m
 import { ProctorEvent, type EventType, type ProctorEventDoc } from "@/models/proctor-event";
 import { Quiz, type QuizDoc } from "@/models/quiz";
 import { Snapshot, type SnapshotDoc } from "@/models/snapshot";
-import { finalizeExpiredForQuiz, finalizeIfExpired } from "@/services/attempt-service";
+import { User, type UserDoc } from "@/models/user";
+import { finalizeExpiredForQuiz, finalizeExpiredForStudent, finalizeIfExpired } from "@/services/attempt-service";
 import { resultFor, type QuestionResult } from "@/services/grading";
 import { eventCounts } from "@/services/proctor-service";
 import { rankEntries } from "@/services/ranking";
@@ -25,6 +26,7 @@ async function loadOwnedQuiz(teacherId: string, quizId: Types.ObjectId | string)
 
 export type SubmissionRow = {
   id: string;
+  studentId: string;
   studentName: string;
   status: AttemptStatus;
   startedAt: string;
@@ -57,6 +59,7 @@ export async function listSubmissions(teacherId: string, quizId: string): Promis
     },
     rows: attempts.map((a) => ({
       id: a._id.toString(),
+      studentId: a.studentId.toString(),
       studentName: a.studentName,
       status: a.status,
       startedAt: a.startedAt.toISOString(),
@@ -72,6 +75,7 @@ export async function listSubmissions(teacherId: string, quizId: string): Promis
 
 export type TeacherAttemptView = {
   id: string;
+  studentId: string;
   quizId: string;
   quizTitle: string;
   studentName: string;
@@ -100,6 +104,7 @@ export async function getAttemptForTeacher(teacherId: string, attemptId: string)
     id: attempt._id.toString(),
     quizId: quiz._id.toString(),
     quizTitle: quiz.title,
+    studentId: attempt.studentId.toString(),
     studentName: attempt.studentName,
     status: attempt.status,
     startedAt: attempt.startedAt.toISOString(),
@@ -204,6 +209,58 @@ export async function getSnapshotGallery(teacherId: string, attemptId: string): 
       id: s._id.toString(),
       capturedAt: s.capturedAt.toISOString(),
       url: signedImageUrl(s.publicId, SNAPSHOT_LINK_SECONDS),
+    })),
+  };
+}
+
+// ---------- one student across this teacher's quizzes (v1/05, D-064) ----------
+
+export type TeacherStudentAttempt = {
+  id: string;
+  quizId: string;
+  quizTitle: string;
+  status: AttemptStatus;
+  startedAt: string;
+  submittedAt: string | null;
+  deadline: string;
+  score: { total: number; correct: number; incorrect: number; unanswered: number; maxPossible: number } | null;
+};
+export type TeacherStudentView = { student: { id: string; name: string; email: string }; attempts: TeacherStudentAttempt[] };
+
+const STUDENT_HISTORY_LIMIT = 200;
+
+/**
+ * A student's attempts on quizzes THIS teacher owns. 404 (one message for both cases) when the id is unknown or the
+ * student never attempted one of these quizzes, so a teacher can't probe for arbitrary students.
+ */
+export async function getStudentForTeacher(teacherId: string, studentId: string): Promise<TeacherStudentView> {
+  await connectDB();
+  const notFound = new AppError("NOT_FOUND", "Student not found", 404);
+  const quizzes = await Quiz.find({ teacherId }, { title: 1 }).lean<Pick<QuizDoc, "_id" | "title">[]>();
+  if (quizzes.length === 0) throw notFound;
+  const titles = new Map(quizzes.map((q) => [q._id.toString(), q.title]));
+  const scope = { studentId, quizId: { $in: quizzes.map((q) => q._id) } };
+  if (!(await Attempt.exists(scope))) throw notFound;
+  await finalizeExpiredForStudent(studentId); // statuses/scores must be current before we read them (D-006)
+  const [user, attempts] = await Promise.all([
+    User.findById(studentId, { name: 1, email: 1 }).lean<Pick<UserDoc, "name" | "email"> & { _id: Types.ObjectId }>(),
+    Attempt.find(scope).sort({ startedAt: -1 }).limit(STUDENT_HISTORY_LIMIT).lean<AttemptDoc[]>(),
+  ]);
+  if (!user) throw notFound;
+  return {
+    student: { id: user._id.toString(), name: user.name, email: user.email },
+    attempts: attempts.map((a) => ({
+      id: a._id.toString(),
+      quizId: a.quizId.toString(),
+      quizTitle: titles.get(a.quizId.toString()) ?? "(deleted quiz)",
+      status: a.status,
+      startedAt: a.startedAt.toISOString(),
+      submittedAt: a.submittedAt ? a.submittedAt.toISOString() : null,
+      deadline: a.deadline.toISOString(),
+      score:
+        a.status !== "active" && a.score
+          ? { total: a.score.total, correct: a.score.correct, incorrect: a.score.incorrect, unanswered: a.score.unanswered, maxPossible: a.score.maxPossible }
+          : null,
     })),
   };
 }
