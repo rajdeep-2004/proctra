@@ -69,6 +69,7 @@ Rules:
 | D-054 | 2026-10-20 | 07 | Per-chip installers instead of universal; install steps for macOS 15+ | Active |
 | D-055 | 2026-10-22 | v1 plan | Phase files grouped by release version (`docs/phases/vN/`) | Active |
 | D-056 | 2026-10-22 | v1 plan | Next release is v1.0.0 (semver), folder number = major version | Active |
+| D-057 | 2026-10-22 | v1/01 | UI copy without em dashes; one shared back button; leaner header | Active |
 
 ---
 
@@ -2233,4 +2234,35 @@ stable release, which fits a product that is now deployed and used. Folder `vN/`
 
 **Revisit if**
 The user wants to stay pre-1.0 until signing/notarization is done.
+
+### D-057 — UI copy without em dashes; one shared back button; leaner header
+- **Date:** 2026-10-22
+- **Phase:** v1/01 — Copy & navigation cleanup
+- **Status:** Active
+- **Type:** UI convention
+
+**Context**
+User feedback (v1 issues 1.2, 1.3, 2.3, 3.1, 3.2): em dashes everywhere in the copy, small "← All quizzes" text links that were
+easy to miss, a header that repeated the role and a "Quizzes" link the logo already covers, and a disclaimer repeated under the
+results table.
+
+**Decision**
+- **Copy rule:** no em dash (`—`) in any user-facing string, including Electron window titles. Each string was rewritten as a
+  sentence (period, comma, colon, parentheses or `·`) rather than swapping the character. Empty table cells that showed `—`
+  now say what's going on: "Pending" (no marks yet) or "Not yet" (not submitted). En dashes in time ranges stay.
+- **Back navigation:** `src/components/layout/back-button.tsx`, a small outlined button with an arrow icon, used on every
+  detail page ("Back to quizzes", "Edit quiz", "Back to <quiz> results"). Long quiz titles truncate instead of wrapping.
+- **Header:** logo only (links to the role's dashboard) + "Profile" for students. The role label is gone; the signed-in name stays.
+- **Disclaimer:** removed from the results page. The attempt page keeps one short line ("Neutral facts about the exam session,
+  not evidence of misconduct.") because the neutral-wording rule (PRD F-09) still applies where events are listed.
+
+**How it works**
+`BackButton` is a server-safe component (no `"use client"`): shadcn `Button` with `asChild` renders a Next `Link`, so it works
+in both server pages and the client-side quiz editor. The check `grep -rn "—" src electron` (comments excluded) must stay empty.
+
+**Files touched**
+- `src/components/layout/{app-header,back-button}.tsx`, 5 detail pages / editor, 12 files of copy, `electron/{main.ts,offline.html}`
+
+**Revisit if**
+Pages get deeper than one level (then breadcrumbs make more sense than a single back button).
 
