@@ -161,6 +161,10 @@ Status values: `not-started` → `in-progress` → `review` → `done`
 - Snapshots have no automatic retention/deletion yet (PRD open question 1).
 
 ## Parked ideas
+- Landing page + post-signup download flow (user idea, 2026-10-23, for a later release): a proper landing page; after
+  signing up on the web, students see "download to take tests" with the two .dmg options (highlight the right chip
+  where the browser can tell) and an "Open Proctra" button that launches the installed app via a `proctra://` link
+  (needs the protocol registered in the app and a new .dmg).
 - Production performance (ex v1/06, D-065): pin functions to `bom1` (Mumbai) via `vercel.json` `regions`; add
   `socketTimeoutMS` / `maxIdleTimeMS` to the Mongo connection; re-measure with `.scratch/perf.mts`.
 - Drag-and-drop question reordering (up/down buttons for now).
