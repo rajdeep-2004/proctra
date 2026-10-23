@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | in-progress |
+| Status | review |
 | Branch | `phase/v1-06-release` |
 | Depends on | Phase v1/05 |
 | Issues | — (ships everything above) |
@@ -50,11 +50,16 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 1. Install the arm64 `.dmg`, sign in as teacher and student, run a quiz end to end.
 
 ## Phase summary
-<!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
-- **Next phase should know:**
+- **Built:** version 1.0.0; per-chip installers `Proctra-1.0.0-mac-arm64.dmg` / `-mac-x64.dmg` (checked: packaged app
+  reports 1.0.0, loads production, contains the D-066 full-screen fix); README features updated for v1/01–v1/05 plus its
+  first screenshots (`docs/images/`, from a separate demo database, D-067).
+- **Key decisions:** D-066 (leave full screen before the kiosk window; shipped to `main` just before this phase),
+  D-067 (README screenshots from demo data).
+- **Known limitations:** installers are still unsigned (right-click → Open on first launch); performance debt from D-065
+  is unchanged; the exam window isn't pictured in the README (desktop-only).
+- **Next phase should know:** after merge, deploy production and create the GitHub Release `v1.0.0` with both `.dmg`
+  files (public action, needs the user's go-ahead). The `proctra-demo` database can be kept for future screenshots or
+  dropped. Next release planning goes in `docs/phases/v2/`.
 
 ## Next phase preview
 None planned. Next release planning goes in `docs/phases/v2/`.
