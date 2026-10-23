@@ -1,7 +1,7 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** none — v1 complete; release ready to tag `v1.0.0`
+**Current phase:** none — v1.0.0 released 2026-10-23 (https://github.com/rajdeep-2004/proctra/releases/tag/v1.0.0)
 **Branch:** —
 **Profile:** lean
 
@@ -41,8 +41,9 @@ Status values: `not-started` → `in-progress` → `review` → `done`
   before committing (nothing wrong was pushed). Demo data lives in a separate `proctra-demo` database.
 - Approved and merged to `main` (3dec650); production redeployed. Before the merge, at the user's request, the production
   database was emptied (no backup, user: "there was no production data") and `proctra-demo` was dropped.
-- Next: `gh release create v1.0.0` with both installers (needs the user's go-ahead). Teachers must be re-created with
-  `npm run seed` before anyone can create quizzes.
+- Released: GitHub Release v1.0.0 (Latest) with both installers, tagged at `main` (2f2472a).
+- Next: create a teacher with `npm run seed` (database is empty). Next release: plan in `docs/phases/v2/` (landing page
+  + download flow is parked for it).
 
 ### 2026-10-23 (manual E2E test fixes)
 - Database wiped and reseeded with 2 teachers + 5 students for the user's manual test (accounts in `.scratch/`, not committed).
