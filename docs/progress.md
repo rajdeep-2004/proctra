@@ -1,8 +1,8 @@
 # Progress
 
 **Current release:** v1 (target tag `v1.0.0`, D-056)
-**Current phase:** v1/06 — Release v1.0.0 (`review`)
-**Branch:** phase/v1-06-release
+**Current phase:** none — v1 complete; release ready to tag `v1.0.0`
+**Branch:** —
 **Profile:** lean
 
 ## Phases
@@ -16,7 +16,7 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 | 03 | Leaderboard & attempt details | done | phase/v1-03-leaderboard-details | 1.4, 1.5, 2.3 | 2026-10-22 | 2026-10-22 |
 | 04 | Analytics: results & profile | done | phase/v1-04-analytics | 1.6, 2.2 | 2026-10-22 | 2026-10-22 |
 | 05 | Teacher's student view | done | phase/v1-05-teacher-student-view | 1.4 | 2026-10-22 | 2026-10-22 |
-| 06 | Release v1.0.0 | review | phase/v1-06-release | — | 2026-10-23 | |
+| 06 | Release v1.0.0 | done | phase/v1-06-release | — | 2026-10-23 | 2026-10-23 |
 | — | ~~Production performance~~ | dropped | — | 3.3 | 2026-10-22 | 2026-10-22 |
 
 ### v0 — shipped as v0.1.0 (deadline 2026-10-25 met)
@@ -39,7 +39,10 @@ Status values: `not-started` → `in-progress` → `review` → `done`
   test of the installed arm64 `.dmg` against production.
 - Note: during the package check I briefly overwrote the project `package.json` with the packaged copy; restored from git
   before committing (nothing wrong was pushed). Demo data lives in a separate `proctra-demo` database.
-- Next: after approval, merge, deploy production, then `gh release create v1.0.0` (needs the user's go-ahead).
+- Approved and merged to `main` (3dec650); production redeployed. Before the merge, at the user's request, the production
+  database was emptied (no backup, user: "there was no production data") and `proctra-demo` was dropped.
+- Next: `gh release create v1.0.0` with both installers (needs the user's go-ahead). Teachers must be re-created with
+  `npm run seed` before anyone can create quizzes.
 
 ### 2026-10-23 (manual E2E test fixes)
 - Database wiped and reseeded with 2 teachers + 5 students for the user's manual test (accounts in `.scratch/`, not committed).
