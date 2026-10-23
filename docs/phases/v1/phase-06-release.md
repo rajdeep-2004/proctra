@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | in-progress |
 | Branch | `phase/v1-06-release` |
 | Depends on | Phase v1/05 |
 | Issues | — (ships everything above) |
@@ -16,8 +16,10 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 - Production already runs the latest `main` (user, 2026-10-22); redeploy after this phase merges.
 - README screenshots to refresh: quiz tabs (v1/02), leaderboard finish times (v1/03), teacher results analytics and
   student profile (v1/04), teacher's student page (v1/05).
-- Scratch fixtures (@scratch.test students, `t2@`/`t3@scratch.test` teachers) are in the production database: run
-  `.scratch/cleanup-users.mts` before the release (and check it covers the scratch teachers too).
+- Production database was wiped and reseeded on 2026-10-23 for the user's manual E2E test (2 teachers, 5 students,
+  `@proctra.test`); no scratch fixtures remain, so no cleanup is needed.
+- Fixes from that test are already on `main` and deployed: leaderboard notes removed; kiosk lock when the app was already
+  full screen (D-066). The desktop fix reaches users only through the new `.dmg`.
 - Known slowness (D-065): functions run in `iad1`, the database is in Mumbai; first request after idle ~5 s.
 
 ## In scope — exact features
@@ -34,7 +36,7 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 - `decisions.md` → D-051, D-054
 
 ## Tasks
-- [ ] 06.1 — Version bump + build installers → `chore(release): bump version to 1.0.0`
+- [x] 06.1 — Version bump + build installers → `chore(release): bump version to 1.0.0`
 - [ ] 06.2 — README refresh → `docs: update README for v1.0.0`
 - [ ] 06.3 — Final docs pass → `docs: update docs for phase v1/06`
 - [ ] After approval/merge: production deploy + `gh release create v1.0.0` (needs user go-ahead; public action)
