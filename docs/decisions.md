@@ -79,6 +79,7 @@ Rules:
 | D-064 | 2026-10-22 | v1/05 | Teacher student view: owner-scoped, one 404 for unknown or not-mine | Active |
 | D-065 | 2026-10-22 | v1/06 | Drop the production performance phase; record findings as known debt | Active |
 | D-066 | 2026-10-23 | v1 fix | Leave macOS full screen before opening the kiosk exam window | Active |
+| D-067 | 2026-10-23 | v1/06 | README screenshots from a separate demo database | Active |
 
 ---
 
@@ -2676,3 +2677,36 @@ settle, and only then opens the kiosk window.
 **Revisit if**
 Students still see swiping after this, or macOS changes how full-screen Spaces work. The main window comes back in normal
 (not full-screen) mode after the exam. That's acceptable for now.
+
+### D-067 — README screenshots from a separate demo database
+
+**Context**
+v1.0.0 adds the README's first screenshots (user choice, 2026-10-23). The production database held only the user's manual
+test data. Its quiz titles were account passwords, so it couldn't be shown publicly.
+
+**Decision**
+Screenshots come from a separate database, `proctra-demo`, on the same Atlas cluster (user-approved). A local
+`next start` on port 3100 points at it through `MONGODB_URI`. A scratch script creates realistic demo data through the
+normal API: one teacher, four quizzes, nine students with spread-out scores, one exam still in progress. A headless Chrome
+then saves four 2× PNGs to `docs/images/` (teacher results, leaderboard, student dashboard, student profile).
+
+**Alternatives rejected**
+- *Use production data:* titles were passwords, and real student names don't belong in a public README.
+- *Hand-edited mock images:* they drift from the real app. Screenshots of the running app show the actual UI.
+- *Screenshot the exam window:* it only runs inside the desktop app with a camera, so the README says so instead.
+
+**How it works**
+1. The database name is part of the connection string, so swapping `/proctra` for `/proctra-demo` in `MONGODB_URI` gives
+   the app an empty, separate database with no code change.
+2. Data is created through the same endpoints the UI uses (register, sign in, create, publish, start, answer, submit), so
+   scores, ranks and charts are computed by the real services.
+3. Each screenshot is cropped to the bottom of the page content, so images don't end in empty space.
+
+**Files touched**
+- `README.md`, `docs/images/*.png`, `docs/architecture.md` (scripts stay in `.scratch/`, uncommitted, per the lean profile)
+
+**Concepts worth learning**
+- *Device scale factor:* rendering at 2× gives sharp images on Retina screens and GitHub at the same layout width.
+
+**Revisit if**
+The UI changes visibly. Re-run the scratch setup and shot scripts against a fresh demo database.

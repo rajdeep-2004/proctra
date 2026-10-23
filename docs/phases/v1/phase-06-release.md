@@ -25,7 +25,7 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 ## In scope — exact features
 1. **Version bump** — `package.json` → `1.0.0` (semver: first stable release after the 0.x line; D-056).
 2. **Installers** — `npm run dist` → `Proctra-1.0.0-mac-arm64.dmg` and `-mac-x64.dmg` (D-054); smoke test the installed app.
-3. **README** — new screenshots (tabs, analytics, leaderboard), features list updated, release link.
+3. **README** — first screenshots (teacher results, leaderboard, student dashboard, profile; D-067), features list updated, release link.
 4. **Production deploy** from `main` after merge, then GitHub Release `v1.0.0` with both installers and short release notes.
 
 ## Out of scope
@@ -38,7 +38,7 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 ## Tasks
 - [x] 06.1 — Version bump + build installers → `chore(release): bump version to 1.0.0`
 - [x] 06.2 — README refresh → `docs: update README for v1.0.0`
-- [ ] 06.3 — Final docs pass → `docs: update docs for phase v1/06`
+- [x] 06.3 — Final docs pass → `docs: update docs for phase v1/06`
 - [ ] After approval/merge: production deploy + `gh release create v1.0.0` (needs user go-ahead; public action)
 
 ## Done criteria
