@@ -37,7 +37,7 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 
 ## Tasks
 - [x] 06.1 — Version bump + build installers → `chore(release): bump version to 1.0.0`
-- [ ] 06.2 — README refresh → `docs: update README for v1.0.0`
+- [x] 06.2 — README refresh → `docs: update README for v1.0.0`
 - [ ] 06.3 — Final docs pass → `docs: update docs for phase v1/06`
 - [ ] After approval/merge: production deploy + `gh release create v1.0.0` (needs user go-ahead; public action)
 

@@ -8,7 +8,7 @@ Teachers create and grade quizzes on the web. Students take them in a full-scree
 
 **[⬇ Download for macOS](https://github.com/rajdeep-2004/proctra/releases/latest)** — Apple Silicon and Intel installers · [install steps](#install)
 
-[Features](#features) · [Architecture](#architecture) · [Getting started](#getting-started) · [Desktop app](#desktop-app) · [Deployment](#deployment) · [Limitations](#limitations) · [Docs](#documentation)
+[Features](#features) · [Screenshots](#screenshots) · [Architecture](#architecture) · [Getting started](#getting-started) · [Desktop app](#desktop-app) · [Deployment](#deployment) · [Limitations](#limitations) · [Docs](#documentation)
 
 </div>
 
@@ -33,24 +33,38 @@ The desktop client is never trusted with time, score or role.
 | **Marking schemes** | Points for correct / wrong / unanswered answers, including negative and fractional marks |
 | **Exam slots** | Fixed start and end time (1 min – 5 h); the duration is calculated. Once students start, content is locked and the end time can only be extended (every active deadline moves with it) |
 | **Publishing** | Draft → published → archived; optional "show results at" release time |
-| **Results** | Per-quiz submissions with marks, average, event and snapshot counts; per-student answer review |
+| **Quiz list** | All / Drafts / Live / Closed / Archived tabs with counts, plus title search |
+| **Results** | Per-quiz submissions with marks, event and snapshot counts; per-student answer review |
+| **Analytics** | Submitted / in-progress counts, average, median, highest and lowest marks, and a score distribution chart |
+| **Student view** | One student's attempts across your own quizzes, with their score trend |
 | **Proctoring review** | Neutral event timeline with gap durations; private snapshot gallery behind signed links that expire after 10 minutes |
-| **Leaderboard** | Live rankings with shared ranks for ties (1, 1, 3) |
+| **Leaderboard** | Rankings that refresh while students finish, with finish times; on equal marks the earlier finish ranks higher |
 
 ### For students
 | | |
 |---|---|
-| **Dashboard** | Open / upcoming / closed quizzes with a live, server-synced countdown |
+| **Dashboard** | "Open & upcoming" and "Closed" tabs with a live, server-synced countdown |
 | **Exam window** | Full-screen kiosk window; one question at a time, question palette, mark for review, clear answer |
 | **Resilient autosave** | Every answer is saved immediately and backed up on the device while offline. Survives reloads, crashes and quitting; resume keeps the original deadline |
 | **Submission** | Confirmation before submitting; automatic submit at the end time, also done by the server if the device is off |
-| **Results** | Score breakdown, per-question review once released, attempt history and a live leaderboard |
+| **Results** | Score, accuracy and time taken; per-question review once released; a live leaderboard |
+| **Profile** | Tests taken, average and best score, accuracy, and a score-over-time chart |
 
 ### Proctoring, by design
 - Camera permission is checked before an exam starts, with clear instructions for each failure (permission, no camera, camera in use).
 - No live preview and no video: a JPEG still every 10 seconds, stored **privately** and visible only to the quiz's teacher.
 - A blocking overlay appears if the camera disconnects mid-exam; the timer keeps running.
 - Window, tab and camera events are recorded as plain facts and never labelled as misconduct.
+
+## Screenshots
+
+| Teacher: quiz results | Teacher: leaderboard |
+|---|---|
+| ![Quiz results with analytics tiles and a score distribution chart](docs/images/teacher-results.png) | ![Leaderboard with ranks, finish times and marks](docs/images/leaderboard.png) |
+| **Student: dashboard** | **Student: profile** |
+| ![Student dashboard with open and upcoming quizzes](docs/images/student-dashboard.png) | ![Student profile with score tiles and a score-over-time chart](docs/images/student-profile.png) |
+
+<sub>Demo data. The exam itself runs in the full-screen desktop window.</sub>
 
 ## Architecture
 
