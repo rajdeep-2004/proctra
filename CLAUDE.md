@@ -12,7 +12,7 @@ snapshots — a university capstone for students and teachers (macOS). Details l
 - Backend: Next.js route handlers under `/api/v1` → services → Mongoose models; Zod validation
 - Database: MongoDB Atlas + Mongoose
 - Auth: Auth.js (NextAuth v5) Credentials, JWT cookie, bcryptjs
-- Desktop: Electron (thin shell loading `PROCTRA_APP_URL`), electron-builder → unsigned universal `.dmg`
+- Desktop: Electron (thin shell loading `PROCTRA_APP_URL`), electron-builder → unsigned per-chip `.dmg`s (arm64 + x64, D-054)
 - Other: Cloudinary (private snapshots), Vercel hosting
 - Package manager: npm
 
@@ -24,7 +24,7 @@ npm run electron     # compile electron/ and open the shell (run with dev server
 npm run build        # production build
 npm run lint         # lint + typecheck
 npm run seed         # create/update teacher from SEED_TEACHER_* in .env (--promote to convert a student)
-npm run dist         # build universal macOS .dmg → release/ (loads production; D-051)
+npm run dist         # build per-chip macOS .dmgs (arm64 + x64) → release/ (loads production; D-051, D-054)
 ```
 (Scripts are created in the phase that introduces them; update here if names change.)
 
