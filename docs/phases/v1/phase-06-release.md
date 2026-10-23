@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | review |
+| Status | done |
 | Branch | `phase/v1-06-release` |
 | Depends on | Phase v1/05 |
 | Issues | — (ships everything above) |
