@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | not-started |
+| Status | review |
 | Branch | `phase/v1-06-release` |
 | Depends on | Phase v1/05 |
 | Issues | — (ships everything above) |
@@ -16,14 +16,16 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 - Production already runs the latest `main` (user, 2026-10-22); redeploy after this phase merges.
 - README screenshots to refresh: quiz tabs (v1/02), leaderboard finish times (v1/03), teacher results analytics and
   student profile (v1/04), teacher's student page (v1/05).
-- Scratch fixtures (@scratch.test students, `t2@`/`t3@scratch.test` teachers) are in the production database: run
-  `.scratch/cleanup-users.mts` before the release (and check it covers the scratch teachers too).
+- Production database was wiped and reseeded on 2026-10-23 for the user's manual E2E test (2 teachers, 5 students,
+  `@proctra.test`); no scratch fixtures remain, so no cleanup is needed.
+- Fixes from that test are already on `main` and deployed: leaderboard notes removed; kiosk lock when the app was already
+  full screen (D-066). The desktop fix reaches users only through the new `.dmg`.
 - Known slowness (D-065): functions run in `iad1`, the database is in Mumbai; first request after idle ~5 s.
 
 ## In scope — exact features
 1. **Version bump** — `package.json` → `1.0.0` (semver: first stable release after the 0.x line; D-056).
 2. **Installers** — `npm run dist` → `Proctra-1.0.0-mac-arm64.dmg` and `-mac-x64.dmg` (D-054); smoke test the installed app.
-3. **README** — new screenshots (tabs, analytics, leaderboard), features list updated, release link.
+3. **README** — first screenshots (teacher results, leaderboard, student dashboard, profile; D-067), features list updated, release link.
 4. **Production deploy** from `main` after merge, then GitHub Release `v1.0.0` with both installers and short release notes.
 
 ## Out of scope
@@ -34,9 +36,9 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 - `decisions.md` → D-051, D-054
 
 ## Tasks
-- [ ] 06.1 — Version bump + build installers → `chore(release): bump version to 1.0.0`
-- [ ] 06.2 — README refresh → `docs: update README for v1.0.0`
-- [ ] 06.3 — Final docs pass → `docs: update docs for phase v1/06`
+- [x] 06.1 — Version bump + build installers → `chore(release): bump version to 1.0.0`
+- [x] 06.2 — README refresh → `docs: update README for v1.0.0`
+- [x] 06.3 — Final docs pass → `docs: update docs for phase v1/06`
 - [ ] After approval/merge: production deploy + `gh release create v1.0.0` (needs user go-ahead; public action)
 
 ## Done criteria
@@ -48,11 +50,16 @@ the user (D-065), so this release ships v1/01–v1/05. Notes for the release:
 1. Install the arm64 `.dmg`, sign in as teacher and student, run a quiz end to end.
 
 ## Phase summary
-<!-- Filled at /phase-close. -->
-- **Built:**
-- **Key decisions:**
-- **Known limitations:**
-- **Next phase should know:**
+- **Built:** version 1.0.0; per-chip installers `Proctra-1.0.0-mac-arm64.dmg` / `-mac-x64.dmg` (checked: packaged app
+  reports 1.0.0, loads production, contains the D-066 full-screen fix); README features updated for v1/01–v1/05 plus its
+  first screenshots (`docs/images/`, from a separate demo database, D-067).
+- **Key decisions:** D-066 (leave full screen before the kiosk window; shipped to `main` just before this phase),
+  D-067 (README screenshots from demo data).
+- **Known limitations:** installers are still unsigned (right-click → Open on first launch); performance debt from D-065
+  is unchanged; the exam window isn't pictured in the README (desktop-only).
+- **Next phase should know:** after merge, deploy production and create the GitHub Release `v1.0.0` with both `.dmg`
+  files (public action, needs the user's go-ahead). The `proctra-demo` database can be kept for future screenshots or
+  dropped. Next release planning goes in `docs/phases/v2/`.
 
 ## Next phase preview
 None planned. Next release planning goes in `docs/phases/v2/`.

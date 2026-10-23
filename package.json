@@ -1,6 +1,6 @@
 {
   "name": "proctra",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "main": "electron/dist/main.js",
   "scripts": {
@@ -49,5 +49,5 @@
     "tsx": "^4.23.15",
     "typescript": "^5"
   },
-  "description": "Proctra \u2014 timed MCQ exams with a kiosk exam window and camera snapshots (Electron + Next.js)."
+  "description": "Proctra — timed MCQ exams with a kiosk exam window and camera snapshots (Electron + Next.js)."
 }

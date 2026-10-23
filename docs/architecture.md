@@ -78,7 +78,7 @@ proctra/
 │   ├── services/           # business logic: quiz, attempt, grading, leaderboard, snapshot
 │   └── types/              # shared TS types, window.proctra typing
 ├── scripts/                # seed-teachers.ts (run with tsx)
-├── docs/
+├── docs/                   # project docs; images/ holds the README screenshots (D-067)
 ├── electron-builder.yml    # .dmg packaging config (npm run dist → release/)
 └── package.json            # single package for Next.js + Electron
 ```
