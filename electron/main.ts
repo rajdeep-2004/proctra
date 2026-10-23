@@ -240,14 +240,39 @@ ipcMain.handle("proctra:request-camera", async (event) => {
   return { granted: false, status };
 });
 
+/**
+ * If the main window is in macOS full screen it lives on its own Space. Opening the kiosk window from there left
+ * three-finger swipes between Spaces working, so leave full screen first and wait for macOS to finish (D-066).
+ */
+function leaveFullScreenThen(win: BrowserWindow | null, next: () => void) {
+  if (!win || win.isDestroyed() || !win.isFullScreen()) return next();
+  let done = false;
+  const finish = (why: string) => {
+    if (done) return;
+    done = true;
+    trace("main window left full screen:", why);
+    setTimeout(next, 150); // let macOS settle on the normal desktop Space
+  };
+  win.once("leave-full-screen", () => finish("leave-full-screen"));
+  win.setFullScreen(false);
+  setTimeout(() => finish("timeout"), 1500); // fallback if macOS sends no event
+}
+
+let pendingExamId: string | null = null; // set while waiting for the main window to leave full screen
+
 ipcMain.handle("proctra:start-exam", (event, attemptId: unknown) => {
   if (!fromAppPage(event) || typeof attemptId !== "string" || !ATTEMPT_ID.test(attemptId)) return { ok: false };
+  if (pendingExamId) return { ok: pendingExamId === attemptId };
   if (examWindow && !examWindow.isDestroyed()) {
     // Only one exam window at a time; asking again just brings it forward.
     examWindow.focus();
     return { ok: examAttemptId === attemptId };
   }
-  openExamWindow(attemptId);
+  pendingExamId = attemptId;
+  leaveFullScreenThen(mainWindow, () => {
+    pendingExamId = null;
+    openExamWindow(attemptId);
+  });
   return { ok: true };
 });
 

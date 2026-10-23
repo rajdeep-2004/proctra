@@ -33,6 +33,13 @@ Phase files live in `docs/phases/vN/`; a phase id is `vN/NN` (D-055).
 Status values: `not-started` → `in-progress` → `review` → `done`
 
 ## Session log
+### 2026-10-23 (manual E2E test fixes)
+- Database wiped and reseeded with 2 teachers + 5 students for the user's manual test (accounts in `.scratch/`, not committed).
+- Fixed from the test: removed the "Live: ranks may change" and "Equal marks" notes from the leaderboard; the kiosk exam
+  window now locks Space swiping even when the app was already full screen (D-066). User confirmed both in the dev app.
+- Merged `fix/v1-kiosk-fullscreen-leaderboard-copy` to `main` and deployed. The .dmg gets the desktop fix in v1/06.
+- Next: `/phase-start v1/06` (release v1.0.0).
+
 ### 2026-10-22 (v1/06 performance, dropped)
 - Measured production before any change: functions run in `iad1` (Washington, D.C.), Atlas in Mumbai; warm API calls
   0.8–1.2 s, first request after 10 min idle 5.3 s; `/api/v1/me/attempts` hung twice early in a run (not reproduced on demand).

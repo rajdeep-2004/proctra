@@ -32,15 +32,11 @@ export function LeaderboardView({ initial }: { initial: Leaderboard }) {
 
   return (
     <div className="grid gap-4">
-      {board.live && (
+      {board.live && stale && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground" role="status">
           <RefreshCw className="size-4" aria-hidden />
-          Live: ranks may change as others finish{board.stillWriting > 0 && <> ({board.stillWriting} still writing)</>}.
-          {stale && " Couldn't refresh; showing the last update."}
+          Couldn&apos;t refresh; showing the last update.
         </p>
-      )}
-      {board.entries.length > 1 && (
-        <p className="text-sm text-muted-foreground">Equal marks: whoever finished first ranks higher.</p>
       )}
       {board.entries.length === 0 ? (
         <p className="text-muted-foreground">No one has finished yet.</p>

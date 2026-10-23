@@ -190,7 +190,7 @@ and shows `deadline − (Date.now() + offset)`. The client countdown is cosmetic
 | Two saves for the same question out of order | Older value overwrites newer | Client queue: one in-flight request, coalesce to newest value |
 | Manual submit + auto-submit + lazy finalize at once | Double grading / status flip-flop | `findOneAndUpdate({status:'active'})` — only one caller wins; others read the final result (idempotent) |
 | Teacher edits questions while a student starts | Student sees questions that then change | Starting sets `quiz.locked = true` **before** creating the attempt; question edits update with condition `locked:false` |
-| Leaderboard viewed while others are still writing | Provisional ranks | Labelled "Live — ranks may change"; only finished attempts ranked; refreshes every 10 s (D-049) |
+| Leaderboard viewed while others are still writing | Provisional ranks | Only finished attempts ranked; refreshes every 10 s; no "live" label (removed on user request, 2026-10-23) (D-049) |
 | Teacher extends end time during active attempts | Some attempts keep the old deadline | Quiz update and `updateMany` on active attempts' `deadline`; end time can only move later, so no attempt is ever cut short (D-041) |
 | Teacher unpublishes during active attempts | Students mid-exam lose quiz | Unpublish only hides it from listings/new starts; active attempts continue to deadline |
 
@@ -259,6 +259,7 @@ windows, main window hidden during the exam, only the app's own pages can load, 
 tab hiding / camera loss are logged neutrally.
 macOS kiosk presentation also hides the Dock and menu bar and disables the app menu and the Force Quit dialog (⌥⌘⎋).
 Cmd+Q is deliberately kept working through a shortcut that exists only while the exam window is open (D-048).
+If the main window is in macOS full screen when an exam starts, it leaves full screen first so the kiosk window locks Space swiping (D-066).
 Does **not**: stop Cmd+Q (kept on purpose), the power button, a second display, a phone or another computer, or a student
 opening the exam URL in a normal browser (blocked by the page, not by the server — D-013).
 Quitting leaves the attempt active: the student can resume with the remaining time, or it is auto-submitted at the deadline.

@@ -78,6 +78,7 @@ Rules:
 | D-063 | 2026-10-22 | v1/04 | Profile analytics: released results only; answer counts in `/me/attempts` | Active |
 | D-064 | 2026-10-22 | v1/05 | Teacher student view: owner-scoped, one 404 for unknown or not-mine | Active |
 | D-065 | 2026-10-22 | v1/06 | Drop the production performance phase; record findings as known debt | Active |
+| D-066 | 2026-10-23 | v1 fix | Leave macOS full screen before opening the kiosk exam window | Active |
 
 ---
 
@@ -2636,3 +2637,42 @@ are parked.
 
 **Revisit if**
 Users complain about load times after release, or the project moves beyond the capstone. The parked items are ready to do.
+
+### D-066 — Leave macOS full screen before opening the kiosk exam window
+
+**Context**
+Found by the user in a manual end-to-end test (2026-10-23). If the main window was already in macOS full screen when they
+started an exam, the exam window opened but three-finger swipes still moved to other Spaces and apps. Starting from a
+normal (not full-screen) window worked: the exam took over the screen and swiping was blocked.
+
+**Decision**
+Before opening the exam window, the main process checks whether the main window is in full screen. If it is, it leaves full
+screen, waits for macOS to say it's done (`leave-full-screen`, with a 1.5 s fallback), waits 150 ms more for the desktop to
+settle, and only then opens the kiosk window.
+
+**Alternatives rejected**
+- *Use `simpleFullScreen` for the exam window:* it changes how the exam window behaves in every case, including the one
+  that already works.
+- *Block the Start button while the app is full screen:* the student would have to fix it themselves, which is confusing.
+
+**How it works**
+1. A macOS full-screen window gets its own Space (a separate desktop). The main window hides itself when the exam opens.
+   Hiding it from inside its own full-screen Space left the kiosk window on a Space that macOS was tearing down, so the
+   kiosk "presentation options" (no app switching, no Space swiping) did not take hold.
+2. `leaveFullScreenThen(mainWindow, next)` does nothing special for a normal window: it calls `next()` right away.
+3. For a full-screen window it calls `setFullScreen(false)` and runs `next()` once, on whichever comes first: the
+   `leave-full-screen` event or the timeout.
+4. While it waits, `pendingExamId` remembers the attempt, so a double-click on Start can't open two exam windows.
+5. This mirrors the order already used when the exam ends (D-047): leave full screen first, then change windows.
+
+**Files touched**
+- `electron/main.ts`, `docs/system-design.md`
+
+**Concepts worth learning**
+- *macOS Spaces:* each full-screen app window is its own desktop. Window changes during a Space transition can land on the
+  wrong Space.
+- *Event plus timeout:* waiting for an OS event that might not arrive needs a fallback timer and a "run once" guard.
+
+**Revisit if**
+Students still see swiping after this, or macOS changes how full-screen Spaces work. The main window comes back in normal
+(not full-screen) mode after the exam. That's acceptable for now.
